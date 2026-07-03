@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum GenererSuccessCode {
+public enum GeneralSuccessCode implements BaseSuccessCode{
 
     OK(HttpStatus.OK, "200_1", "성공적으로 요청을 처리했습니다."),
     CREATED(HttpStatus.CREATED, "201_1", "성공적으로 생성이 되었습니다.");
