@@ -46,6 +46,8 @@
     │   │   └── service             # 서비스
     │   ├── notify                  # 알림 도메인
     │   ├── post                    # 공고 도메인
+    │   ├   ├── scholarship         # 장학금 도메인
+    │   ├   └── contest             # 공모전 도메인
     │   └── user                    # 사용자 도메인
     ├── global                      # 전역 공통 설정 및 예외 처리
     └── FitmeApplication.java
