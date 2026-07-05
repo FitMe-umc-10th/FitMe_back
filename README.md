@@ -57,8 +57,8 @@ https://difficult-grass-c0f.notion.site/e2751793c00a82a993b801e2c81ba654?source=
 ## 팀원 정보
 | 이름  | 역할      | 깃헙주소 |
 |-----|---------| ---| 
-| 장문경 | Backend : 찜 & 온보딩 api 구현 | 깃헙주소 |
-| 김태리 | Backend : 마이페이지 api 구현      | 깃헙주소 |
-| 육도연 | Backend : 홈 api 구현      | 깃헙주소 |
-| 홍진우 | Backend : 이력 api 구현     | 깃헙주소 |
-| 김강민 | Backend : 탐색 & 로그인 api 구현, 개발 환경 세팅     | 깃헙주소 |
+| 장문경 | Backend : 찜 & 온보딩 api 구현 | [깃헙주소](https://github.com/jangmk05) | 
+| 김태리 | Backend : 마이페이지 api 구현      | [깃헙주소](https://github.com/lucky7terry) |
+| 육도연 | Backend : 홈 api 구현      | [깃헙주소](https://github.com/yookdy) |
+| 홍진우 | Backend : 이력 api 구현     | [깃헙주소](https://github.com/j2nooh) |
+| 김강민 | Backend : 탐색 & 로그인 api 구현, 개발 환경 세팅     | [깃헙주소](https://github.com/kkangmen) |
