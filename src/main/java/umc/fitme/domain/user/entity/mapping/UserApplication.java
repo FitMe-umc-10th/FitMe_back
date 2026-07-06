@@ -59,4 +59,9 @@ public class UserApplication extends BaseEntity {
         String trimmed = memo.trim();
         this.memo = trimmed.isEmpty() ? null : trimmed;
     }
+
+    public void updateStatus(Status status) {
+        this.status = status;
+        this.isApplied = true;
+    }
 }
