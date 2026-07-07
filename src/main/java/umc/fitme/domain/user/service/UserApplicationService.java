@@ -13,6 +13,8 @@ import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -49,7 +51,25 @@ public class UserApplicationService {
     }
 
     public UserApplicationResponseDto.ListResponse getList(String tab) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        List<Status> statuses = switch (tab) {
+            case "IN_PROGRESS" -> List.of(
+                    Status.NONE,
+                    Status.PENDING_RESULT,
+                    Status.DOCUMENT_PASSED
+            );
+            case "FINAL_PASSED" -> List.of(Status.FINAL_PASSED);
+            default -> throw new IllegalArgumentException("유효하지 않은 이력 탭입니다.");
+        };
+
+        List<UserApplication> userApplications =
+                userApplicationRepository.findAllByUserAndStatusInOrderByUpdatedAtDescIdDesc(
+                        user, statuses
+                );
+
+        return UserApplicationResponseDto.ListResponse.from(userApplications);
     }
 
     public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
