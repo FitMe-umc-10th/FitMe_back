@@ -62,6 +62,6 @@ public class UserApplication extends BaseEntity {
 
     public void updateStatus(Status status) {
         this.status = status;
-        this.isApplied = true;
+        this.isApplied = status != Status.NONE;
     }
 }
