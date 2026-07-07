@@ -89,7 +89,7 @@ public class UserApplicationService {
                         userApplicationId, user
                 ).orElseThrow(() -> new IllegalArgumentException("지원 이력을 찾을 수 없습니다."));
 
-        if(request.status() == Status.NONE) {
+        if (request.status() == null || request.status() == Status.NONE) {
             throw new IllegalArgumentException("변경할 수 없는 상태입니다.");
         }
 
