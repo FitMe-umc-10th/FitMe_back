@@ -18,7 +18,7 @@ public class GeneralExceptionHandler {
     // 프로젝트에서 발생한 예외 처리
     @ExceptionHandler(ProjectException.class)
     public ResponseEntity<ApiResponse<Void>> handleProjectException(ProjectException e){
-        BaseErrorCode errorCode = e.getBaseErrorCode();
+        BaseErrorCode errorCode = e.getErrorCode();
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }
