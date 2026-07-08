@@ -72,8 +72,17 @@ public class UserApplicationService {
         return UserApplicationResponseDto.ListResponse.from(userApplications);
     }
 
+    @Transactional
     public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
+                .orElseThrow(() -> new IllegalArgumentException("지원 이력을 찾을 수 없습니다."));
+
+        userApplication.getPost().increaseViewCount();
+
+        return UserApplicationResponseDto.DetailResponse.from(userApplication);
     }
 
     @Transactional

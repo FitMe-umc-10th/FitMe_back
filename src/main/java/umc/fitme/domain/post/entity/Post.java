@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 @Builder
 @Table(name = "post")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(
+        name = "dtype",
+        discriminatorType = DiscriminatorType.STRING
+)
 public class Post {
 
     @Id
