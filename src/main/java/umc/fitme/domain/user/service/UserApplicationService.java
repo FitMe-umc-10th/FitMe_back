@@ -77,10 +77,10 @@ public class UserApplicationService {
     @Transactional
     public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
         User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new IllegalArgumentException("지원 이력을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
 
         userApplication.getPost().increaseViewCount();
 
