@@ -15,7 +15,7 @@ public class CustomOAuth2User implements OAuth2User {
     private final String role;
     private final String name;
 
-    `@Override`
+    @Override
     public Map<String, Object> getAttributes() {
         return Collections.emptyMap();
     }
