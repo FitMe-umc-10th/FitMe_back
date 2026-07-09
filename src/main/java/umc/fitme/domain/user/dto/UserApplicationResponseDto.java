@@ -113,7 +113,7 @@ public class UserApplicationResponseDto {
             ContestResponse contest
     ) {
         public static PostDetailResponse from(Post post) {
-            Post unproxiedPost = (Post) Hibernate.unproxy(post);
+            Post unproxiedPost = Hibernate.unproxy(post, Post.class);
 
             ScholarshipResponse scholarship = null;
             ContestResponse contest = null;
