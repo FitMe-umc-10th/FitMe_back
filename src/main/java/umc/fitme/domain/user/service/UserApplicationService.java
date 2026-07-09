@@ -12,6 +12,8 @@ import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.global.apiPayload.code.GeneralErrorCode;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.List;
 
@@ -31,10 +33,10 @@ public class UserApplicationService {
             UserApplicationRequestDto.CreateRequest request
     ) {
         User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         Post post = postRepository.findById(request.postId())
-                .orElseThrow(() -> new IllegalArgumentException("공고를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
 
         UserApplication userApplication = userApplicationRepository.findByUserAndPost(user, post)
                 .orElseGet(() -> userApplicationRepository.save(
@@ -52,7 +54,7 @@ public class UserApplicationService {
 
     public UserApplicationResponseDto.ListResponse getList(String tab) {
         User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         List<Status> statuses = switch (tab) {
             case "IN_PROGRESS" -> List.of(
@@ -61,7 +63,7 @@ public class UserApplicationService {
                     Status.DOCUMENT_PASSED
             );
             case "FINAL_PASSED" -> List.of(Status.FINAL_PASSED);
-            default -> throw new IllegalArgumentException("유효하지 않은 이력 탭입니다.");
+            default -> throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_TAB);
         };
 
         List<UserApplication> userApplications =
@@ -82,15 +84,15 @@ public class UserApplicationService {
             UserApplicationRequestDto.UpdateStatusRequest request
     ) {
         User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserApplication userApplication =
                 userApplicationRepository.findByIdAndUser(
                         userApplicationId, user
-                ).orElseThrow(() -> new IllegalArgumentException("지원 이력을 찾을 수 없습니다."));
+                ).orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
 
         if (request.status() == null || request.status() == Status.NONE) {
-            throw new IllegalArgumentException("변경할 수 없는 상태입니다.");
+            throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
         }
 
         userApplication.updateStatus(request.status());
