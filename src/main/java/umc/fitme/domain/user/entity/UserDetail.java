@@ -33,4 +33,7 @@ public class UserDetail {
 
     @Column(name = "income_bracket", nullable = false)
     private int incomeBracket;
+
+    @Column(name = "profile_image_url", nullable = true)
+    private String profileImageUrl;
 }
