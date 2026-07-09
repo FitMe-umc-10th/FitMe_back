@@ -106,16 +106,16 @@ public class UserApplicationService {
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
         User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new IllegalArgumentException("지원 이력을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
 
         String memo = request.memo();
         String trimmedMemo = memo == null ? null : memo.trim();
 
         if (trimmedMemo != null && trimmedMemo.length() > 1000) {
-            throw new IllegalArgumentException("메모는 최대 1,000자를 초과할 수 없습니다.");
+            throw new ProjectException(GeneralErrorCode.MEMO_TOO_LONG);
         }
 
         userApplication.updateMemo(trimmedMemo);
