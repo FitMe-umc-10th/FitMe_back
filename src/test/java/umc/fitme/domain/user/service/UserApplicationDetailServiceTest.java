@@ -103,8 +103,8 @@ class UserApplicationDetailServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 지원 이력 상세 조회 시 예외를 던진다")
-    void getDetail_notFoundApplication_throwsException() {
+    @DisplayName("본인 소유가 아닌 지원 이력 상세 조회 시 예외를 던진다")
+    void getDetail_otherUserApplication_throwsException() {
         // given
         User user = createUser();
 
@@ -117,6 +117,45 @@ class UserApplicationDetailServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting("baseErrorCode")
                 .isEqualTo(GeneralErrorCode.USER_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("마감된 공고의 지원 이력도 상세 조회할 수 있다")
+    void getDetail_closedPost_returnsDetail() {
+        // given
+        User user = createUser();
+
+        Post closedPost = Post.builder()
+                .id(1L)
+                .postType(PostType.CONTEST)
+                .title("마감된 공모전")
+                .organizer("테스트 기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 30))
+                .summary("마감된 공고입니다.")
+                .applicationMethod("공식 홈페이지 접수")
+                .applicationUrl("https://example.com/apply")
+                .build();
+
+        UserApplication userApplication = UserApplication.builder()
+                .user(user)
+                .post(closedPost)
+                .status(Status.PENDING_RESULT)
+                .isApplied(true)
+                .memo("마감 공고 메모")
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(1L, user))
+                .thenReturn(Optional.of(userApplication));
+
+        // when
+        UserApplicationResponseDto.DetailResponse response =
+                userApplicationService.getDetail(1L);
+
+        // then
+        assertThat(response.post().title()).isEqualTo("마감된 공모전");
+        assertThat(response.post().applyEndAt()).isEqualTo(LocalDate.of(2026, 7, 30));
     }
 
     private User createUser() {
