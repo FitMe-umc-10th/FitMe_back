@@ -50,8 +50,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtUtil.createAccessToken(userId, role, name);
         String refreshToken = jwtUtil.createRefreshToken(userId);
 
-        log.info("발급된 accessToken: {}", accessToken);
-        log.info("발급된 refreshToken: {}", refreshToken);
+        log.info("토큰 발급 완료 - userId: {}", userId);
 
         // 소셜 로그인 성공 시, 프론트 주소로 리다이렉션
         redirect(request, response, userId, name, accessToken, refreshToken);
