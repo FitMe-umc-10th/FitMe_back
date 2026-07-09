@@ -95,7 +95,7 @@ public class JwtUtil {
                     .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
-            log.info("토큰이 유효하지 않습니다. {}", e.getMessage());
+            log.error("토큰이 유효하지 않습니다. {}", e.getMessage());
             throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
         }
     }
