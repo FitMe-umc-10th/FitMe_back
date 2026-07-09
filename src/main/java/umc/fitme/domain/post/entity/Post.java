@@ -61,4 +61,8 @@ public class Post {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void increaseViewCount() {
+        this.viewCount += 1;
+    }
 }
