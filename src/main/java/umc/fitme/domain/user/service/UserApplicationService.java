@@ -105,7 +105,24 @@ public class UserApplicationService {
             Long userApplicationId,
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+
+        // 정책 확정: API로 들어온 원본 memo 기준 1000자 검증, 그 후 trim 처리, trim 후 빈 문자열이면 null 저장
+        String memo = request.memo();
+
+        if (memo != null && memo.length() > 1000) {
+            throw new ProjectException(GeneralErrorCode.MEMO_TOO_LONG);
+        }
+
+        String trimmedMemo = memo == null ? null : memo.trim();
+
+        userApplication.updateMemo(trimmedMemo);
+
+        return UserApplicationResponseDto.UpdateMemoResponse.from(userApplication);
     }
 
     @Transactional
