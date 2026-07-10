@@ -51,7 +51,7 @@ public class MyPageService {
                 user, Status.FINAL_PASSED
         );
         long totalScholarshipAmount = amounts.stream()
-                .mapToLong(this::parseAmount)
+                .mapToLong(MyPageService::parseAmount)
                 .sum();
 
         return MyPageResponseDto.MyPageResponse.of(
@@ -69,7 +69,7 @@ public class MyPageService {
      * @param amount 장학금 금액 문자열
      * @return 변환된 장학금 금액
      */
-    private long parseAmount(String amount) {
+    static long parseAmount(String amount) {
         if (amount == null) {
             return 0L;
         }
