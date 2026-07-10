@@ -74,8 +74,17 @@ public class UserApplicationService {
         return UserApplicationResponseDto.ListResponse.from(userApplications);
     }
 
+    @Transactional
     public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+
+        userApplication.getPost().increaseViewCount();
+
+        return UserApplicationResponseDto.DetailResponse.from(userApplication);
     }
 
     @Transactional
