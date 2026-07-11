@@ -4,7 +4,7 @@ import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
-
+import org.hibernate.Hibernate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -113,29 +113,31 @@ public class UserApplicationResponseDto {
             ContestResponse contest
     ) {
         public static PostDetailResponse from(Post post) {
+            Post unproxiedPost = Hibernate.unproxy(post, Post.class);
+
             ScholarshipResponse scholarship = null;
             ContestResponse contest = null;
 
-            if (post instanceof Scholarship scholarshipPost) {
+            if (unproxiedPost instanceof Scholarship scholarshipPost) {
                 scholarship = ScholarshipResponse.from(scholarshipPost);
             }
 
-            if (post instanceof Contest contestPost) {
+            if (unproxiedPost instanceof Contest contestPost) {
                 contest = ContestResponse.from(contestPost);
             }
 
             return new PostDetailResponse(
-                    post.getId(),
-                    post.getPostType().name(),
-                    post.getTitle(),
-                    post.getOrganizer(),
-                    post.getApplyStartAt(),
-                    post.getApplyEndAt(),
-                    post.getSummary(),
-                    post.getApplicationMethod(),
-                    post.getApplicationUrl(),
-                    post.getViewCount(),
-                    post.getSavedCount(),
+                    unproxiedPost.getId(),
+                    unproxiedPost.getPostType().name(),
+                    unproxiedPost.getTitle(),
+                    unproxiedPost.getOrganizer(),
+                    unproxiedPost.getApplyStartAt(),
+                    unproxiedPost.getApplyEndAt(),
+                    unproxiedPost.getSummary(),
+                    unproxiedPost.getApplicationMethod(),
+                    unproxiedPost.getApplicationUrl(),
+                    unproxiedPost.getViewCount(),
+                    unproxiedPost.getSavedCount(),
                     scholarship,
                     contest
             );
