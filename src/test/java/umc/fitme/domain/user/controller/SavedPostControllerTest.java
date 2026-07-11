@@ -1,5 +1,6 @@
 package umc.fitme.domain.user.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import umc.fitme.domain.user.dto.SavedPostRequestDto;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
@@ -20,6 +22,7 @@ import java.util.List;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(SavedPostController.class)
@@ -28,6 +31,9 @@ class SavedPostControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private SavedPostService savedPostService;
@@ -83,5 +89,43 @@ class SavedPostControllerTest {
                 .andExpect(jsonPath("$.result.savedPosts[0].deadlineLabel").value("D-3"))
                 .andExpect(jsonPath("$.result.pageInfo.size").value(20))
                 .andExpect(jsonPath("$.result.pageInfo.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("저장 공고 저장 API 성공")
+    void savePost_success() throws Exception {
+        SavedPostRequestDto.SavePostRequest request =
+                SavedPostRequestDto.SavePostRequest.builder()
+                        .postId(10L)
+                        .build();
+
+        SavedPostResponseDto.SavePostResponse response =
+                SavedPostResponseDto.SavePostResponse.builder()
+                        .savedId(100L)
+                        .postId(10L)
+                        .saved(true)
+                        .build();
+
+        given(savedPostService.savePost(10L)).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/saved-posts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.result.savedId").value(100))
+                .andExpect(jsonPath("$.result.postId").value(10))
+                .andExpect(jsonPath("$.result.saved").value(true));
+    }
+
+    @Test
+    @DisplayName("postId가 없으면 400")
+    void savePost_badRequest_whenPostIdIsNull() throws Exception {
+        String invalidRequest = "{}";
+
+        mockMvc.perform(post("/api/v1/saved-posts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidRequest))
+                .andExpect(status().isBadRequest());
     }
 }

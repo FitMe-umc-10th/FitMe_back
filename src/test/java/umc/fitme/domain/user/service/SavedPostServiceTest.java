@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
@@ -15,6 +16,7 @@ import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
+import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -35,6 +37,9 @@ class SavedPostServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PostRepository postRepository;
 
     @InjectMocks
     private SavedPostService savedPostService;
@@ -129,5 +134,102 @@ class SavedPostServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10));
+    }
+
+    @Test
+    @DisplayName("공고 찜하기 성공")
+    void savePost_success() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave savedUserSave = UserSave.builder()
+                .id(100L)
+                .user(user)
+                .post(post)
+                .isSaved(true)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
+        when(userSaveRepository.save(any(UserSave.class))).thenReturn(savedUserSave);
+
+        SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(10L);
+
+        assertNotNull(response);
+        assertEquals(100L, response.savedId());
+        assertEquals(10L, response.postId());
+        assertTrue(response.saved());
+    }
+
+    @Test
+    @DisplayName("이미 찜한 공고면 예외 발생")
+    void savePost_alreadySaved() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave existingUserSave = UserSave.builder()
+                .id(99L)
+                .user(user)
+                .post(post)
+                .isSaved(true)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.of(existingUserSave));
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.savePost(10L)
+        );
+
+        assertEquals(GeneralErrorCode.ALREADY_SAVED_POST, exception.getBaseErrorCode());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 공고 저장 시 예외 발생")
+    void savePost_postNotFound() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.empty());
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.savePost(10L)
+        );
+
+        assertEquals(GeneralErrorCode.POST_NOT_FOUND, exception.getBaseErrorCode());
     }
 }
