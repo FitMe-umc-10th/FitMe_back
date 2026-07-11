@@ -114,7 +114,7 @@ class SavedPostServiceTest {
         when(userSaveRepository.findAllByUserAndIsSavedTrueOrderByIdDesc(eq(user), any()))
                 .thenReturn(List.of(save1, save2, save3));
 
-        SavedPostResponseDto.SavedPostListResponse result = savedPostService.getSavedPosts(SavedPostCategory.ALL, SavedPostSort.RECENT, null, 2);
+        SavedPostResponseDto.SavedPostListResponse result = savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 2);
 
         assertEquals(2, result.savedPosts().size());
         assertTrue(result.pageInfo().hasNext());
@@ -124,7 +124,7 @@ class SavedPostServiceTest {
     @Test
     @DisplayName("size가 0 이하이면 예외가 발생한다")
     void getSavedPosts_invalidSize_fail() {
-        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(SavedPostCategory.ALL, SavedPostSort.RECENT, null, 0));
+        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 0));
     }
 
     @Test
@@ -133,7 +133,7 @@ class SavedPostServiceTest {
         User user = User.builder().id(1L).build();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10));
+        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10));
     }
 
     @Test
@@ -168,7 +168,7 @@ class SavedPostServiceTest {
         when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
         when(userSaveRepository.save(any(UserSave.class))).thenReturn(savedUserSave);
 
-        SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(10L);
+        SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(1L, 10L);
 
         assertNotNull(response);
         assertEquals(100L, response.savedId());
@@ -209,10 +209,10 @@ class SavedPostServiceTest {
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
-                () -> savedPostService.savePost(10L)
+                () -> savedPostService.savePost(1L, 10L)
         );
 
-        assertEquals(GeneralErrorCode.ALREADY_SAVED_POST, exception.getBaseErrorCode());
+        assertEquals(GeneralErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
     }
 
     @Test
@@ -227,10 +227,10 @@ class SavedPostServiceTest {
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
-                () -> savedPostService.savePost(10L)
+                () -> savedPostService.savePost(1L, 10L)
         );
 
-        assertEquals(GeneralErrorCode.POST_NOT_FOUND, exception.getBaseErrorCode());
+        assertEquals(GeneralErrorCode.POST_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -263,7 +263,7 @@ class SavedPostServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
 
-        SavedPostResponseDto.DeleteSavedPostResponse response = savedPostService.deleteSavedPost(100L);
+        SavedPostResponseDto.DeleteSavedPostResponse response = savedPostService.deleteSavedPost(1L, 100L);
 
         assertNotNull(response);
         assertEquals(100L, response.savedId());
@@ -284,10 +284,10 @@ class SavedPostServiceTest {
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
-                () -> savedPostService.deleteSavedPost(100L)
+                () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(GeneralErrorCode.SAVED_POST_NOT_FOUND, exception.getBaseErrorCode());
+        assertEquals(GeneralErrorCode.SAVED_POST_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -322,9 +322,9 @@ class SavedPostServiceTest {
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
-                () -> savedPostService.deleteSavedPost(100L)
+                () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(GeneralErrorCode.ALREADY_UNSAVED_POST, exception.getBaseErrorCode());
+        assertEquals(GeneralErrorCode.ALREADY_UNSAVED_POST, exception.getErrorCode());
     }
 }

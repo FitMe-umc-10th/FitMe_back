@@ -12,6 +12,7 @@ import umc.fitme.domain.user.service.SavedPostService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
+import umc.fitme.global.security.entity.CustomUserDetails;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class SavedPostController {
 
     @GetMapping
     public ApiResponse<SavedPostResponseDto.SavedPostListResponse> getSavedPosts(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "ALL") SavedPostCategory category,
             @RequestParam(defaultValue = "RECENT") SavedPostSort sort,
             @RequestParam(required = false) String cursor,
@@ -29,27 +31,29 @@ public class SavedPostController {
     ) {
         return ApiResponse.onSuccess(
                 GeneralSuccessCode.OK,
-                savedPostService.getSavedPosts(category, sort, cursor, size)
+                savedPostService.getSavedPosts(userDetails.getUserId(), category, sort, cursor, size)
         );
     }
 
     @PostMapping
     public ApiResponse<SavedPostResponseDto.SavePostResponse> savePost(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody SavedPostRequestDto.SavePostRequest request
     ) {
         return ApiResponse.onSuccess(
                 GeneralSuccessCode.OK,
-                savedPostService.savePost(request.postId())
+                savedPostService.savePost(userDetails.getUserId(), request.postId())
         );
     }
 
     @DeleteMapping("/{savedId}")
     public ApiResponse<SavedPostResponseDto.DeleteSavedPostResponse> deleteSavedPost(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long savedId
     ) {
         return ApiResponse.onSuccess(
                 GeneralSuccessCode.OK,
-                savedPostService.deleteSavedPost(savedId)
+                savedPostService.deleteSavedPost(userDetails.getUserId(), savedId)
         );
     }
 }

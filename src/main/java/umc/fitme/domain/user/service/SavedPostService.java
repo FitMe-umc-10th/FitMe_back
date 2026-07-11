@@ -31,7 +31,6 @@ import static umc.fitme.domain.user.converter.SavedPostConverter.convertCategory
 @Transactional(readOnly = true)
 public class SavedPostService {
 
-    private static final Long TEMP_USER_ID = 1L;
     private static final int MAX_SIZE = 100;
 
     private final UserSaveRepository userSaveRepository;
@@ -39,6 +38,7 @@ public class SavedPostService {
     private final PostRepository postRepository;
 
     public SavedPostResponseDto.SavedPostListResponse getSavedPosts(
+            Long userId,
             SavedPostCategory category,
             SavedPostSort sort,
             String cursor,
@@ -46,7 +46,7 @@ public class SavedPostService {
     ) {
         validateSize(size);
 
-        User user = userRepository.findById(TEMP_USER_ID)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
 
@@ -78,8 +78,8 @@ public class SavedPostService {
     }
 
     @Transactional
-    public SavedPostResponseDto.SavePostResponse savePost(Long postId) {
-        User user = userRepository.findById(TEMP_USER_ID)
+    public SavedPostResponseDto.SavePostResponse savePost(Long userId, Long postId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         Post post = postRepository.findById(postId)
@@ -216,8 +216,8 @@ public class SavedPostService {
     }
 
     @Transactional
-    public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long savedId) {
-        User user = userRepository.findById(TEMP_USER_ID)
+    public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long userId, Long savedId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserSave userSave = userSaveRepository.findByIdAndUser(savedId, user)

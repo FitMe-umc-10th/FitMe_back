@@ -1,6 +1,7 @@
 package umc.fitme.domain.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,13 +9,19 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import umc.fitme.domain.user.dto.SavedPostRequestDto;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
 import umc.fitme.domain.user.service.SavedPostService;
+import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.util.JwtUtil;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class SavedPostControllerTest {
 
+    private static final Long USER_ID = 1L;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -39,6 +48,23 @@ class SavedPostControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // addFilters = false라 필터 체인이 돌지 않으므로 SecurityContextHolder에 직접 인증 정보를 채운다.
+    private MockHttpServletRequestBuilder withAuth(MockHttpServletRequestBuilder builder) {
+        CustomUserDetails userDetails = new CustomUserDetails(USER_ID, "USER", "테스트유저");
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return builder;
+    }
 
     @Test
     @DisplayName("저장 공고 목록 조회 API 성공")
@@ -71,17 +97,18 @@ class SavedPostControllerTest {
                         .build();
 
         given(savedPostService.getSavedPosts(
+                USER_ID,
                 SavedPostCategory.ALL,
                 SavedPostSort.RECENT,
                 null,
                 20
         )).willReturn(response);
 
-        mockMvc.perform(get("/api/v1/saved-posts")
+        mockMvc.perform(withAuth(get("/api/v1/saved-posts")
                         .param("category", "ALL")
                         .param("sort", "RECENT")
                         .param("size", "20")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.result.savedPosts[0].title").value("공모전 테스트"))
@@ -105,11 +132,11 @@ class SavedPostControllerTest {
                         .saved(true)
                         .build();
 
-        given(savedPostService.savePost(10L)).willReturn(response);
+        given(savedPostService.savePost(USER_ID, 10L)).willReturn(response);
 
-        mockMvc.perform(post("/api/v1/saved-posts")
+        mockMvc.perform(withAuth(post("/api/v1/saved-posts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.result.savedId").value(100))
@@ -138,10 +165,10 @@ class SavedPostControllerTest {
                         .saved(false)
                         .build();
 
-        given(savedPostService.deleteSavedPost(100L)).willReturn(response);
+        given(savedPostService.deleteSavedPost(USER_ID, 100L)).willReturn(response);
 
-        mockMvc.perform(delete("/api/v1/saved-posts/{savedId}", 100L)
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(withAuth(delete("/api/v1/saved-posts/{savedId}", 100L)
+                        .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.result.savedId").value(100))
