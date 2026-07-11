@@ -13,7 +13,10 @@ class MyPageServiceTest {
     @CsvSource({
             "5000000, 5000000",
             "'최대 1,000,000원', 1000000",
-            "'1,000,000', 1000000"
+            "'1,000,000', 1000000",
+            "'250만원', 2500000",
+            "'최대 250만원', 2500000",
+            "'1,000만원', 10000000"
     })
     void parseAmount_숫자와_콤마_표기를_long으로_변환한다(String input, long expected) {
         assertThat(MyPageService.parseAmount(input)).isEqualTo(expected);
