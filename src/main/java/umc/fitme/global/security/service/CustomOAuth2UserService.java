@@ -20,6 +20,7 @@ import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import java.lang.reflect.Member;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -48,23 +49,33 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         if (registrationId.equals("kakao")){
             String providerId = String.valueOf((Long)oAuth2User.getAttribute("id"));
             Map<String, Object> attributes = oAuth2User.getAttribute("kakao_account");
+            if (attributes == null) {
+                throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
+            }
             Map<String, Object> profile = (Map<String, Object>) attributes.get("profile");
             oAuth2Response = new KakaoResponse(providerId, attributes.get("email").toString(), profile.get("nickname").toString());
         } else if (registrationId.equals("naver")){
             Map<String, Object> attributes = (Map<String, Object>) oAuth2User.getAttribute("response");
+            if (attributes == null) {
+                throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
+            }
             oAuth2Response = new NaverResponse(attributes.get("id").toString(), attributes.get("email").toString(), attributes.get("name").toString());
         } else {
             throw new SocialLoginException(SocialLoginErrorCode.PROVIDER_NOT_FOUND);
         }
 
-        // 신규회원이면 DB에 추가
-        User user = userRepository.findByEmail(oAuth2Response.getEmail()).orElseGet(() -> {
-            User savedUser = userRepository.save(userConverter.convert(oAuth2Response));
-            log.info("신규회원 가입 완료! DB에 적재하였습니다.");
-            return savedUser;
-        });
+        Optional<User> optionalUser = userRepository.findBySocialTypeAndSocialUid(oAuth2Response.getProvider(), oAuth2Response.getProviderId());
 
-        log.info("소셜 로그인에 성공하였습니다. SecurityContext에 인증객체가 답깁니다.");
-        return new CustomOAuth2User(user.getId(), "USER", user.getName());
+        User user;
+        if (optionalUser.isPresent()) {
+            user = optionalUser.get();
+            log.info("기존 회원 로그인 성공!");
+
+        } else {
+            // 신규회원이면 DB에 추가
+            user = userRepository.save(userConverter.convert(oAuth2Response));
+            log.info("신규회원 가입 완료! DB에 적재하였습니다.");
+        }
+        return new CustomOAuth2User(user.getId(), "ROLE_USER", user.getName());
     }
 }
