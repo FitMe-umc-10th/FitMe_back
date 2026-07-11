@@ -20,8 +20,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class MyPageService {
 
-    private static final Long TEMP_USER_ID = 1L;
-
     private final UserRepository userRepository;
     private final UserDetailRepository userDetailRepository;
     private final UserApplicationRepository userApplicationRepository;
@@ -29,10 +27,11 @@ public class MyPageService {
     /**
      * 마이페이지에 필요한 사용자 정보, 지원 현황, 장학금 합격 금액을 조회합니다.
      *
+     * @param userId 조회 대상(로그인한) 사용자 식별자
      * @return 마이페이지 응답 정보
      */
-    public MyPageResponseDto.MyPageResponse getMyPage() {
-        User user = userRepository.findById(TEMP_USER_ID)
+    public MyPageResponseDto.MyPageResponse getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserDetail userDetail = userDetailRepository.findByUser(user)
