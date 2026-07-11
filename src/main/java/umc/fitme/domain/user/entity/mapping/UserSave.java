@@ -9,6 +9,8 @@ import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.global.entity.BaseEntity;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Builder
 @AllArgsConstructor
@@ -32,4 +34,7 @@ public class UserSave extends BaseEntity {
     @Column(name = "is_saved")
     @Builder.Default
     private Boolean isSaved = false;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
