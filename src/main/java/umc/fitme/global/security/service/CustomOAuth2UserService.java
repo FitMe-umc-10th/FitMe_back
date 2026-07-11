@@ -40,7 +40,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
 
         // 회원 정보 가져오기
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        log.info("받아온 회원 정보: {}", oAuth2User.getAttributes());
+        log.debug("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
 
         // 카카오, 네이버 구분
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
