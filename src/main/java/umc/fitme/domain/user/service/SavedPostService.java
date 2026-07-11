@@ -215,5 +215,20 @@ public class SavedPostService {
 
     }
 
+    @Transactional
+    public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long savedId) {
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
+        UserSave userSave = userSaveRepository.findByIdAndUser(savedId, user)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.SAVED_POST_NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(userSave.getIsSaved())) {
+            throw new ProjectException(GeneralErrorCode.ALREADY_UNSAVED_POST);
+        }
+
+        userSave.cancelSave();
+
+        return SavedPostConverter.toDeleteSavedPostResponse(userSave);
+    }
 }

@@ -90,4 +90,12 @@ public class SavedPostConverter {
             default -> throw new ProjectException(GeneralErrorCode.INVALID_CATEGORY);
         };
     }
+
+    public static SavedPostResponseDto.DeleteSavedPostResponse toDeleteSavedPostResponse(UserSave userSave) {
+        return SavedPostResponseDto.DeleteSavedPostResponse.builder()
+                .savedId(userSave.getId())
+                .postId(userSave.getPost().getId())
+                .saved(userSave.getIsSaved())
+                .build();
+    }
 }

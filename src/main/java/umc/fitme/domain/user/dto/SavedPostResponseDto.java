@@ -49,4 +49,12 @@ public class SavedPostResponseDto {
             Boolean hasNext
     ) {
     }
+
+    @Builder
+    public record DeleteSavedPostResponse(
+            Long savedId,
+            Long postId,
+            Boolean saved
+    ) {
+    }
 }

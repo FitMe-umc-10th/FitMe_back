@@ -37,4 +37,8 @@ public class UserSave extends BaseEntity {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    public void cancelSave() {
+        this.isSaved = false;
+    }
 }

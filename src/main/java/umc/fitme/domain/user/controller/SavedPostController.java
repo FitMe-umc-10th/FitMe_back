@@ -42,4 +42,14 @@ public class SavedPostController {
                 savedPostService.savePost(request.postId())
         );
     }
+
+    @DeleteMapping("/{savedId}")
+    public ApiResponse<SavedPostResponseDto.DeleteSavedPostResponse> deleteSavedPost(
+            @PathVariable Long savedId
+    ) {
+        return ApiResponse.onSuccess(
+                GeneralSuccessCode.OK,
+                savedPostService.deleteSavedPost(savedId)
+        );
+    }
 }
