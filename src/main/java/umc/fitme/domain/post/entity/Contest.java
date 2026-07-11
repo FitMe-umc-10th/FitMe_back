@@ -10,15 +10,15 @@ import lombok.Getter;
 @DiscriminatorValue("contest")
 public class Contest extends Post{
 
-    @Column(name = "poster_image_url", nullable = false)
+    @Column(name = "poster_image_url")
     private String posterImageUrl;
 
-    @Column(name = "target", nullable = false)
+    @Column(name = "target")
     private String target;
 
-    @Column(name = "participant_limit", nullable = false)
+    @Column(name = "participant_limit")
     private String participantLimit;
 
-    @Column(name = "reward_total", nullable = false)
+    @Column(name = "reward_total")
     private String rewardTotal;
 }
