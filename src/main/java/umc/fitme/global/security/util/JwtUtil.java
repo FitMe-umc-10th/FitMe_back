@@ -14,7 +14,9 @@ import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -96,7 +98,7 @@ public class JwtUtil {
             return true;
         } catch (Exception e) {
             log.error("토큰이 유효하지 않습니다. {}", e.getMessage());
-            throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
+            return false;
         }
     }
 
@@ -116,6 +118,12 @@ public class JwtUtil {
         long userId = Long.parseLong(payload.getSubject());
         String role = payload.get("role", String.class);
         String name = payload.get("name", String.class);
+        String typ = payload.get("typ", String.class);
+
+        // 토큰 타입이 access가 아닌 경우 예외 처리
+        if (!"access".equals(typ)) {
+            throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
+        }
 
         CustomUserDetails principal = new CustomUserDetails(userId, role, name);
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
