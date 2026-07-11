@@ -8,8 +8,3 @@ public interface OAuth2Response {
     String getEmail();
     String getName();
 }
-    SocialType getProvider();
-    String getProviderId();
-    String getEmail();
-    String getName();
-}
