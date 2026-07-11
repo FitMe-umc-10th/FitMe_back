@@ -14,8 +14,10 @@ public enum SocialLoginErrorCode implements BaseErrorCode {
             "해당되는 소셜로그인 방법이 존재하지 않습니다."),
     TOKEN_NOT_VALIDATE(HttpStatus.UNAUTHORIZED,
             "SOCIAL_LOGIN401_1",
-            "토큰이 유효하지 않습니다.");
-
+            "토큰이 유효하지 않습니다."),
+    USER_INFO_NOT_FOUND(HttpStatus.NOT_FOUND,
+            "SOCIAL_LOGIN404_2",
+            "해당되는 유저 정보가 존재하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;
