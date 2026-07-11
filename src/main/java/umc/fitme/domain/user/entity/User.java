@@ -50,8 +50,10 @@ public class User extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Column(name = "is_onboarded")
-    private Boolean isOnboarded;
+    @Builder.Default
+    private Boolean isOnboarded = false;
 
     @Column(name = "apply_count")
-    private int applyCount;
+    @Builder.Default
+    private int applyCount = 0;
 }
