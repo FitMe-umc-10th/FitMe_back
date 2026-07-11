@@ -34,6 +34,15 @@ public class SavedPostResponseDto {
     }
 
     @Builder
+    public record SavePostResponse(
+            Long savedId,
+            Long postId,
+            Boolean saved
+    ) {
+
+    }
+
+    @Builder
     public record PageInfo(
             String nextCursor,
             Integer size,

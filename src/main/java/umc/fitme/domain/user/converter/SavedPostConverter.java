@@ -43,6 +43,14 @@ public class SavedPostConverter {
                 .build();
     }
 
+    public static SavedPostResponseDto.SavePostResponse toSavePostResponse(UserSave userSave) {
+        return SavedPostResponseDto.SavePostResponse.builder()
+                .savedId(userSave.getId())
+                .postId(userSave.getPost().getId())
+                .saved(userSave.getIsSaved())
+                .build();
+    }
+
     public static List<SavedPostResponseDto.SavedPostItem> toSavedPostItemList(List<UserSave> userSaves) {
         return userSaves.stream()
                 .map(SavedPostConverter::toSavedPostItem)

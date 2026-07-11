@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.converter.SavedPostConverter;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.entity.User;
@@ -35,6 +36,7 @@ public class SavedPostService {
 
     private final UserSaveRepository userSaveRepository;
     private final UserRepository userRepository;
+    private final PostRepository postRepository;
 
     public SavedPostResponseDto.SavedPostListResponse getSavedPosts(
             SavedPostCategory category,
@@ -73,6 +75,30 @@ public class SavedPostService {
                 size,
                 hasNext
         );
+    }
+
+    @Transactional
+    public SavedPostResponseDto.SavePostResponse savePost(Long postId) {
+        User user = userRepository.findById(TEMP_USER_ID)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
+
+        userSaveRepository.findByUserAndPost(user,post)
+                .ifPresent(userSave -> {
+                    throw new ProjectException(GeneralErrorCode.ALREADY_SAVED_POST);
+                });
+
+        UserSave userSave = UserSave.builder()
+                .user(user)
+                .post(post)
+                .isSaved(true)
+                .build();
+
+        UserSave saved = userSaveRepository.save(userSave);
+
+        return SavedPostConverter.toSavePostResponse(saved);
     }
 
     private void validateSize(Integer size) {
