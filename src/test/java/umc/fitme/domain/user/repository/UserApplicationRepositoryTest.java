@@ -109,6 +109,73 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
         }
     }
 
+    // 지원 "완료"로 간주하는 상태 집합 (MyPageService 기준)
+    private static final List<Status> COMPLETED_STATUSES =
+            List.of(Status.PENDING_RESULT, Status.DOCUMENT_PASSED, Status.FINAL_PASSED);
+
+    @Nested
+    @DisplayName("countByUserAndStatusIn (완료 건수)")
+    class CountByUserAndStatusIn {
+
+        @Test
+        @DisplayName("여러 상태가 섞여 있어도 완료 집합에 속한 건수만 정확히 카운트된다")
+        void 완료집합만_정확히_카운트된다() {
+            // given: 완료 집합 3건 + 완료가 아닌 NONE 1건
+            User user = persistUser("completed@test.com");
+            persistApplication(user, persistScholarship("장학금1"), Status.PENDING_RESULT);
+            persistApplication(user, persistScholarship("장학금2"), Status.DOCUMENT_PASSED);
+            persistApplication(user, persistScholarship("장학금3"), Status.FINAL_PASSED);
+            persistApplication(user, persistScholarship("장학금4"), Status.NONE);
+            flushAndClear();
+
+            // when
+            long count = userApplicationRepository.countByUserAndStatusIn(user, COMPLETED_STATUSES);
+
+            // then
+            assertThat(count).isEqualTo(3L);
+        }
+
+        @Test
+        @DisplayName("NONE 상태만 있으면 완료 집합 카운트는 0이다 (경계 고정)")
+        void NONE_상태는_완료집합에서_제외된다() {
+            // given: 완료 집합 경계 바로 밖인 NONE 만 존재
+            User user = persistUser("none-only@test.com");
+            persistApplication(user, persistScholarship("장학금1"), Status.NONE);
+            persistApplication(user, persistScholarship("장학금2"), Status.NONE);
+            flushAndClear();
+
+            // when
+            long count = userApplicationRepository.countByUserAndStatusIn(user, COMPLETED_STATUSES);
+
+            // then
+            assertThat(count).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("countByUserAndStatus (대기 건수)")
+    class CountByUserAndStatus {
+
+        @Test
+        @DisplayName("여러 상태가 섞여 있어도 PENDING_RESULT 건수만 대기로 카운트된다")
+        void PENDING_RESULT만_대기로_카운트된다() {
+            // given: PENDING_RESULT 2건 + 다른 상태들
+            User user = persistUser("pending@test.com");
+            persistApplication(user, persistScholarship("장학금1"), Status.PENDING_RESULT);
+            persistApplication(user, persistScholarship("장학금2"), Status.PENDING_RESULT);
+            persistApplication(user, persistScholarship("장학금3"), Status.DOCUMENT_PASSED);
+            persistApplication(user, persistScholarship("장학금4"), Status.FINAL_PASSED);
+            persistApplication(user, persistScholarship("장학금5"), Status.NONE);
+            flushAndClear();
+
+            // when
+            long count = userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT);
+
+            // then
+            assertThat(count).isEqualTo(2L);
+        }
+    }
+
     // --- 테스트 데이터 헬퍼 -------------------------------------------------
 
     private void flushAndClear() {
