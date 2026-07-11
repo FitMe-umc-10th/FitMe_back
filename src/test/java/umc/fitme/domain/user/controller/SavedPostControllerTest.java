@@ -21,8 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(SavedPostController.class)
@@ -127,5 +126,26 @@ class SavedPostControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRequest))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("저장 공고 취소 API 성공")
+    void deleteSavedPost_success() throws Exception {
+        SavedPostResponseDto.DeleteSavedPostResponse response =
+                SavedPostResponseDto.DeleteSavedPostResponse.builder()
+                        .savedId(100L)
+                        .postId(10L)
+                        .saved(false)
+                        .build();
+
+        given(savedPostService.deleteSavedPost(100L)).willReturn(response);
+
+        mockMvc.perform(delete("/api/v1/saved-posts/{savedId}", 100L)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.result.savedId").value(100))
+                .andExpect(jsonPath("$.result.postId").value(10))
+                .andExpect(jsonPath("$.result.saved").value(false));
     }
 }

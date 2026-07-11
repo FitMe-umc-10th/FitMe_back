@@ -232,4 +232,99 @@ class SavedPostServiceTest {
 
         assertEquals(GeneralErrorCode.POST_NOT_FOUND, exception.getBaseErrorCode());
     }
+
+    @Test
+    @DisplayName("저장 공고 취소 성공")
+    void deleteSavedPost_success() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave userSave = UserSave.builder()
+                .id(100L)
+                .user(user)
+                .post(post)
+                .isSaved(true)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+
+        SavedPostResponseDto.DeleteSavedPostResponse response = savedPostService.deleteSavedPost(100L);
+
+        assertNotNull(response);
+        assertEquals(100L, response.savedId());
+        assertEquals(10L, response.postId());
+        assertFalse(response.saved());
+        assertFalse(userSave.getIsSaved());
+    }
+
+    @Test
+    @DisplayName("저장 공고가 없으면 예외 발생")
+    void deleteSavedPost_notFound() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.empty());
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.deleteSavedPost(100L)
+        );
+
+        assertEquals(GeneralErrorCode.SAVED_POST_NOT_FOUND, exception.getBaseErrorCode());
+    }
+
+    @Test
+    @DisplayName("이미 저장 취소된 공고면 예외 발생")
+    void deleteSavedPost_alreadyUnsaved() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave userSave = UserSave.builder()
+                .id(100L)
+                .user(user)
+                .post(post)
+                .isSaved(false)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.deleteSavedPost(100L)
+        );
+
+        assertEquals(GeneralErrorCode.ALREADY_UNSAVED_POST, exception.getBaseErrorCode());
+    }
 }
