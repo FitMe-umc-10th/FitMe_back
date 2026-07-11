@@ -36,7 +36,7 @@ public class MyPageService {
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
         UserDetail userDetail = userDetailRepository.findByUser(user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_DETAIL_NOT_FOUND));
 
         long completedApplicationCount = userApplicationRepository.countByUserAndStatusIn(
                 user,
