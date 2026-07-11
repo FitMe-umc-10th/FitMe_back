@@ -29,6 +29,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserApplicationServiceTest {
 
+    private static final Long USER_ID = 1L;
+    private static final Long POST_ID = 1L;
+    private static final Long USER_APPLICATION_ID = 1L;
+
     @Mock
     private UserApplicationRepository userApplicationRepository;
 
@@ -57,19 +61,19 @@ class UserApplicationServiceTest {
                 .build();
 
         UserApplicationRequestDto.CreateRequest request =
-                new UserApplicationRequestDto.CreateRequest(1L);
+                new UserApplicationRequestDto.CreateRequest(POST_ID);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
         when(userApplicationRepository.findByUserAndPost(user, post))
                 .thenReturn(Optional.of(existingApplication));
 
         // when
         UserApplicationResponseDto.CreateResponse response =
-                userApplicationService.create(request);
+                userApplicationService.create(USER_ID, request);
 
         // then
-        assertThat(response.postId()).isEqualTo(1L);
+        assertThat(response.postId()).isEqualTo(POST_ID);
         assertThat(response.status()).isEqualTo(Status.NONE.name());
         assertThat(response.isApplied()).isFalse();
         assertThat(response.applicationUrl()).isEqualTo("https://example.com/apply");
@@ -83,12 +87,12 @@ class UserApplicationServiceTest {
         // given
         User user = createUser();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
         // when & then
-        assertThatThrownBy(() -> userApplicationService.getList("INVALID"))
+        assertThatThrownBy(() -> userApplicationService.getList(USER_ID, "INVALID"))
                 .isInstanceOf(ProjectException.class)
-                .extracting("baseErrorCode")
+                .extracting("errorCode")
                 .isEqualTo(GeneralErrorCode.INVALID_USER_APPLICATION_TAB);
     }
 
@@ -110,13 +114,13 @@ class UserApplicationServiceTest {
         UserApplicationRequestDto.UpdateStatusRequest request =
                 new UserApplicationRequestDto.UpdateStatusRequest(Status.PENDING_RESULT);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.UpdateStatusResponse response =
-                userApplicationService.updateStatus(1L, request);
+                userApplicationService.updateStatus(USER_ID, USER_APPLICATION_ID, request);
 
         // then
         assertThat(response.status()).isEqualTo(Status.PENDING_RESULT.name());
@@ -141,14 +145,14 @@ class UserApplicationServiceTest {
         UserApplicationRequestDto.UpdateStatusRequest request =
                 new UserApplicationRequestDto.UpdateStatusRequest(Status.NONE);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when & then
-        assertThatThrownBy(() -> userApplicationService.updateStatus(1L, request))
+        assertThatThrownBy(() -> userApplicationService.updateStatus(USER_ID, USER_APPLICATION_ID, request))
                 .isInstanceOf(ProjectException.class)
-                .extracting("baseErrorCode")
+                .extracting("errorCode")
                 .isEqualTo(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
     }
 
@@ -170,13 +174,13 @@ class UserApplicationServiceTest {
         UserApplicationRequestDto.UpdateMemoRequest request =
                 new UserApplicationRequestDto.UpdateMemoRequest("  서류 제출 완료  ");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.UpdateMemoResponse response =
-                userApplicationService.updateMemo(1L, request);
+                userApplicationService.updateMemo(USER_ID, USER_APPLICATION_ID, request);
 
         // then
         assertThat(response.memo()).isEqualTo("서류 제출 완료");
@@ -200,13 +204,13 @@ class UserApplicationServiceTest {
         UserApplicationRequestDto.UpdateMemoRequest request =
                 new UserApplicationRequestDto.UpdateMemoRequest("     ");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.UpdateMemoResponse response =
-                userApplicationService.updateMemo(1L, request);
+                userApplicationService.updateMemo(USER_ID, USER_APPLICATION_ID, request);
 
         // then
         assertThat(response.memo()).isNull();
@@ -232,14 +236,14 @@ class UserApplicationServiceTest {
         UserApplicationRequestDto.UpdateMemoRequest request =
                 new UserApplicationRequestDto.UpdateMemoRequest(over1000Memo);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when & then
-        assertThatThrownBy(() -> userApplicationService.updateMemo(1L, request))
+        assertThatThrownBy(() -> userApplicationService.updateMemo(USER_ID, USER_APPLICATION_ID, request))
                 .isInstanceOf(ProjectException.class)
-                .extracting("baseErrorCode")
+                .extracting("errorCode")
                 .isEqualTo(GeneralErrorCode.MEMO_TOO_LONG);
     }
 
@@ -248,30 +252,31 @@ class UserApplicationServiceTest {
     void updateMemo_notFoundApplication_throwsException() {
         // given
         User user = createUser();
+        Long notFoundUserApplicationId = 999L;
 
         UserApplicationRequestDto.UpdateMemoRequest request =
                 new UserApplicationRequestDto.UpdateMemoRequest("메모");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(999L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(notFoundUserApplicationId, user))
                 .thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> userApplicationService.updateMemo(999L, request))
+        assertThatThrownBy(() -> userApplicationService.updateMemo(USER_ID, notFoundUserApplicationId, request))
                 .isInstanceOf(ProjectException.class)
-                .extracting("baseErrorCode")
+                .extracting("errorCode")
                 .isEqualTo(GeneralErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
     private User createUser() {
         return User.builder()
-                .id(1L)
+                .id(USER_ID)
                 .build();
     }
 
     private Post createPost() {
         return Post.builder()
-                .id(1L)
+                .id(POST_ID)
                 .postType(PostType.CONTEST)
                 .title("테스트 공모전")
                 .organizer("테스트 기관")

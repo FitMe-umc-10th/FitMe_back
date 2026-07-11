@@ -22,18 +22,16 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class UserApplicationService {
 
-    private static final Long TEMP_USER_ID = 1L;
-
     private final UserApplicationRepository userApplicationRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
     @Transactional
     public UserApplicationResponseDto.CreateResponse create(
+            Long userId,
             UserApplicationRequestDto.CreateRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+        User user = getUser(userId);
 
         Post post = postRepository.findById(request.postId())
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
@@ -52,9 +50,8 @@ public class UserApplicationService {
         return UserApplicationResponseDto.CreateResponse.from(userApplication);
     }
 
-    public UserApplicationResponseDto.ListResponse getList(String tab) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+    public UserApplicationResponseDto.ListResponse getList(Long userId, String tab) {
+        User user = getUser(userId);
 
         List<Status> statuses = switch (tab) {
             case "IN_PROGRESS" -> List.of(
@@ -75,9 +72,8 @@ public class UserApplicationService {
     }
 
     @Transactional
-    public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+    public UserApplicationResponseDto.DetailResponse getDetail(Long userId, Long userApplicationId) {
+        User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
@@ -89,16 +85,15 @@ public class UserApplicationService {
 
     @Transactional
     public UserApplicationResponseDto.UpdateStatusResponse updateStatus(
+            Long userId,
             Long userApplicationId,
             UserApplicationRequestDto.UpdateStatusRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+        User user = getUser(userId);
 
         UserApplication userApplication =
-                userApplicationRepository.findByIdAndUser(
-                        userApplicationId, user
-                ).orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+                userApplicationRepository.findByIdAndUser(userApplicationId, user)
+                        .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
 
         if (request.status() == null || request.status() == Status.NONE) {
             throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
@@ -111,11 +106,11 @@ public class UserApplicationService {
 
     @Transactional
     public UserApplicationResponseDto.UpdateMemoResponse updateMemo(
+            Long userId,
             Long userApplicationId,
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+        User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
@@ -135,7 +130,13 @@ public class UserApplicationService {
     }
 
     @Transactional
-    public UserApplicationResponseDto.DeleteResponse delete(Long userApplicationId) {
+    public UserApplicationResponseDto.DeleteResponse delete(Long userId, Long userApplicationId) {
         throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+
     }
 }
