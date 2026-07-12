@@ -1,0 +1,16 @@
+spring:
+  # H2로 대체하지 않고 실제 MySQL의 테스트 전용 스키마(fitme_test)에 접속한다.
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/fitme_test
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      # 테스트 전용 빈 스키마이므로 매 실행마다 엔티티 기준으로 테이블 생성·삭제
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
