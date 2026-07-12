@@ -10,7 +10,7 @@ import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.List;
@@ -32,10 +32,10 @@ public class MyPageService {
      */
     public MyPageResponseDto.MyPageResponse getMyPage(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         UserDetail userDetail = userDetailRepository.findByUser(user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_DETAIL_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_DETAIL_NOT_FOUND));
 
         long completedApplicationCount = userApplicationRepository.countByUserAndStatusIn(
                 user,

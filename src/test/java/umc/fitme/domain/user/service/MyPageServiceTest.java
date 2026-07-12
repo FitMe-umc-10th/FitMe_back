@@ -19,7 +19,7 @@ import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.List;
@@ -65,7 +65,7 @@ class MyPageServiceTest {
             assertThatThrownBy(() -> myPageService.getMyPage(USER_ID))
                     .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
-                    .isEqualTo(GeneralErrorCode.USER_NOT_FOUND);
+                    .isEqualTo(UserErrorCode.USER_NOT_FOUND);
         }
 
         @Test
@@ -79,7 +79,7 @@ class MyPageServiceTest {
             assertThatThrownBy(() -> myPageService.getMyPage(USER_ID))
                     .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
-                    .isEqualTo(GeneralErrorCode.USER_DETAIL_NOT_FOUND);
+                    .isEqualTo(UserErrorCode.USER_DETAIL_NOT_FOUND);
         }
 
         @Test

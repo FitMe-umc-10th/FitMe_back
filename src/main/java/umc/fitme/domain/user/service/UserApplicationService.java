@@ -10,6 +10,7 @@ import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
@@ -33,7 +34,9 @@ public class UserApplicationService {
             Long userId,
             UserApplicationRequestDto.CreateRequest request
     ) {
+
         User user = getUser(userId);
+
 
         Post post = postRepository.findById(request.postId())
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
@@ -54,6 +57,7 @@ public class UserApplicationService {
 
     public UserApplicationResponseDto.ListResponse getList(Long userId, String tab) {
         User user = getUser(userId);
+
 
         List<Status> statuses = switch (tab) {
             case "IN_PROGRESS" -> List.of(
@@ -76,6 +80,7 @@ public class UserApplicationService {
     @Transactional
     public UserApplicationResponseDto.DetailResponse getDetail(Long userId, Long userApplicationId) {
         User user = getUser(userId);
+
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
@@ -112,6 +117,7 @@ public class UserApplicationService {
             Long userApplicationId,
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
+
         User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
