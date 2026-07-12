@@ -34,14 +34,14 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
     );
 
     @EntityGraph(attributePaths = {"post"})
-    List<UserSave> findAllByUserAndIsSavedTrueAndPost_CategoryOrderByIdDesc(
+    List<UserSave> findAllByUserAndIsSavedTrueAndPost_PostTypeOrderByIdDesc(
             User user,
             PostType category,
             Pageable pageable
     );
 
     @EntityGraph(attributePaths = {"post"})
-    List<UserSave> findAllByUserAndIsSavedTrueAndPost_CategoryAndIdLessThanOrderByIdDesc(
+    List<UserSave> findAllByUserAndIsSavedTrueAndPost_PostTypeAndIdLessThanOrderByIdDesc(
             User user,
             PostType category,
             Long id,
@@ -55,7 +55,7 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
         join us.post p
         where us.user = :user
           and us.isSaved = true
-        order by p.deadlineDate asc, p.id asc
+        order by p.applyEndAt asc, p.id asc
     """)
     List<UserSave> findAllByUserAndIsSavedTrueOrderByDeadlineAsc(
             @Param("user") User user,
@@ -70,10 +70,10 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
         where us.user = :user
           and us.isSaved = true
           and (
-                p.deadlineDate > :deadlineDate
-                or (p.deadlineDate = :deadlineDate and p.id > :postId)
+                p.applyEndAt > :deadlineDate
+                or (p.applyEndAt = :deadlineDate and p.id > :postId)
               )
-        order by p.deadlineDate asc, p.id asc
+        order by p.applyEndAt asc, p.id asc
     """)
     List<UserSave> findAllByUserAndIsSavedTrueAndDeadlineCursorOrderByDeadlineAsc(
             @Param("user") User user,
@@ -89,8 +89,8 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
         join us.post p
         where us.user = :user
           and us.isSaved = true
-          and p.category = :category
-        order by p.deadlineDate asc, p.id asc
+          and p.postType = :category
+        order by p.applyEndAt asc, p.id asc
     """)
     List<UserSave> findAllByUserAndIsSavedTrueAndPostCategoryOrderByDeadlineAsc(
             @Param("user") User user,
@@ -105,12 +105,12 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
         join us.post p
         where us.user = :user
           and us.isSaved = true
-          and p.category = :category
+          and p.postType = :category
           and (
-                p.deadlineDate > :deadlineDate
-                or (p.deadlineDate = :deadlineDate and p.id > :postId)
+                p.applyEndAt > :deadlineDate
+                or (p.applyEndAt = :deadlineDate and p.id > :postId)
               )
-        order by p.deadlineDate asc, p.id asc
+        order by p.applyEndAt asc, p.id asc
     """)
     List<UserSave> findAllByUserAndIsSavedTrueAndPostCategoryAndDeadlineCursorOrderByDeadlineAsc(
             @Param("user") User user,

@@ -125,7 +125,7 @@ public class SavedPostService {
             );
         }
 
-        return userSaveRepository.findAllByUserAndIsSavedTrueAndPost_CategoryAndIdLessThanOrderByIdDesc(
+        return userSaveRepository.findAllByUserAndIsSavedTrueAndPost_PostTypeAndIdLessThanOrderByIdDesc(
                 user, convertCategory(category), savedIdCursor, pageable
         );
     }
