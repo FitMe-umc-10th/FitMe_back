@@ -5,6 +5,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
+import umc.fitme.domain.user.exception.code.UserApplicationSuccessCode;
 import umc.fitme.domain.user.service.UserApplicationService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
@@ -76,12 +77,15 @@ public class UserApplicationController {
 
     @DeleteMapping("/{userApplicationId}")
     public ApiResponse<UserApplicationResponseDto.DeleteResponse> delete(
-            @AuthenticationPrincipal CustomUserDetails principal,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long userApplicationId
     ) {
         return ApiResponse.onSuccess(
-                GeneralSuccessCode.OK,
-                userApplicationService.delete(principal.getUserId(), userApplicationId)
+                UserApplicationSuccessCode.DELETE_USER_APPLICATION_SUCCESS,
+                userApplicationService.delete(
+                        userDetails.getUserId(),
+                        userApplicationId
+                )
         );
     }
 }
