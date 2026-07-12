@@ -91,7 +91,6 @@ class SavedPostServiceTest {
                 .user(user)
                 .post(post1)
                 .isSaved(true)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         UserSave save2 = UserSave.builder()
@@ -99,7 +98,6 @@ class SavedPostServiceTest {
                 .user(user)
                 .post(post2)
                 .isSaved(true)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         UserSave save3 = UserSave.builder()
@@ -107,7 +105,6 @@ class SavedPostServiceTest {
                 .user(user)
                 .post(post3)
                 .isSaved(true)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));

@@ -35,9 +35,6 @@ public class UserSave extends BaseEntity {
     @Builder.Default
     private Boolean isSaved = false;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     public void cancelSave() {
         this.isSaved = false;
     }
