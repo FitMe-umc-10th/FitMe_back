@@ -122,8 +122,14 @@ public class SavedPostService {
             );
         }
 
+        PostType postType = convertCategory(category);
+        if (savedIdCursor == null) {
+            return userSaveRepository.findAllByUserAndIsSavedTrueAndPost_PostTypeOrderByIdDesc(
+                    user, postType, pageable
+            );
+        }
         return userSaveRepository.findAllByUserAndIsSavedTrueAndPost_PostTypeAndIdLessThanOrderByIdDesc(
-                user, convertCategory(category), savedIdCursor, pageable
+                user, postType, savedIdCursor, pageable
         );
     }
 
