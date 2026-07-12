@@ -47,8 +47,8 @@ public final class ScholarshipAmountParser {
         }
 
         try {
-            return Long.parseLong(digits) * multiplier;
-        } catch (NumberFormatException e) {
+            return Math.multiplyExact(Long.parseLong(digits), multiplier);
+        } catch (NumberFormatException | ArithmeticException e) {
             return 0L;
         }
     }
