@@ -38,7 +38,7 @@ public class UserApplicationService {
         Post post = postRepository.findById(request.postId())
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
-        UserApplication userApplication = userApplicationRepository.findByUserAndPost(user, post)
+        UserApplication userApplication = userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post)
                 .orElseGet(() -> userApplicationRepository.save(
                         UserApplication.builder()
                                 .user(user)
@@ -66,7 +66,7 @@ public class UserApplicationService {
         };
 
         List<UserApplication> userApplications =
-                userApplicationRepository.findAllByUserAndStatusInOrderByUpdatedAtDescIdDesc(
+                userApplicationRepository.findAllByUserAndDeletedAtIsNullAndStatusInOrderByUpdatedAtDescIdDesc(
                         user, statuses
                 );
 
@@ -77,7 +77,7 @@ public class UserApplicationService {
     public UserApplicationResponseDto.DetailResponse getDetail(Long userId, Long userApplicationId) {
         User user = getUser(userId);
 
-        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         userApplication.getPost().increaseViewCount();
@@ -94,7 +94,7 @@ public class UserApplicationService {
         User user = getUser(userId);
 
         UserApplication userApplication =
-                userApplicationRepository.findByIdAndUser(userApplicationId, user)
+                userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
                         .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         if (request.status() == null || request.status() == Status.NONE) {
@@ -114,7 +114,7 @@ public class UserApplicationService {
     ) {
         User user = getUser(userId);
 
-        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         // 정책 확정: API로 들어온 원본 memo 기준 1000자 검증, 그 후 trim 처리, trim 후 빈 문자열이면 null 저장
@@ -133,7 +133,14 @@ public class UserApplicationService {
 
     @Transactional
     public UserApplicationResponseDto.DeleteResponse delete(Long userId, Long userApplicationId) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+        User user = getUser(userId);
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
+
+        userApplication.softDelete();
+
+        return UserApplicationResponseDto.DeleteResponse.from(userApplication);
     }
 
     private User getUser(Long userId) {

@@ -11,12 +11,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserApplicationRepository extends JpaRepository<UserApplication, Long> {
-    Optional<UserApplication> findByUserAndPost(User user, Post post);
+    Optional<UserApplication> findByUserAndPostAndDeletedAtIsNull(User user, Post post);
+
     @EntityGraph(attributePaths = "post")
-    List<UserApplication> findAllByUserAndStatusInOrderByUpdatedAtDescIdDesc(
+    List<UserApplication> findAllByUserAndDeletedAtIsNullAndStatusInOrderByUpdatedAtDescIdDesc(
             User user,
             List<Status> statuses
     );
 
-    Optional<UserApplication> findByIdAndUser(Long id, User user);
+    Optional<UserApplication> findByIdAndUserAndDeletedAtIsNull(Long id, User user);
 }

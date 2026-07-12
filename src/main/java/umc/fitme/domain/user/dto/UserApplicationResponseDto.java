@@ -212,5 +212,8 @@ public class UserApplicationResponseDto {
     public record DeleteResponse(
             Long userApplicationId
     ) {
+        public static DeleteResponse from(UserApplication userApplication) {
+            return new DeleteResponse(userApplication.getId());
+        }
     }
 }
