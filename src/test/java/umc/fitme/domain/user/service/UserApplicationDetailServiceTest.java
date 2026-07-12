@@ -13,9 +13,9 @@ import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -120,7 +120,7 @@ class UserApplicationDetailServiceTest {
         assertThatThrownBy(() -> userApplicationService.getDetail(USER_ID, otherUserApplicationId))
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
-                .isEqualTo(GeneralErrorCode.USER_APPLICATION_NOT_FOUND);
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
     @Test

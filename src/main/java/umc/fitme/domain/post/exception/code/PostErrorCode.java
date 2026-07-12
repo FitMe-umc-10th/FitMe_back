@@ -1,4 +1,4 @@
-package umc.fitme.domain.user.exception.code;
+package umc.fitme.domain.post.exception.code;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -7,9 +7,9 @@ import umc.fitme.global.apiPayload.code.BaseErrorCode;
 
 @Getter
 @RequiredArgsConstructor
-public enum UserErrorCode implements BaseErrorCode {
+public enum PostErrorCode implements BaseErrorCode {
 
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404_1", "사용자를 찾을 수 없습니다.");
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST404_1", "공고를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

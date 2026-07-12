@@ -16,8 +16,8 @@ import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -93,7 +93,7 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> userApplicationService.getList(USER_ID, "INVALID"))
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
-                .isEqualTo(GeneralErrorCode.INVALID_USER_APPLICATION_TAB);
+                .isEqualTo(UserApplicationErrorCode.INVALID_USER_APPLICATION_TAB);
     }
 
     @Test
@@ -153,7 +153,7 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> userApplicationService.updateStatus(USER_ID, USER_APPLICATION_ID, request))
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
-                .isEqualTo(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
+                .isEqualTo(UserApplicationErrorCode.INVALID_USER_APPLICATION_STATUS);
     }
 
     @Test
@@ -244,7 +244,7 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> userApplicationService.updateMemo(USER_ID, USER_APPLICATION_ID, request))
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
-                .isEqualTo(GeneralErrorCode.MEMO_TOO_LONG);
+                .isEqualTo(UserApplicationErrorCode.MEMO_TOO_LONG);
     }
 
     @Test
@@ -265,7 +265,7 @@ class UserApplicationServiceTest {
         assertThatThrownBy(() -> userApplicationService.updateMemo(USER_ID, notFoundUserApplicationId, request))
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
-                .isEqualTo(GeneralErrorCode.USER_APPLICATION_NOT_FOUND);
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
     private User createUser() {

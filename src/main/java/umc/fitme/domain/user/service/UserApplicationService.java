@@ -12,8 +12,10 @@ import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class UserApplicationService {
         User user = getUser(userId);
 
         Post post = postRepository.findById(request.postId())
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
         UserApplication userApplication = userApplicationRepository.findByUserAndPost(user, post)
                 .orElseGet(() -> userApplicationRepository.save(
@@ -60,7 +62,7 @@ public class UserApplicationService {
                     Status.DOCUMENT_PASSED
             );
             case "FINAL_PASSED" -> List.of(Status.FINAL_PASSED);
-            default -> throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_TAB);
+            default -> throw new ProjectException(UserApplicationErrorCode.INVALID_USER_APPLICATION_TAB);
         };
 
         List<UserApplication> userApplications =
@@ -76,7 +78,7 @@ public class UserApplicationService {
         User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         userApplication.getPost().increaseViewCount();
 
@@ -93,10 +95,10 @@ public class UserApplicationService {
 
         UserApplication userApplication =
                 userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                        .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+                        .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         if (request.status() == null || request.status() == Status.NONE) {
-            throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
+            throw new ProjectException(UserApplicationErrorCode.INVALID_USER_APPLICATION_STATUS);
         }
 
         userApplication.updateStatus(request.status());
@@ -113,13 +115,13 @@ public class UserApplicationService {
         User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         // 정책 확정: API로 들어온 원본 memo 기준 1000자 검증, 그 후 trim 처리, trim 후 빈 문자열이면 null 저장
         String memo = request.memo();
 
         if (memo != null && memo.length() > 1000) {
-            throw new ProjectException(GeneralErrorCode.MEMO_TOO_LONG);
+            throw new ProjectException(UserApplicationErrorCode.MEMO_TOO_LONG);
         }
 
         String trimmedMemo = memo == null ? null : memo.trim();
@@ -136,7 +138,7 @@ public class UserApplicationService {
 
     private User getUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
     }
 }
