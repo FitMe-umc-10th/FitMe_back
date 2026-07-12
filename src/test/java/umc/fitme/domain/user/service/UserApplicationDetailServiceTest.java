@@ -13,9 +13,9 @@ import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -27,6 +27,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserApplicationDetailServiceTest {
+
+    private static final Long USER_ID = 1L;
+    private static final Long USER_APPLICATION_ID = 1L;
 
     @Mock
     private UserApplicationRepository userApplicationRepository;
@@ -56,12 +59,12 @@ class UserApplicationDetailServiceTest {
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
-                userApplicationService.getDetail(1L);
+                userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
 
         // then
         assertThat(response.status()).isEqualTo(Status.FINAL_PASSED.name());
@@ -90,13 +93,13 @@ class UserApplicationDetailServiceTest {
                 .memo(null)
                 .build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
-                userApplicationService.getDetail(1L);
+                userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
 
         // then
         assertThat(response.post().viewCount()).isEqualTo(1);
@@ -107,16 +110,17 @@ class UserApplicationDetailServiceTest {
     void getDetail_otherUserApplication_throwsException() {
         // given
         User user = createUser();
+        Long otherUserApplicationId = 999L;
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(999L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(otherUserApplicationId, user))
                 .thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> userApplicationService.getDetail(999L))
+        assertThatThrownBy(() -> userApplicationService.getDetail(USER_ID, otherUserApplicationId))
                 .isInstanceOf(ProjectException.class)
-                .extracting("baseErrorCode")
-                .isEqualTo(GeneralErrorCode.USER_APPLICATION_NOT_FOUND);
+                .extracting("errorCode")
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
     @Test
@@ -145,13 +149,13 @@ class UserApplicationDetailServiceTest {
                 .memo("마감 공고 메모")
                 .build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(1L, user))
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
-                userApplicationService.getDetail(1L);
+                userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
 
         // then
         assertThat(response.post().title()).isEqualTo("마감된 공모전");
@@ -160,7 +164,7 @@ class UserApplicationDetailServiceTest {
 
     private User createUser() {
         return User.builder()
-                .id(1L)
+                .id(USER_ID)
                 .build();
     }
 
