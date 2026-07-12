@@ -134,6 +134,159 @@ class SavedPostServiceTest {
     }
 
     @Test
+    @DisplayName("DEADLINE 정렬로 저장 공고 목록을 조회하고 nextCursor를 반환한다")
+    void getSavedPosts_deadline_success() {
+        User user = User.builder().id(1L).build();
+
+        Post post1 = Post.builder()
+                .id(101L)
+                .postType(PostType.CONTEST)
+                .title("A")
+                .organizer("기관 A")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(1))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com/a")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Post post2 = Post.builder()
+                .id(102L)
+                .postType(PostType.CONTEST)
+                .title("B")
+                .organizer("기관 B")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(2))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com/b")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave save1 = UserSave.builder().id(1L).user(user).post(post1).isSaved(true).build();
+        UserSave save2 = UserSave.builder().id(2L).user(user).post(post2).isSaved(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findAllByUserAndIsSavedTrueOrderByDeadlineAsc(eq(user), any()))
+                .thenReturn(List.of(save1, save2));
+
+        SavedPostResponseDto.SavedPostListResponse result =
+                savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.DEADLINE, null, 1);
+
+        assertEquals(1, result.savedPosts().size());
+        assertTrue(result.pageInfo().hasNext());
+        assertEquals(post1.getApplyEndAt() + "_" + post1.getId(), result.pageInfo().nextCursor());
+    }
+
+    @Test
+    @DisplayName("카테고리 필터 + 첫 페이지 조회 시 결과가 정상적으로 반환된다")
+    void getSavedPosts_categoryFilter_firstPage_success() {
+        User user = User.builder().id(1L).build();
+
+        Post post = Post.builder()
+                .id(101L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("기관")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(5))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave save = UserSave.builder().id(1L).user(user).post(post).isSaved(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findAllByUserAndIsSavedTrueAndPost_PostTypeOrderByIdDesc(eq(user), eq(PostType.CONTEST), any()))
+                .thenReturn(List.of(save));
+
+        SavedPostResponseDto.SavedPostListResponse result =
+                savedPostService.getSavedPosts(1L, SavedPostCategory.CONTEST, SavedPostSort.RECENT, null, 10);
+
+        assertEquals(1, result.savedPosts().size());
+        assertFalse(result.pageInfo().hasNext());
+    }
+
+    @Test
+    @DisplayName("카테고리 필터 + cursor로 다음 페이지를 조회한다")
+    void getSavedPosts_categoryFilter_secondPage_success() {
+        User user = User.builder().id(1L).build();
+
+        Post post = Post.builder()
+                .id(50L)
+                .postType(PostType.SCHOLARSHIP)
+                .title("장학금")
+                .organizer("기관")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(5))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave save = UserSave.builder().id(50L).user(user).post(post).isSaved(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findAllByUserAndIsSavedTrueAndPost_PostTypeAndIdLessThanOrderByIdDesc(
+                eq(user), eq(PostType.SCHOLARSHIP), eq(60L), any()))
+                .thenReturn(List.of(save));
+
+        SavedPostResponseDto.SavedPostListResponse result =
+                savedPostService.getSavedPosts(1L, SavedPostCategory.SCHOLARSHIP, SavedPostSort.RECENT, "60", 10);
+
+        assertEquals(1, result.savedPosts().size());
+        assertFalse(result.pageInfo().hasNext());
+    }
+
+    @Test
+    @DisplayName("결과 수가 size와 정확히 같으면 hasNext는 false이다")
+    void getSavedPosts_exactSize_hasNextFalse() {
+        User user = User.builder().id(1L).build();
+
+        Post post = Post.builder()
+                .id(101L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("기관")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(5))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave save = UserSave.builder().id(1L).user(user).post(post).isSaved(true).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findAllByUserAndIsSavedTrueOrderByIdDesc(eq(user), any()))
+                .thenReturn(List.of(save));
+
+        SavedPostResponseDto.SavedPostListResponse result =
+                savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 1);
+
+        assertEquals(1, result.savedPosts().size());
+        assertFalse(result.pageInfo().hasNext());
+        assertNull(result.pageInfo().nextCursor());
+    }
+
+    @Test
+    @DisplayName("저장한 공고가 없으면 빈 목록을 반환한다")
+    void getSavedPosts_empty_success() {
+        User user = User.builder().id(1L).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userSaveRepository.findAllByUserAndIsSavedTrueOrderByIdDesc(eq(user), any()))
+                .thenReturn(List.of());
+
+        SavedPostResponseDto.SavedPostListResponse result =
+                savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 10);
+
+        assertTrue(result.savedPosts().isEmpty());
+        assertFalse(result.pageInfo().hasNext());
+        assertNull(result.pageInfo().nextCursor());
+    }
+
+    @Test
     @DisplayName("공고 찜하기 성공")
     void savePost_success() {
         User user = User.builder()
