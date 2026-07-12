@@ -121,7 +121,12 @@ class SavedPostServiceTest {
     @Test
     @DisplayName("size가 0 이하이면 예외가 발생한다")
     void getSavedPosts_invalidSize_fail() {
-        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 0));
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 0)
+        );
+
+        assertEquals(GeneralErrorCode.INVALID_PAGE_SIZE, exception.getErrorCode());
     }
 
     @Test
@@ -130,7 +135,26 @@ class SavedPostServiceTest {
         User user = User.builder().id(1L).build();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        assertThrows(ProjectException.class, () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10));
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10)
+        );
+
+        assertEquals(GeneralErrorCode.INVALID_CURSOR, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("잘못된 deadline cursor면 예외가 발생한다")
+    void getSavedPosts_invalidDeadlineCursor_fail() {
+        User user = User.builder().id(1L).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.DEADLINE, "not-a-cursor", 10)
+        );
+
+        assertEquals(GeneralErrorCode.INVALID_CURSOR, exception.getErrorCode());
     }
 
     @Test
