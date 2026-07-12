@@ -47,7 +47,6 @@ public class SavedPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
-
         List<UserSave> savedPosts = switch (sort) {
             case RECENT -> getRecentSavedPosts(user, category, cursor, size + 1);
             case DEADLINE -> getDeadlineSavedPosts(user, category, cursor, size + 1);
@@ -68,7 +67,7 @@ public class SavedPostService {
                 SavedPostConverter.toSavedPostItemList(savedPosts);
 
         return SavedPostConverter.toSavedPostListResponse(
-                SavedPostConverter.toSavedPostItemList(savedPosts),
+                items,
                 nextCursor,
                 size,
                 hasNext
