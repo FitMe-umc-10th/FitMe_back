@@ -1,8 +1,6 @@
 package umc.fitme.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.security.SecurityUtil;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -85,18 +83,17 @@ public class SavedPostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
 
-        userSaveRepository.findByUserAndPost(user,post)
-                .ifPresent(userSave -> {
-                    throw new ProjectException(GeneralErrorCode.ALREADY_SAVED_POST);
-                });
-
-        UserSave userSave = UserSave.builder()
-                .user(user)
-                .post(post)
-                .isSaved(true)
-                .build();
-
-        UserSave saved = userSaveRepository.save(userSave);
+        UserSave saved = userSaveRepository.findByUserAndPost(user, post)
+                               .map(existing -> {
+                                   if (Boolean.TRUE.equals(existing.getIsSaved())) {
+                                       throw new ProjectException(GeneralErrorCode.ALREADY_SAVED_POST);
+                                   }
+                                   existing.resave();
+                                   return existing;
+                               })
+                               .orElseGet(() -> userSaveRepository.save(
+                                 UserSave.builder().user(user).post(post).isSaved(true).build()
+                                ));
 
         return SavedPostConverter.toSavePostResponse(saved);
     }

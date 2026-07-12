@@ -38,4 +38,8 @@ public class UserSave extends BaseEntity {
     public void cancelSave() {
         this.isSaved = false;
     }
+
+    public void resave() {
+        this.isSaved = true;
+    }
 }
