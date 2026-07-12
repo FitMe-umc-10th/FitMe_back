@@ -42,15 +42,15 @@ public interface UserApplicationRepository extends JpaRepository<UserApplication
     long countByUserAndStatus(User user, Status status);
 
     /**
-     * 최종 합격한 장학금의 지원 금액 목록을 조회합니다.
+     * 최종 합격한 장학금의 지원 금액 합계를 조회합니다.
      *
      * @param user 지원 내역을 조회할 사용자
      * @param status 최종 합격 상태
-     * @return 최종 합격한 장학금의 지원 금액 목록
+     * @return 최종 합격한 장학금 금액(supportAmountValue)의 합계 (없으면 0)
      */
     // Scholarship은 Post를 상속하며 동일한 post_id를 공유하므로 id 기준으로 조인
-    @Query("SELECT s.supportAmount FROM UserApplication ua " +
+    @Query("SELECT COALESCE(SUM(s.supportAmountValue), 0) FROM UserApplication ua " +
            "JOIN Scholarship s ON s.id = ua.post.id " +
            "WHERE ua.user = :user AND ua.status = :status")
-    List<String> findFinalPassedScholarshipAmounts(@Param("user") User user, @Param("status") Status status);
+    long sumFinalPassedScholarshipAmount(@Param("user") User user, @Param("status") Status status);
 }

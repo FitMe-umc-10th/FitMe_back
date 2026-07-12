@@ -4,10 +4,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -94,8 +90,8 @@ class MyPageServiceTest {
                     .willReturn(3L);
             given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
                     .willReturn(0L);
-            given(userApplicationRepository.findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED))
-                    .willReturn(List.of());
+            given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
+                    .willReturn(0L);
 
             // when
             MyPageResponseDto.MyPageResponse response = myPageService.getMyPage(USER_ID);
@@ -118,8 +114,8 @@ class MyPageServiceTest {
                     .willReturn(0L);
             given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
                     .willReturn(2L);
-            given(userApplicationRepository.findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED))
-                    .willReturn(List.of());
+            given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
+                    .willReturn(0L);
 
             // when
             MyPageResponseDto.MyPageResponse response = myPageService.getMyPage(USER_ID);
@@ -139,8 +135,8 @@ class MyPageServiceTest {
                     .willReturn(0L);
             given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
                     .willReturn(0L);
-            given(userApplicationRepository.findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED))
-                    .willReturn(List.of());
+            given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
+                    .willReturn(0L);
 
             // when
             MyPageResponseDto.MyPageResponse response = myPageService.getMyPage(USER_ID);
@@ -148,27 +144,27 @@ class MyPageServiceTest {
             // then
             assertThat(response.activitySummary().completedApplicationCount()).isZero();
             assertThat(response.activitySummary().pendingResultCount()).isZero();
-            // TODO: 저장 포맷 확정 후 수혜액 합산 검증 추가
+            assertThat(response.activitySummary().totalScholarshipAmount()).isZero();
         }
-    }
 
-    @ParameterizedTest(name = "\"{0}\" -> {1}")
-    @CsvSource({
-            "5000000, 5000000",
-            "'최대 1,000,000원', 1000000",
-            "'1,000,000', 1000000",
-            "'250만원', 2500000",
-            "'최대 250만원', 2500000",
-            "'1,000만원', 10000000"
-    })
-    void parseAmount_숫자와_콤마_표기를_long으로_변환한다(String input, long expected) {
-        assertThat(MyPageService.parseAmount(input)).isEqualTo(expected);
-    }
+        @Test
+        @DisplayName("수혜액 합계는 sumFinalPassedScholarshipAmount 결과를 그대로 매핑한다")
+        void 수혜액_합계는_sum쿼리_결과를_그대로_매핑한다() {
+            // given
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(userDetail));
+            given(userApplicationRepository.countByUserAndStatusIn(eq(user), anyList()))
+                    .willReturn(0L);
+            given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
+                    .willReturn(0L);
+            given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
+                    .willReturn(3_000_000L);
 
-    @ParameterizedTest(name = "\"{0}\" -> 0")
-    @NullSource
-    @ValueSource(strings = {"", "전액", "미정"})
-    void parseAmount_숫자가_없거나_null이면_0을_반환한다(String input) {
-        assertThat(MyPageService.parseAmount(input)).isEqualTo(0L);
+            // when
+            MyPageResponseDto.MyPageResponse response = myPageService.getMyPage(USER_ID);
+
+            // then
+            assertThat(response.activitySummary().totalScholarshipAmount()).isEqualTo(3_000_000L);
+        }
     }
 }

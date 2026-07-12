@@ -46,12 +46,9 @@ public class MyPageService {
                 user, Status.PENDING_RESULT
         );
 
-        List<String> amounts = userApplicationRepository.findFinalPassedScholarshipAmounts(
+        long totalScholarshipAmount = userApplicationRepository.sumFinalPassedScholarshipAmount(
                 user, Status.FINAL_PASSED
         );
-        long totalScholarshipAmount = amounts.stream()
-                .mapToLong(MyPageService::parseAmount)
-                .sum();
 
         return MyPageResponseDto.MyPageResponse.of(
                 user,
@@ -60,43 +57,5 @@ public class MyPageService {
                 totalScholarshipAmount,
                 pendingResultCount
         );
-    }
-
-    /**
-     * 문자열 형태의 장학금 금액을 long 타입으로 변환합니다.
-     * "만"이 포함되면 "만" 앞의 숫자만 뽑아 파싱한 뒤 10,000을 곱하고,
-     * 그렇지 않으면 숫자만 추출해 그대로 파싱합니다.
-     *
-     * @param amount 장학금 금액 문자열
-     * @return 변환된 장학금 금액
-     */
-    static long parseAmount(String amount) {
-        if (amount == null) {
-            return 0L;
-        }
-
-        int manIndex = amount.indexOf('만');
-        if (manIndex >= 0) {
-            String digits = amount.substring(0, manIndex).replaceAll("[^0-9]", "");
-            if (digits.isEmpty()) {
-                return 0L;
-            }
-            try {
-                return Long.parseLong(digits) * 10_000L;
-            } catch (NumberFormatException e) {
-                return 0L;
-            }
-        }
-
-        String digits = amount.replaceAll("[^0-9]", "");
-        if (digits.isEmpty()) {
-            return 0L;
-        }
-
-        try {
-            return Long.parseLong(digits);
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
     }
 }

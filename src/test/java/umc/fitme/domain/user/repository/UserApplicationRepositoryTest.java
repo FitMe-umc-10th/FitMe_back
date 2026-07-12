@@ -22,10 +22,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link UserApplicationRepository#findFinalPassedScholarshipAmounts} JPQL 쿼리 검증.
+ * {@link UserApplicationRepository#sumFinalPassedScholarshipAmount} 및 count 쿼리 검증.
  * <p>
  * DB 설정(@DataJpaTest, 실제 MySQL fitme_test)은 {@link RepositoryTestSupport}에서 물려받는다.
  * Scholarship/Contest는 빌더·세터가 없으므로 {@link ReflectionTestUtils}로 필드를 심는다.
+ * 장학금 금액은 저장 시 @PrePersist가 supportAmount(String)를 파싱해 supportAmountValue(Long)에 넣는다.
  */
 class UserApplicationRepositoryTest extends RepositoryTestSupport {
 
@@ -36,62 +37,62 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
     private TestEntityManager em;
 
     @Nested
-    @DisplayName("findFinalPassedScholarshipAmounts")
-    class FindFinalPassedScholarshipAmounts {
+    @DisplayName("sumFinalPassedScholarshipAmount")
+    class SumFinalPassedScholarshipAmount {
 
         @Test
-        @DisplayName("FINAL_PASSED 상태의 장학금 지원 이력 금액만 조회된다")
-        void 최종합격_금액만_조회된다() {
-            // given
+        @DisplayName("FINAL_PASSED 상태 장학금들의 supportAmountValue 합계를 반환한다")
+        void 최종합격_금액_합계를_반환한다() {
+            // given: 100만원(1,000,000) + 200만원(2,000,000)
             User user = persistUser("final@test.com");
             persistApplication(user, persistScholarship("100만원"), Status.FINAL_PASSED);
             persistApplication(user, persistScholarship("200만원"), Status.FINAL_PASSED);
             flushAndClear();
 
             // when
-            List<String> amounts = userApplicationRepository
-                    .findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED);
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
 
             // then
-            assertThat(amounts).containsExactlyInAnyOrder("100만원", "200만원");
+            assertThat(total).isEqualTo(3_000_000L);
         }
 
         @Test
-        @DisplayName("FINAL_PASSED 외 다른 상태(DOCUMENT_PASSED, PENDING_RESULT, NONE)는 제외된다")
-        void 다른_상태는_제외된다() {
-            // given
+        @DisplayName("FINAL_PASSED 외 다른 상태(DOCUMENT_PASSED, PENDING_RESULT, NONE)는 합계에서 제외된다")
+        void 다른_상태는_합계에서_제외된다() {
+            // given: FINAL_PASSED만 합산 대상
             User user = persistUser("mixed@test.com");
-            persistApplication(user, persistScholarship("최종합격"), Status.FINAL_PASSED);
-            persistApplication(user, persistScholarship("서류합격"), Status.DOCUMENT_PASSED);
-            persistApplication(user, persistScholarship("결과대기"), Status.PENDING_RESULT);
-            persistApplication(user, persistScholarship("지원안함"), Status.NONE);
+            persistApplication(user, persistScholarship("300만원"), Status.FINAL_PASSED);
+            persistApplication(user, persistScholarship("999만원"), Status.DOCUMENT_PASSED);
+            persistApplication(user, persistScholarship("999만원"), Status.PENDING_RESULT);
+            persistApplication(user, persistScholarship("999만원"), Status.NONE);
             flushAndClear();
 
             // when
-            List<String> amounts = userApplicationRepository
-                    .findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED);
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
 
             // then
-            assertThat(amounts).containsExactly("최종합격");
+            assertThat(total).isEqualTo(3_000_000L);
         }
 
         @Test
-        @DisplayName("지원 이력이 없으면 빈 리스트를 반환한다")
-        void 지원이력이_없으면_빈리스트() {
+        @DisplayName("지원 이력이 없으면 0을 반환한다")
+        void 지원이력이_없으면_0() {
             // given
             User user = persistUser("empty@test.com");
             flushAndClear();
 
             // when
-            List<String> amounts = userApplicationRepository
-                    .findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED);
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
 
             // then
-            assertThat(amounts).isEmpty();
+            assertThat(total).isZero();
         }
 
         @Test
-        @DisplayName("Scholarship-Post id 상속 조인이 실제로 물려 금액이 조회되고, 장학금이 아닌 게시글(Contest)은 제외된다")
+        @DisplayName("Scholarship-Post id 상속 조인이 실제로 물려 금액이 합산되고, 장학금이 아닌 게시글(Contest)은 제외된다")
         void 상속조인이_실제로_동작한다() {
             // given: 같은 post 테이블(SINGLE_TABLE)에 장학금과 공모전이 섞여 있어도
             //        JOIN Scholarship s ON s.id = ua.post.id 는 dtype=scholarship 행만 매칭되어야 한다.
@@ -101,11 +102,11 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             flushAndClear();
 
             // when
-            List<String> amounts = userApplicationRepository
-                    .findFinalPassedScholarshipAmounts(user, Status.FINAL_PASSED);
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
 
-            // then: 공모전(Contest)은 상속 조인에서 걸러지고 장학금 금액만 조회된다.
-            assertThat(amounts).containsExactly("500만원");
+            // then: 공모전(Contest)은 상속 조인에서 걸러지고 장학금 금액만 합산된다.
+            assertThat(total).isEqualTo(5_000_000L);
         }
     }
 
