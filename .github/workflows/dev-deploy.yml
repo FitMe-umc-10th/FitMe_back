@@ -76,5 +76,5 @@ jobs:
             # 컨테이너 실행
             sudo docker run -p ${{ secrets.PORT }}:${{ secrets.PORT }} \
             --name ${{ secrets.PROJECT_NAME }} \
-            --env-file .env \ # EC2에 환경변수 주입
+            --env-file .env \
             -d ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }}:latest
