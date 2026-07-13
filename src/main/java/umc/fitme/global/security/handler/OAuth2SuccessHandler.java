@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -14,7 +15,6 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.security.dto.LoginResDto;
 import umc.fitme.global.security.entity.CustomOAuth2User;
 import umc.fitme.global.security.util.JwtUtil;
 
@@ -28,6 +28,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
+    @Value("${app.oauth2.redirect-uri}")
+    private String redirectUrl;
     /***
      * 함수 기능: 로그인 성공 시, accessToken/refreshToken 발급 후 리다이렉트
      * @param request the request which caused the successful authentication
@@ -50,6 +52,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = jwtUtil.createAccessToken(userId, role, name);
         String refreshToken = jwtUtil.createRefreshToken(userId);
 
+        log.info("발급된 accessToken: {}", accessToken); // 일단 디버깅용으로 로그에 남김
         log.info("토큰 발급 완료 - userId: {}", userId);
 
         // 소셜 로그인 성공 시, 프론트 주소로 리다이렉션
@@ -79,15 +82,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .maxAge(1209600)
                 .path("/")
-//                .secure(true) // 배포 시 주석 해제 (HTTPS 환경)
-//                .sameSite("None") // 배포 시 주석 해제 (CORS)
+                .secure(true) // 배포 시 주석 해제 (HTTPS 환경)
+                .sameSite("None") // 배포 시 주석 해제 (CORS)
                 .httpOnly(true)
                 .build();
 
         response.addHeader("Set-Cookie", cookie.toString() );
 
         // 프론트 URL로 리다이렉트 주소 조립
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3030/oauth2/callback")
+        String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("userId", userId)
                 .queryParam("name", name)
