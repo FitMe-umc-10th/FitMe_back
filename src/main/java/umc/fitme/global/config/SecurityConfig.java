@@ -28,6 +28,11 @@ public class SecurityConfig {
     private final CustomEntryPoint customEntryPoint;
     private final CustomAccessDenied customAccessDenied;
 
+    private final String[] authenticatedUris = {
+            "/api/v1/user-applications",
+            "/api/v1/user-applications/**"
+    };
+
     private final String[] allowUris = {
         "/",
         "/swagger-ui/**",
@@ -51,6 +56,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(authenticatedUris).authenticated()
                         .requestMatchers(allowUris).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
