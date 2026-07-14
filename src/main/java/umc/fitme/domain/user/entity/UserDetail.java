@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import umc.fitme.global.entity.BaseEntity;
 
 @Entity
 @Builder
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @Table(name = "user_detail")
-public class UserDetail {
+public class UserDetail extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,4 +37,14 @@ public class UserDetail {
 
     @Column(name = "profile_image_url", nullable = true)
     private String profileImageUrl;
+
+    public void updateProfile(Float gpa, int incomeBracket, String region) {
+        this.gpa = gpa;
+        this.incomeBracket = incomeBracket;
+        this.region = region;
+    }
+
+    public void updateProfileImage(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
 }
