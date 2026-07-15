@@ -4,6 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -49,6 +53,9 @@ class MyPageProfileServiceTest {
 
     @InjectMocks
     private MyPageProfileService myPageProfileService;
+
+    @Captor
+    private ArgumentCaptor<List<UserInterest>> userInterestsCaptor;
 
     private static final Long USER_ID = 1L;
 
@@ -269,6 +276,129 @@ class MyPageProfileServiceTest {
 
             // then: 추천 재계산 정확히 1회
             verify(recommendationRefreshService, times(1)).refresh(USER_ID);
+        }
+
+        @Test
+        @DisplayName("수정 필드가 모두 null 이면 PROFILE_UPDATE_EMPTY 예외를 던지고 아무 변경도 하지 않는다")
+        void 모든_필드_null() {
+            // given
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(null, null, null, null, null);
+
+            // when & then
+            assertThatThrownBy(() -> myPageProfileService.updateProfile(USER_ID, request))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(UserErrorCode.PROFILE_UPDATE_EMPTY);
+
+            // then: 관심분야 교체·추천 재계산·엔티티 변경이 전혀 없다
+            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).saveAll(anyList());
+            verify(recommendationRefreshService, never()).refresh(any());
+            assertThat(detail.getGpa()).isEqualTo(3.5f);
+            assertThat(detail.getIncomeBracket()).isEqualTo(5);
+            assertThat(detail.getRegion()).isEqualTo("서울");
+            assertThat(detail.getProfileImageUrl()).isEqualTo("http://img/old.png");
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 관심분야 ID 가 포함되면 INTEREST_NOT_FOUND 예외를 던지고 부수효과가 없다")
+        void 존재하지_않는_관심분야() {
+            // given: [2, 99] 요청인데 조회 결과는 id2 하나뿐
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+
+            List<Long> requestedIds = List.of(2L, 99L);
+            given(interestRepository.findAllById(requestedIds))
+                    .willReturn(List.of(planning()));
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(null, null, null, requestedIds, null);
+
+            // when & then
+            assertThatThrownBy(() -> myPageProfileService.updateProfile(USER_ID, request))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(UserErrorCode.INTEREST_NOT_FOUND);
+
+            // then: 삭제·저장·추천 재계산이 모두 일어나지 않는다
+            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).saveAll(anyList());
+            verify(recommendationRefreshService, never()).refresh(any());
+        }
+
+        @Test
+        @DisplayName("중복 관심분야 ID 는 중복 제거되어 saveAll 로 1건만 저장한다")
+        void 중복_관심분야_ID() {
+            // given: [2, 2] 요청 → distinct 후 [2] 로 조회
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+            given(interestRepository.findAllById(List.of(2L)))
+                    .willReturn(List.of(planning()));
+            // 응답 조립용
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+            given(userInterestRepository.findAllByUser(user))
+                    .willReturn(List.of(userInterest(user, planning())));
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(
+                            null, null, null, List.of(2L, 2L), null);
+
+            // when: 예외 없이 정상 처리
+            myPageProfileService.updateProfile(USER_ID, request);
+
+            // then: 저장된 목록은 id2 하나뿐
+            verify(userInterestRepository).saveAll(userInterestsCaptor.capture());
+            assertThat(userInterestsCaptor.getValue())
+                    .extracting(ui -> ui.getInterest().getId())
+                    .containsExactly(2L);
+        }
+
+        @Test
+        @DisplayName("관심분야 교체는 deleteAllByUser 후 saveAll 순서로 처리하며 개별 save 는 쓰지 않는다")
+        void 관심분야_교체_순서() {
+            // given: interests 만 변경 ([1, 3])
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+
+            List<Long> requestedIds = List.of(1L, 3L);
+            given(interestRepository.findAllById(requestedIds))
+                    .willReturn(List.of(marketing(), design()));
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+            given(userInterestRepository.findAllByUser(user)).willReturn(List.of(
+                    userInterest(user, marketing()),
+                    userInterest(user, design())
+            ));
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(null, null, null, requestedIds, null);
+
+            // when
+            myPageProfileService.updateProfile(USER_ID, request);
+
+            // then: 삭제 → 저장 순서
+            InOrder inOrder = inOrder(userInterestRepository);
+            inOrder.verify(userInterestRepository).deleteAllByUser(user);
+            inOrder.verify(userInterestRepository).saveAll(userInterestsCaptor.capture());
+
+            // then: 개별 save 는 호출하지 않는다
+            verify(userInterestRepository, never()).save(any());
+
+            // then: 저장된 관심분야 id 목록 내용 검증
+            assertThat(userInterestsCaptor.getValue())
+                    .extracting(ui -> ui.getInterest().getId())
+                    .containsExactly(1L, 3L);
         }
     }
 }
