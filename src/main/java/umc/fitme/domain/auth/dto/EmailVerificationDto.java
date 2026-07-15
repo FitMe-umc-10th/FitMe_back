@@ -1,14 +1,16 @@
 package umc.fitme.domain.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
+import lombok.Getter;
 
 public class EmailVerificationDto {
 
     public record EmailVerificationReqDto(
-
             @NotBlank(message = "이메일 필드는 필수입니다.")
-//            @Pattern(regexp = "^[a-zA-Z0-9_+&*-]+(?:\\\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\\\.)+[a-zA-Z]{2,7}$")
+            @Pattern(regexp = "^[a-zA-Z0-9_+&*-]+(?:\\\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\\\.)+[a-zA-Z]{2,7}$")
             String email
     ){}
 
