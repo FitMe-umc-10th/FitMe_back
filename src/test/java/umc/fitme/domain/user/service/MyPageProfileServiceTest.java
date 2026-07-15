@@ -11,6 +11,7 @@ import umc.fitme.domain.interest.entity.Interest;
 import umc.fitme.domain.interest.entity.mapping.UserInterest;
 import umc.fitme.domain.interest.repository.InterestRepository;
 import umc.fitme.domain.interest.repository.UserInterestRepository;
+import umc.fitme.domain.user.dto.MyPageProfileRequestDto;
 import umc.fitme.domain.user.dto.MyPageProfileResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
@@ -19,13 +20,17 @@ import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -167,6 +172,103 @@ class MyPageProfileServiceTest {
                     .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
                     .isEqualTo(UserErrorCode.USER_DETAIL_NOT_FOUND);
+        }
+    }
+
+    /* ===================== updateProfile ===================== */
+
+    @Nested
+    @DisplayName("updateProfile 은 값이 온 필드만 병합해 수정한다")
+    class UpdateProfile {
+
+        @Test
+        @DisplayName("gpa 만 전달하면 나머지 스칼라·이미지·관심분야는 기존값을 유지한다")
+        void 진짜_부분수정_병합() {
+            // given: gpa 만 오고 나머지는 null
+            User user = user();
+            UserDetail detail = detail(user); // gpa=3.5, incomeBracket=5, region="서울", img="http://img/old.png"
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+            // interests 는 오지 않으므로 응답 조립용 전체 목록/선택 조회만 스텁
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+            given(userInterestRepository.findAllByUser(user)).willReturn(List.of());
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(
+                            new BigDecimal("4.00"), null, null, null, null);
+
+            // when
+            MyPageProfileResponseDto.UpdateProfileResponse response =
+                    myPageProfileService.updateProfile(USER_ID, request);
+
+            // then: 실제 객체의 최종 상태로 검증 (gpa 만 바뀌고 나머지는 유지)
+            assertThat(detail.getGpa()).isEqualTo(4.00f);
+            assertThat(detail.getIncomeBracket()).isEqualTo(5);
+            assertThat(detail.getRegion()).isEqualTo("서울");
+            assertThat(detail.getProfileImageUrl()).isEqualTo("http://img/old.png");
+
+            assertThat(response.gpa()).isEqualTo(4.00f);
+            assertThat(response.incomeBracket()).isEqualTo(5);
+            assertThat(response.region()).isEqualTo("서울");
+            assertThat(response.profileImageUrl()).isEqualTo("http://img/old.png");
+
+            // then: 관심분야 교체 로직은 타지 않는다
+            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        @DisplayName("모든 필드를 함께 전달하면 스칼라·이미지가 갱신되고 관심분야가 전체 교체되며 추천이 재계산된다")
+        void 동시_수정() {
+            // given: 모든 필드 전달, 관심분야는 마케팅(1)·디자인(3) 선택
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+
+            List<Long> requestedIds = List.of(1L, 3L);
+            given(interestRepository.findAllById(requestedIds))
+                    .willReturn(List.of(marketing(), design()));
+            // 응답 조립: 전체 목록 + 교체 후 선택 상태(마케팅·디자인)
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+            given(userInterestRepository.findAllByUser(user)).willReturn(List.of(
+                    userInterest(user, marketing()),
+                    userInterest(user, design())
+            ));
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(
+                            new BigDecimal("2.75"), 8, "부산", requestedIds, "http://img/new.png");
+
+            // when
+            MyPageProfileResponseDto.UpdateProfileResponse response =
+                    myPageProfileService.updateProfile(USER_ID, request);
+
+            // then: 실제 객체 최종 상태가 전부 새 값
+            assertThat(detail.getGpa()).isEqualTo(2.75f);
+            assertThat(detail.getIncomeBracket()).isEqualTo(8);
+            assertThat(detail.getRegion()).isEqualTo("부산");
+            assertThat(detail.getProfileImageUrl()).isEqualTo("http://img/new.png");
+
+            assertThat(response.gpa()).isEqualTo(2.75f);
+            assertThat(response.incomeBracket()).isEqualTo(8);
+            assertThat(response.region()).isEqualTo("부산");
+            assertThat(response.profileImageUrl()).isEqualTo("http://img/new.png");
+
+            // then: 관심분야 전체 교체 (삭제 후 저장)
+            verify(userInterestRepository).deleteAllByUser(user);
+            verify(userInterestRepository).saveAll(anyList());
+
+            // then: 응답 interests 는 전체 목록 + 요청한 것만 selected=true (순서 보장)
+            assertThat(response.interests())
+                    .extracting(MyPageProfileResponseDto.InterestItem::interestId)
+                    .containsExactly(1L, 2L, 3L);
+            assertThat(response.interests())
+                    .extracting(MyPageProfileResponseDto.InterestItem::selected)
+                    .containsExactly(true, false, true);
+
+            // then: 추천 재계산 정확히 1회
+            verify(recommendationRefreshService, times(1)).refresh(USER_ID);
         }
     }
 }
