@@ -95,12 +95,13 @@ public class MyPageProfileService {
             }
 
             userInterestRepository.deleteAllByUser(user);
-            found.forEach(it -> userInterestRepository.save(
-                    UserInterest.builder()
+            List<UserInterest> userInterests = found.stream()
+                    .map(it -> UserInterest.builder()
                             .user(user)
                             .interest(it)
-                            .build()
-            ));
+                            .build())
+                    .collect(Collectors.toList());
+            userInterestRepository.saveAll(userInterests);
         }
 
         recommendationRefreshService.refresh(userId);
@@ -117,7 +118,7 @@ public class MyPageProfileService {
                 .map(userInterest -> userInterest.getInterest().getId())
                 .collect(Collectors.toSet());
 
-        return interestRepository.findAll().stream()
+        return interestRepository.findAllByOrderByIdAsc().stream()
                 .map(interest -> MyPageProfileResponseDto.InterestItem.of(
                         interest, selectedIds.contains(interest.getId())))
                 .collect(Collectors.toList());

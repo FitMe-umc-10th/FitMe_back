@@ -12,4 +12,6 @@ public interface InterestRepository extends JpaRepository<Interest, Long> {
     Optional<Interest> findByInterestName(String interestName);
 
     List<Interest> findByInterestNameIn(List<String> interestNames);
+
+    List<Interest> findAllByOrderByIdAsc();
 }

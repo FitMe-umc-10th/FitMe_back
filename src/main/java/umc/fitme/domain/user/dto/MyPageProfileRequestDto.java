@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -23,7 +24,7 @@ public class MyPageProfileRequestDto {
             String region,
 
             @Size(min = 1, message = "관심 분야는 최소 1개 이상 선택해야 합니다.")
-            List<Long> interests,
+            List<@NotNull(message = "관심 분야 ID에 null 은 허용되지 않습니다.") Long> interests,
 
             String profileImageUrl
     ) {

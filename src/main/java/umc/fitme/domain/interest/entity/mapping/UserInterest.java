@@ -14,7 +14,8 @@ import umc.fitme.global.entity.BaseEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(name = "user_interest")
+@Table(name = "user_interest",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "interest_id"}))
 public class UserInterest extends BaseEntity {
 
     @Id
