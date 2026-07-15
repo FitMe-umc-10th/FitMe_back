@@ -158,6 +158,25 @@ class UserApplicationServiceTest {
 
     @Test
     @DisplayName("삭제된 지원 이력은 상태를 변경할 수 없다.")
+    void updateStatus_deletedApplication_throwsException() {
+        // given
+        User user = createUser();
+
+        UserApplicationRequestDto.UpdateStatusRequest request = new UserApplicationRequestDto.UpdateStatusRequest(Status.PENDING_RESULT);
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userApplicationService.updateStatus(USER_ID, USER_APPLICATION_ID, request))
+                .isInstanceOf(ProjectException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("삭제된 지원 이력은 메모를 수정할 수 없다.")
     void updateMemo_deletedApplication_throwsException() {
         // given
         User user = createUser();
