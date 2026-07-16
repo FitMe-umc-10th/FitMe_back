@@ -33,7 +33,9 @@ public class UserApplicationService {
             Long userId,
             UserApplicationRequestDto.CreateRequest request
     ) {
+
         User user = getUser(userId);
+
 
         Post post = postRepository.findById(request.postId())
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
@@ -54,6 +56,7 @@ public class UserApplicationService {
 
     public UserApplicationResponseDto.ListResponse getList(Long userId, String tab) {
         User user = getUser(userId);
+
 
         List<Status> statuses = switch (tab) {
             case "IN_PROGRESS" -> List.of(
@@ -112,6 +115,7 @@ public class UserApplicationService {
             Long userApplicationId,
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
+
         User user = getUser(userId);
 
         UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
