@@ -10,20 +10,14 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.global.entity.BaseEntity;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(
-        name = "user_application",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "unique_user_post",
-                        columnNames = {"user_id", "post_id"}
-                )
-        }
-)
+@Table(name = "user_application")
 public class UserApplication extends BaseEntity {
 
     @Id
@@ -50,6 +44,9 @@ public class UserApplication extends BaseEntity {
     @Builder.Default
     private Boolean isApplied = false;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public void updateMemo(String memo) {
         if (memo == null) {
             this.memo = null;
@@ -63,5 +60,13 @@ public class UserApplication extends BaseEntity {
     public void updateStatus(Status status) {
         this.status = status;
         this.isApplied = status != Status.NONE;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 }

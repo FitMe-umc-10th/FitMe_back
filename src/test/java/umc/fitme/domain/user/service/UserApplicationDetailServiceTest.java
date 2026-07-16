@@ -59,7 +59,7 @@ class UserApplicationDetailServiceTest {
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
@@ -94,7 +94,7 @@ class UserApplicationDetailServiceTest {
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
@@ -113,7 +113,7 @@ class UserApplicationDetailServiceTest {
         Long otherUserApplicationId = 999L;
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(otherUserApplicationId, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(otherUserApplicationId, user))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -150,7 +150,7 @@ class UserApplicationDetailServiceTest {
                 .build();
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when

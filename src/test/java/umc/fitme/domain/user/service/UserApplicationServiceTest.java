@@ -65,7 +65,7 @@ class UserApplicationServiceTest {
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
-        when(userApplicationRepository.findByUserAndPost(user, post))
+        when(userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post))
                 .thenReturn(Optional.of(existingApplication));
 
         // when
@@ -115,7 +115,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateStatusRequest(Status.PENDING_RESULT);
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
@@ -146,7 +146,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateStatusRequest(Status.NONE);
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when & then
@@ -154,6 +154,44 @@ class UserApplicationServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting("errorCode")
                 .isEqualTo(UserApplicationErrorCode.INVALID_USER_APPLICATION_STATUS);
+    }
+
+    @Test
+    @DisplayName("삭제된 지원 이력은 상태를 변경할 수 없다.")
+    void updateStatus_deletedApplication_throwsException() {
+        // given
+        User user = createUser();
+
+        UserApplicationRequestDto.UpdateStatusRequest request = new UserApplicationRequestDto.UpdateStatusRequest(Status.PENDING_RESULT);
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userApplicationService.updateStatus(USER_ID, USER_APPLICATION_ID, request))
+                .isInstanceOf(ProjectException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("삭제된 지원 이력은 메모를 수정할 수 없다.")
+    void updateMemo_deletedApplication_throwsException() {
+        // given
+        User user = createUser();
+
+        UserApplicationRequestDto.UpdateMemoRequest request = new UserApplicationRequestDto.UpdateMemoRequest("수정할 메모");
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userApplicationService.updateMemo(USER_ID, USER_APPLICATION_ID, request))
+                .isInstanceOf(ProjectException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
     @Test
@@ -175,7 +213,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateMemoRequest("  서류 제출 완료  ");
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
@@ -205,7 +243,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateMemoRequest("     ");
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when
@@ -237,7 +275,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateMemoRequest(over1000Memo);
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(USER_APPLICATION_ID, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
 
         // when & then
@@ -258,7 +296,7 @@ class UserApplicationServiceTest {
                 new UserApplicationRequestDto.UpdateMemoRequest("메모");
 
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        when(userApplicationRepository.findByIdAndUser(notFoundUserApplicationId, user))
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(notFoundUserApplicationId, user))
                 .thenReturn(Optional.empty());
 
         // when & then
