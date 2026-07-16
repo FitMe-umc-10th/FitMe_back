@@ -1,7 +1,12 @@
 package umc.fitme.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+
+import java.util.Properties;
 
 @Configuration
 public class EmailConfig {
@@ -20,10 +25,10 @@ public class EmailConfig {
             @Value("${spring.mail.port}") int port,
             @Value("${spring.mail.username}") String username,
             @Value("${spring.mail.password}") String password,
-            @Value("${spring.mail.auth}") boolean auth,
-            @Value("${spring.mail.starttls.enable}") boolean starttlsEnable,
-            @Value("${spring.mail.starttls.required}") boolean starttlsRequired,
-            @Value("${spring.mail.timeout}") int timeout) {
+            @Value("${spring.mail.properties.mail.smtp.auth}") boolean auth,
+            @Value("${spring.mail.properties.mail.smtp.starttls.enable}") boolean starttlsEnable,
+            @Value("${spring.mail.properties.mail.smtp.starttls.require}") boolean starttlsRequired,
+            @Value("${spring.mail.properties.mail.smtp.timeout}") int timeout) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -32,5 +37,29 @@ public class EmailConfig {
         this.starttlsEnable = starttlsEnable;
         this.starttlsRequired = starttlsRequired;
         this.timeout = timeout;
+    }
+
+    // 해당 빈을 통해 메일을 보낼 수 있다.
+    @Bean
+    public JavaMailSender javaMailSender(){
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost(host);
+        mailSender.setPort(port);
+        mailSender.setUsername(username);
+        mailSender.setPassword(password);
+        mailSender.setDefaultEncoding("UTF-8");
+        mailSender.setJavaMailProperties(getmailProperties());
+
+        return mailSender;
+    }
+
+    private Properties getmailProperties(){
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", auth);
+        props.put("mail.smtp.starttls.enable", starttlsEnable);
+        props.put("mail.smtp.starttls.required", starttlsRequired);
+        props.put("mail.smtp.timeout", timeout);
+
+        return props;
     }
 }

@@ -17,7 +17,7 @@ import umc.fitme.global.apiPayload.code.BaseSuccessCode;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 
 @RequestMapping("/api/auth")
-@Tag(name = "인증")
+@Tag(name = "인증 및 로그인 관련 API")
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -30,7 +30,7 @@ public class AuthController {
      * @param dto 사용자 이메일
      * @return 공통응답형식
      */
-    @Operation(summary = "인증번호 발송")
+    @Operation(summary = "이메일 인증 요청 API", description = "이메일로 인증 번호를 보내는 API")
     @PostMapping("/email-verifications")
     public ApiResponse<EmailVerificationDto.EmailVerificationResDto> emailVerify(
             @Valid @RequestBody EmailVerificationDto.EmailVerificationReqDto dto
@@ -43,7 +43,7 @@ public class AuthController {
      * @param confirm 사용자 이메일 및 인증번호
      * @return 공통응답형식
      */
-    @Operation(summary = "인증번호 검증")
+    @Operation(summary = "이메일 인증 확인 API", description = "이메일 인증 번호를 검증하는 API")
     @PostMapping("/email-verifications/confirm")
     public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerityConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
