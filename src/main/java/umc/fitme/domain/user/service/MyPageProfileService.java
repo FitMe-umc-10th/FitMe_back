@@ -95,6 +95,7 @@ public class MyPageProfileService {
             }
 
             userInterestRepository.deleteAllByUser(user);
+            userInterestRepository.flush();
             List<UserInterest> userInterests = found.stream()
                     .map(it -> UserInterest.builder()
                             .user(user)
