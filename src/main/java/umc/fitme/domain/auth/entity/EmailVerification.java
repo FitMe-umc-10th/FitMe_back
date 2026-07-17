@@ -1,4 +1,4 @@
-package umc.fitme.domain.user.entity;
+package umc.fitme.domain.auth.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
