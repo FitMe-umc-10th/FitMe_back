@@ -1,10 +1,12 @@
 package umc.fitme.domain.user.dto;
 
+import org.hibernate.Hibernate;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
+import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
-import org.hibernate.Hibernate;
+import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -86,6 +88,19 @@ public class UserApplicationResponseDto {
             String memo,
             PostDetailResponse post
     ) {
+        public static DetailResponse from(
+                UserApplication userApplication,
+                UserApplicationPostSnapshot snapshot
+        ) {
+            return new DetailResponse(
+                    userApplication.getId(),
+                    userApplication.getStatus().name(),
+                    userApplication.getIsApplied(),
+                    userApplication.getMemo(),
+                    PostDetailResponse.from(snapshot)
+            );
+        }
+
         public static DetailResponse from(UserApplication userApplication) {
             return new DetailResponse(
                     userApplication.getId(),
@@ -142,6 +157,35 @@ public class UserApplicationResponseDto {
                     contest
             );
         }
+
+        public static PostDetailResponse from(UserApplicationPostSnapshot snapshot) {
+            ScholarshipResponse scholarship = null;
+            ContestResponse contest = null;
+
+            if (snapshot.getPostType() == PostType.SCHOLARSHIP) {
+                scholarship = ScholarshipResponse.from(snapshot);
+            }
+
+            if (snapshot.getPostType() == PostType.CONTEST) {
+                contest = ContestResponse.from(snapshot);
+            }
+
+            return new PostDetailResponse(
+                    snapshot.getOriginalPostId(),
+                    snapshot.getPostType().name(),
+                    snapshot.getTitle(),
+                    snapshot.getOrganizer(),
+                    snapshot.getApplyStartAt(),
+                    snapshot.getApplyEndAt(),
+                    snapshot.getSummary(),
+                    snapshot.getApplicationMethod(),
+                    snapshot.getApplicationUrl(),
+                    null,
+                    null,
+                    scholarship,
+                    contest
+            );
+        }
     }
 
     public record ScholarshipResponse(
@@ -158,6 +202,15 @@ public class UserApplicationResponseDto {
                     scholarship.getSupportAmount()
             );
         }
+
+        public static ScholarshipResponse from(UserApplicationPostSnapshot snapshot) {
+            return new ScholarshipResponse(
+                    snapshot.getGradeRequirement(),
+                    snapshot.getIncomeRequirement(),
+                    snapshot.getRegionRequirement(),
+                    snapshot.getSupportAmount()
+            );
+        }
     }
 
     public record ContestResponse(
@@ -172,6 +225,15 @@ public class UserApplicationResponseDto {
                     contest.getTarget(),
                     contest.getParticipantLimit(),
                     contest.getRewardTotal()
+            );
+        }
+
+        public static ContestResponse from(UserApplicationPostSnapshot snapshot) {
+            return new ContestResponse(
+                    snapshot.getPosterImageUrl(),
+                    snapshot.getTarget(),
+                    snapshot.getParticipantLimit(),
+                    snapshot.getRewardTotal()
             );
         }
     }
