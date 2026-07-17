@@ -8,15 +8,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
+import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -126,7 +127,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, null, 0)
         );
 
-        assertEquals(GeneralErrorCode.INVALID_PAGE_SIZE, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.INVALID_PAGE_SIZE, exception.getErrorCode());
     }
 
     @Test
@@ -140,7 +141,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.RECENT, "abc", 10)
         );
 
-        assertEquals(GeneralErrorCode.INVALID_CURSOR, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.INVALID_CURSOR, exception.getErrorCode());
     }
 
     @Test
@@ -154,7 +155,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.getSavedPosts(1L, SavedPostCategory.ALL, SavedPostSort.DEADLINE, "not-a-cursor", 10)
         );
 
-        assertEquals(GeneralErrorCode.INVALID_CURSOR, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.INVALID_CURSOR, exception.getErrorCode());
     }
 
     @Test
@@ -386,7 +387,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.savePost(1L, 10L)
         );
 
-        assertEquals(GeneralErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
     }
 
     @Test
@@ -404,7 +405,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.savePost(1L, 10L)
         );
 
-        assertEquals(GeneralErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+        assertEquals(PostErrorCode.POST_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -461,7 +462,7 @@ class SavedPostServiceTest {
                 () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(GeneralErrorCode.SAVED_POST_NOT_FOUND, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.SAVED_POST_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -499,6 +500,6 @@ class SavedPostServiceTest {
                 () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(GeneralErrorCode.ALREADY_UNSAVED_POST, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.ALREADY_UNSAVED_POST, exception.getErrorCode());
     }
 }

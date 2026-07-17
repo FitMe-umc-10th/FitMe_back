@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.converter.SavedPostConverter;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
@@ -14,9 +15,10 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
+import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -45,8 +47,7 @@ public class SavedPostService {
         validateSize(size);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
-
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         List<UserSave> savedPosts = switch (sort) {
             case RECENT -> getRecentSavedPosts(user, category, cursor, size + 1);
@@ -68,7 +69,7 @@ public class SavedPostService {
                 SavedPostConverter.toSavedPostItemList(savedPosts);
 
         return SavedPostConverter.toSavedPostListResponse(
-                SavedPostConverter.toSavedPostItemList(savedPosts),
+                items,
                 nextCursor,
                 size,
                 hasNext
@@ -78,15 +79,15 @@ public class SavedPostService {
     @Transactional
     public SavedPostResponseDto.SavePostResponse savePost(Long userId, Long postId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
         UserSave saved = userSaveRepository.findByUserAndPost(user, post)
                                .map(existing -> {
                                    if (Boolean.TRUE.equals(existing.getIsSaved())) {
-                                       throw new ProjectException(GeneralErrorCode.ALREADY_SAVED_POST);
+                                       throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
                                    }
                                    existing.resave();
                                    return existing;
@@ -100,7 +101,7 @@ public class SavedPostService {
 
     private void validateSize(Integer size) {
         if (size == null || size <= 0 || size > MAX_SIZE) {
-            throw new ProjectException(GeneralErrorCode.INVALID_PAGE_SIZE);
+            throw new ProjectException(SavedPostErrorCode.INVALID_PAGE_SIZE);
         }
     }
 
@@ -178,7 +179,7 @@ public class SavedPostService {
         try {
             return Long.parseLong(cursor);
         } catch (NumberFormatException e) {
-            throw new ProjectException(GeneralErrorCode.INVALID_CURSOR);
+            throw new ProjectException(SavedPostErrorCode.INVALID_CURSOR);
         }
     }
 
@@ -198,7 +199,7 @@ public class SavedPostService {
 
             return new DeadlineCursor(deadlineDate, postId);
         } catch (Exception e) {
-            throw new ProjectException(GeneralErrorCode.INVALID_CURSOR);
+            throw new ProjectException(SavedPostErrorCode.INVALID_CURSOR);
         }
     }
 
@@ -221,13 +222,13 @@ public class SavedPostService {
     @Transactional
     public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long userId, Long savedId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         UserSave userSave = userSaveRepository.findByIdAndUser(savedId, user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.SAVED_POST_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(SavedPostErrorCode.SAVED_POST_NOT_FOUND));
 
         if (!Boolean.TRUE.equals(userSave.getIsSaved())) {
-            throw new ProjectException(GeneralErrorCode.ALREADY_UNSAVED_POST);
+            throw new ProjectException(SavedPostErrorCode.ALREADY_UNSAVED_POST);
         }
 
         userSave.cancelSave();
