@@ -119,4 +119,18 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
             @Param("postId") Long postId,
             Pageable pageable
     );
+
+    @Query("""
+        select us
+        from UserSave us
+        join fetch us.user u
+        join fetch us.post p
+        join UserNotificationSetting uns on uns.user = u
+        where us.isSaved = true
+            and p.applyEndAt in :applyEndDates
+            and uns.reminderEnabled = true
+    """)
+    List<UserSave> findDeadlineEmailReminderTargets(
+            @Param("applyEndDates") List<LocalDate> applyEndDates
+    );
 }
