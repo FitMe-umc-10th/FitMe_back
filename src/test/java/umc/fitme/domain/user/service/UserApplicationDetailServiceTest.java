@@ -16,6 +16,7 @@ import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -39,6 +40,9 @@ class UserApplicationDetailServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private UserApplicationPostSnapshotRepository userApplicationPostSnapshotRepository;
 
     @InjectMocks
     private UserApplicationService userApplicationService;
