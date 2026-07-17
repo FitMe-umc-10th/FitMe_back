@@ -1,7 +1,9 @@
 package umc.fitme.domain.user.dto;
 
+import org.hibernate.Hibernate;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
+import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
@@ -98,6 +100,16 @@ public class UserApplicationResponseDto {
                     PostDetailResponse.from(snapshot)
             );
         }
+
+        public static DetailResponse from(UserApplication userApplication) {
+            return new DetailResponse(
+                    userApplication.getId(),
+                    userApplication.getStatus().name(),
+                    userApplication.getIsApplied(),
+                    userApplication.getMemo(),
+                    PostDetailResponse.from(userApplication.getPost())
+            );
+        }
     }
 
     public record PostDetailResponse(
@@ -115,6 +127,37 @@ public class UserApplicationResponseDto {
             ScholarshipResponse scholarship,
             ContestResponse contest
     ) {
+        public static PostDetailResponse from(Post post) {
+            Post unproxiedPost = Hibernate.unproxy(post, Post.class);
+
+            ScholarshipResponse scholarship = null;
+            ContestResponse contest = null;
+
+            if (unproxiedPost instanceof Scholarship scholarshipPost) {
+                scholarship = ScholarshipResponse.from(scholarshipPost);
+            }
+
+            if (unproxiedPost instanceof Contest contestPost) {
+                contest = ContestResponse.from(contestPost);
+            }
+
+            return new PostDetailResponse(
+                    unproxiedPost.getId(),
+                    unproxiedPost.getPostType().name(),
+                    unproxiedPost.getTitle(),
+                    unproxiedPost.getOrganizer(),
+                    unproxiedPost.getApplyStartAt(),
+                    unproxiedPost.getApplyEndAt(),
+                    unproxiedPost.getSummary(),
+                    unproxiedPost.getApplicationMethod(),
+                    unproxiedPost.getApplicationUrl(),
+                    unproxiedPost.getViewCount(),
+                    unproxiedPost.getSavedCount(),
+                    scholarship,
+                    contest
+            );
+        }
+
         public static PostDetailResponse from(UserApplicationPostSnapshot snapshot) {
             ScholarshipResponse scholarship = null;
             ContestResponse contest = null;
@@ -151,6 +194,15 @@ public class UserApplicationResponseDto {
             String regionRequirement,
             String supportAmount
     ) {
+        public static ScholarshipResponse from(Scholarship scholarship) {
+            return new ScholarshipResponse(
+                    scholarship.getGradeRequirement(),
+                    scholarship.getIncomeRequirement(),
+                    scholarship.getRegionRequirement(),
+                    scholarship.getSupportAmount()
+            );
+        }
+
         public static ScholarshipResponse from(UserApplicationPostSnapshot snapshot) {
             return new ScholarshipResponse(
                     snapshot.getGradeRequirement(),
@@ -167,6 +219,15 @@ public class UserApplicationResponseDto {
             String participantLimit,
             String rewardTotal
     ) {
+        public static ContestResponse from(Contest contest) {
+            return new ContestResponse(
+                    contest.getPosterImageUrl(),
+                    contest.getTarget(),
+                    contest.getParticipantLimit(),
+                    contest.getRewardTotal()
+            );
+        }
+
         public static ContestResponse from(UserApplicationPostSnapshot snapshot) {
             return new ContestResponse(
                     snapshot.getPosterImageUrl(),
