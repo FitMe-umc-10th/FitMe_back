@@ -4,8 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
-import umc.fitme.domain.user.entity.EmailVerification;
+import umc.fitme.domain.auth.entity.EmailVerification;
+import umc.fitme.domain.auth.exception.AuthException;
+import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.EmailVerificationRepository;
@@ -16,7 +19,7 @@ import java.security.SecureRandom;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class AuthService {
 
     private static final long CODE_TTL_SECONDS = 300L;
@@ -32,7 +35,7 @@ public class AuthService {
      * @param dto 이메일
      * @return 인증번호, 만료시간(5분) dto
      */
-    public EmailVerificationDto.EmailVerificationResDto sendEmailVerification(EmailVerificationDto.EmailVerificationReqDto dto) {
+    public EmailVerificationDto.EmailVerificationResDto sendVerificationCode(EmailVerificationDto.EmailVerificationReqDto dto) {
         String email = dto.email();
 
         // 이미 가입된 이메일로 인증을 할 경우, "이미 가입된 이메일입니다" 반환
@@ -57,5 +60,34 @@ public class AuthService {
     private String generateCode() {
         int number = secureRandom.nextInt(900000) + 100000;
         return String.valueOf(number);
+    }
+
+    /***
+     * 함수 기능: 사용자가 입력한 6자리 인증번호를 검증한다.
+     * @param dto 이메일, 인증번호(6자리)
+     * @return 이메일, isVerified t/f dto
+     */
+    public EmailVerificationConfirmDto.EmailVerificationConfirmResDto isValidateCode(EmailVerificationConfirmDto.EmailVerificationConfirmReqDto dto){
+
+        // 이메일 확인
+        EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
+                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
+
+        // 인증번호 만료 시 에러
+        if (emailVerification.isExpired()){
+            throw new AuthException(AuthErrorCode.CODE_NOT_VALIDATE);
+        }
+
+        // 인증번호가 잘못되었을 시 에러
+        if (!emailVerification.matches(dto.verificationCode())){
+            throw new AuthException(AuthErrorCode.CODE_NOT_MATCH);
+        }
+
+        emailVerification.verify();
+
+        return EmailVerificationConfirmDto.EmailVerificationConfirmResDto.builder()
+                .email(dto.email())
+                .isVerified(true)
+                .build();
     }
 }

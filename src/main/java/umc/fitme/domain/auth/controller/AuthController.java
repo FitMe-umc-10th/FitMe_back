@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
@@ -34,8 +35,9 @@ public class AuthController {
     @PostMapping("/email-verifications")
     public ApiResponse<EmailVerificationDto.EmailVerificationResDto> emailVerify(
             @Valid @RequestBody EmailVerificationDto.EmailVerificationReqDto dto
-            ){
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, authService.sendEmailVerification(dto));
+    ){
+        BaseSuccessCode successCode = AuthSuccessCode.REQUEST_OK;
+        return ApiResponse.onSuccess(successCode, authService.sendVerificationCode(dto));
     }
 
     /***
@@ -48,8 +50,7 @@ public class AuthController {
     public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerityConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
     ){
-
-        BaseSuccessCode successCode = GeneralSuccessCode.OK;
-        return ApiResponse.onSuccess(successCode, null);
+        BaseSuccessCode successCode = AuthSuccessCode.CONFIRM_OK;
+        return ApiResponse.onSuccess(successCode, authService.isValidateCode(confirm));
     }
 }
