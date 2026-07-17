@@ -13,9 +13,11 @@ import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
+import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 
@@ -41,6 +43,9 @@ class UserApplicationServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private UserApplicationPostSnapshotRepository userApplicationPostSnapshotRepository;
 
     @InjectMocks
     private UserApplicationService userApplicationService;
@@ -79,6 +84,8 @@ class UserApplicationServiceTest {
         assertThat(response.applicationUrl()).isEqualTo("https://example.com/apply");
 
         verify(userApplicationRepository, never()).save(any(UserApplication.class));
+        verify(userApplicationPostSnapshotRepository, never())
+                .save(any(UserApplicationPostSnapshot.class));
     }
 
     @Test
@@ -306,6 +313,32 @@ class UserApplicationServiceTest {
                 .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("새 지원 이력이 생성되면 공고 스냅샷도 함꼐 저장한다.")
+    void create_newUserApplication_savesSnapshot() {
+        // given
+        User user = createUser();
+        Post post = createPost();
+
+        UserApplicationRequestDto.CreateRequest request =
+                new UserApplicationRequestDto.CreateRequest(POST_ID);
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(postRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        when(userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post))
+                .thenReturn(Optional.empty());
+        when(userApplicationRepository.save(any(UserApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        userApplicationService.create(USER_ID, request);
+
+        // then
+        verify(userApplicationRepository).save(any(UserApplication.class));
+        verify(userApplicationPostSnapshotRepository)
+                .save(any(UserApplicationPostSnapshot.class));
+    }
+
     private User createUser() {
         return User.builder()
                 .id(USER_ID)
@@ -322,6 +355,7 @@ class UserApplicationServiceTest {
                 .applyEndAt(LocalDate.of(2026, 7, 31))
                 .applicationMethod("공식 홈페이지 접수")
                 .applicationUrl("https://example.com/apply")
+                .imageUrl("https://example.com/image.png")
                 .build();
     }
 }

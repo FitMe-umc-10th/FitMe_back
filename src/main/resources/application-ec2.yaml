@@ -9,9 +9,13 @@ spring:
       client:
         registration:
           naver:
-            redirect-uri: http://13.124.60.42:8080/login/oauth2/code/naver
+            redirect-uri: https://api.fit-me.site/login/oauth2/code/naver
           kakao:
-            redirect-uri: http://13.124.60.42:8080/login/oauth2/code/kakao
+            redirect-uri: https://api.fit-me.site/login/oauth2/code/kakao
+
+app:
+  oauth2:
+    redirect-uri: https://api.fit-me.site/test.html # 추후 프론트엔드 주소 기입
 
 logging:
   level:
