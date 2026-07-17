@@ -98,9 +98,13 @@ public class UserApplicationService {
         UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
                 .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
-        userApplication.getPost().increaseViewCount();
+        UserApplicationPostSnapshot snapshot =
+                userApplicationPostSnapshotRepository.findByUserApplication(userApplication)
+                        .orElseThrow(() -> new ProjectException(
+                                UserApplicationErrorCode.USER_APPLICATION_SNAPSHOT_NOT_FOUND
+                        ));
 
-        return UserApplicationResponseDto.DetailResponse.from(userApplication);
+        return UserApplicationResponseDto.DetailResponse.from(userApplication, snapshot);
     }
 
     @Transactional
