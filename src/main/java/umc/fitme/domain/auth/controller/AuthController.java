@@ -60,11 +60,12 @@ public class AuthController {
      * @param dto 회원가입 정보
      * @return
      */
+    @Operation(summary = "회원가입 API", description = "이메일 기반 회원가입 API")
     @PostMapping("/signup")
     public ApiResponse<SignUpDto.SignUpRes> signUp(
             @Valid @RequestBody SignUpDto.SignUpReq dto
     ){
-        BaseSuccessCode successCode = GeneralSuccessCode.OK;
+        BaseSuccessCode successCode = AuthSuccessCode.SIGNUP_OK;
         return ApiResponse.onSuccess(successCode, authService.signUp(dto));
     }
 }

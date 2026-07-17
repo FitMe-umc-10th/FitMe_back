@@ -2,6 +2,7 @@ package umc.fitme.domain.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
@@ -10,12 +11,14 @@ import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
+import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -28,6 +31,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailSender emailSender;
+    private final PasswordEncoder passwordEncoder;
 
     private final SecureRandom secureRandom = new SecureRandom(); // 6자리 난수 생성
 
@@ -52,15 +56,6 @@ public class AuthService {
         emailSender.sendVerificationCode(email, code);
 
         return new EmailVerificationDto.EmailVerificationResDto(email, CODE_TTL_SECONDS);
-    }
-
-    /***
-     * 함수 기능: 난수 6자리 생성
-     * @return 상동
-     */
-    private String generateCode() {
-        int number = secureRandom.nextInt(900000) + 100000;
-        return String.valueOf(number);
     }
 
     /***
@@ -112,6 +107,28 @@ public class AuthService {
         }
 
         // 비밀번호 암호화 후 DB에 저장 로직
-        
+        String encode = passwordEncoder.encode(dto.password());
+
+        userRepository.save(User.builder()
+                .name(dto.name())
+                .email(dto.email())
+                .birth(dto.birth())
+                .password(encode)
+                .termsAgreed(true)
+                .build());
+
+        return SignUpDto.SignUpRes.builder()
+                .email(dto.email())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    /***
+     * 함수 기능: 난수 6자리 생성
+     * @return 상동
+     */
+    private String generateCode() {
+        int number = secureRandom.nextInt(900000) + 100000;
+        return String.valueOf(number);
     }
 }

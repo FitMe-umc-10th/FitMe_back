@@ -1,6 +1,7 @@
 package umc.fitme.domain.auth.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -15,7 +16,7 @@ public class SignUpDto {
             @NotBlank(message = "이름은 필수 값입니다.")
             String name,
 
-            @NotBlank(message = "생년월일은 필수 값입니다.")
+//            @NotBlank(message = "생년월일은 필수 값입니다.")
             LocalDate birth,
 
             @Schema(example = "fitme@example.com")
@@ -31,7 +32,7 @@ public class SignUpDto {
             @NotBlank(message = "비밀번호 검증은 필수 값입니다.")
             String passwordConfirm,
 
-            @NotBlank(message = "개인정보 보호 약관 동의는 필수입니다.")
+//            @AssertTrue(message = "개인정보 보호 약관 동의는 필수입니다.")
             boolean privacyPolicyAgreed
     ){}
 
