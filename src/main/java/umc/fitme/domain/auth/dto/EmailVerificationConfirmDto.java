@@ -1,24 +1,30 @@
 package umc.fitme.domain.auth.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 
 public class EmailVerificationConfirmDto {
 
     public record EmailVerificationConfirmReqDto(
 
+            @Schema(description = "인증번호 요청한 이메일 주소", example = "fitme@example.com")
             @NotNull(message = "이메일은 필수입니다.")
-            @Pattern(regexp = "^[a-zA-Z0-9_+&*-]+(?:\\\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\\\.)+[a-zA-Z]{2,7}$",
-                    message = "이메일 형식이 올바르지 않습니다.")
+            @Email(message = "이메일 형식이 올바르지 않습니다.")
             String email,
 
             @NotNull(message = "인증코드는 필수입니다.")
             String verificationCode
     ){}
 
+    @Builder
     public record EmailVerificationConfirmResDto(
-            
+
+            @Schema(example = "fitme@example.com")
             String email,
+
             boolean isVerified
     ){}
 }
