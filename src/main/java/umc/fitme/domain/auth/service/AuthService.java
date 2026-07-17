@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
@@ -89,5 +90,28 @@ public class AuthService {
                 .email(dto.email())
                 .isVerified(true)
                 .build();
+    }
+
+    public SignUpDto.SignUpRes signUp(SignUpDto.SignUpReq dto) {
+
+        // 이메일 인증 여부 검증
+        EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
+                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
+        if (emailVerification.getVerifiedAt() == null){
+            throw new AuthException(AuthErrorCode.NEED_TO_VERIFY);
+        }
+
+        // 비밀번호 일치 검증
+        if (!dto.password().equals(dto.passwordConfirm())){
+            throw new AuthException(AuthErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // 개인정보 약관 동의 여부 검증
+        if (!dto.privacyPolicyAgreed()){
+            throw new AuthException(AuthErrorCode.NEED_TO_AGREE);
+        }
+
+        // 비밀번호 암호화 후 DB에 저장 로직
+        
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
@@ -18,7 +19,7 @@ import umc.fitme.global.apiPayload.code.BaseSuccessCode;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 
 @RequestMapping("/api/auth")
-@Tag(name = "인증 및 로그인 관련 API")
+@Tag(name = "이메일 인증 / 이메일 기반 회원가입 / 로그인(소셜x) 관련 API")
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -52,5 +53,18 @@ public class AuthController {
     ){
         BaseSuccessCode successCode = AuthSuccessCode.CONFIRM_OK;
         return ApiResponse.onSuccess(successCode, authService.isValidateCode(confirm));
+    }
+
+    /***
+     * 함수 기능: 이메일 기반 회원가입을 진행한다.
+     * @param dto 회원가입 정보
+     * @return
+     */
+    @PostMapping("/signup")
+    public ApiResponse<SignUpDto.SignUpRes> signUp(
+            @Valid @RequestBody SignUpDto.SignUpReq dto
+    ){
+        BaseSuccessCode successCode = GeneralSuccessCode.OK;
+        return ApiResponse.onSuccess(successCode, authService.signUp(dto));
     }
 }
