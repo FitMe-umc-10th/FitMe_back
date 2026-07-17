@@ -16,8 +16,11 @@ import umc.fitme.global.apiPayload.exception.ProjectException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 import umc.fitme.domain.post.exception.code.PostErrorCode;
+import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ import java.util.List;
 public class UserApplicationService {
 
     private final UserApplicationRepository userApplicationRepository;
+    private final UserApplicationPostSnapshotRepository userApplicationPostSnapshotRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
@@ -40,16 +44,27 @@ public class UserApplicationService {
         Post post = postRepository.findById(request.postId())
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
-        UserApplication userApplication = userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post)
-                .orElseGet(() -> userApplicationRepository.save(
-                        UserApplication.builder()
-                                .user(user)
-                                .post(post)
-                                .status(Status.NONE)
-                                .isApplied(false)
-                                .memo(null)
-                                .build()
-                ));
+        Optional<UserApplication> existingApplication =
+                userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post);
+
+        if (existingApplication.isPresent()) {
+            return UserApplicationResponseDto.CreateResponse.from(existingApplication.get());
+        }
+
+        UserApplication userApplication = userApplicationRepository.save(
+                UserApplication.builder()
+                        .user(user)
+                        .post(post)
+                        .status(Status.NONE)
+                        .isApplied(false)
+                        .memo(null)
+                        .build()
+        );
+
+        UserApplicationPostSnapshot snapshot =
+                UserApplicationPostSnapshot.from(userApplication, post);
+
+        userApplicationPostSnapshotRepository.save(snapshot);
 
         return UserApplicationResponseDto.CreateResponse.from(userApplication);
     }
