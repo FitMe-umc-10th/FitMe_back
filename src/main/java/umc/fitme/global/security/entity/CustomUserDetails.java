@@ -11,6 +11,7 @@ import java.util.List;
 public class CustomUserDetails implements UserDetails {
 
     private final Long userId;
+
     private final String role;
     private final String name;
 
