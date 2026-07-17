@@ -12,10 +12,12 @@ import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
+import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -40,6 +42,9 @@ class UserApplicationDetailServiceTest {
     @Mock
     private PostRepository postRepository;
 
+    @Mock
+    private UserApplicationPostSnapshotRepository userApplicationPostSnapshotRepository;
+
     @InjectMocks
     private UserApplicationService userApplicationService;
 
@@ -58,9 +63,13 @@ class UserApplicationDetailServiceTest {
                 .memo("서류 제출 완료")
                 .build();
 
+        UserApplicationPostSnapshot snapshot = UserApplicationPostSnapshot.from(userApplication, post);
+
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
+        when(userApplicationPostSnapshotRepository.findByUserApplication(userApplication))
+                .thenReturn(Optional.of(snapshot));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
@@ -79,8 +88,8 @@ class UserApplicationDetailServiceTest {
     }
 
     @Test
-    @DisplayName("지원 이력 상세 조회 시 공고 조회수가 증가한다")
-    void getDetail_increasesPostViewCount() {
+    @DisplayName("지원 이력 상세 조회는 스냅샷 기준 공고 정보를 반환한다.")
+    void getDetail_returnsSnapshotPostDetail() {
         // given
         User user = createUser();
         Post post = createPost();
@@ -93,16 +102,24 @@ class UserApplicationDetailServiceTest {
                 .memo(null)
                 .build();
 
+        UserApplicationPostSnapshot snapshot =
+                UserApplicationPostSnapshot.from(userApplication, post);
+
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
+        when(userApplicationPostSnapshotRepository.findByUserApplication(userApplication))
+                .thenReturn(Optional.of(snapshot));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
                 userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
 
         // then
-        assertThat(response.post().viewCount()).isEqualTo(1);
+        assertThat(response.post().title()).isEqualTo(post.getTitle());
+        assertThat(response.post().organizer()).isEqualTo(post.getOrganizer());
+        assertThat(response.post().viewCount()).isNull();
+        assertThat(response.post().savedCount()).isNull();
     }
 
     @Test
@@ -124,6 +141,38 @@ class UserApplicationDetailServiceTest {
     }
 
     @Test
+    @DisplayName("지원 이력 스냅샷이 없으면 원본 공고 기준으로 상세 정보를 반환한다.")
+    void getDetail_snapshotNotFound_returnsPostFallbackDetail() {
+        // given
+        User user = createUser();
+        Post post = createPost();
+
+        UserApplication userApplication = UserApplication.builder()
+                .user(user)
+                .post(post)
+                .status(Status.PENDING_RESULT)
+                .isApplied(true)
+                .memo(null)
+                .build();
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
+                .thenReturn(Optional.of(userApplication));
+        when(userApplicationPostSnapshotRepository.findByUserApplication(userApplication))
+                .thenReturn(Optional.empty());
+
+        // when
+        UserApplicationResponseDto.DetailResponse response =
+                userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
+
+        // then
+        assertThat(response.post().title()).isEqualTo(post.getTitle());
+        assertThat(response.post().organizer()).isEqualTo(post.getOrganizer());
+        assertThat(response.post().viewCount()).isEqualTo(post.getViewCount());
+        assertThat(response.post().savedCount()).isEqualTo(post.getSavedCount());
+    }
+
+    @Test
     @DisplayName("마감된 공고의 지원 이력도 상세 조회할 수 있다")
     void getDetail_closedPost_returnsDetail() {
         // given
@@ -139,6 +188,7 @@ class UserApplicationDetailServiceTest {
                 .summary("마감된 공고입니다.")
                 .applicationMethod("공식 홈페이지 접수")
                 .applicationUrl("https://example.com/apply")
+                .imageUrl("https://example.com/image.png")
                 .build();
 
         UserApplication userApplication = UserApplication.builder()
@@ -149,9 +199,14 @@ class UserApplicationDetailServiceTest {
                 .memo("마감 공고 메모")
                 .build();
 
+        UserApplicationPostSnapshot snapshot =
+                UserApplicationPostSnapshot.from(userApplication, closedPost);
+
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(USER_APPLICATION_ID, user))
                 .thenReturn(Optional.of(userApplication));
+        when(userApplicationPostSnapshotRepository.findByUserApplication(userApplication))
+                .thenReturn(Optional.of(snapshot));
 
         // when
         UserApplicationResponseDto.DetailResponse response =
@@ -179,6 +234,7 @@ class UserApplicationDetailServiceTest {
                 .summary("테스트용 공고입니다.")
                 .applicationMethod("공식 홈페이지 접수")
                 .applicationUrl("https://example.com/apply")
+                .imageUrl("https://example.com/image.png")
                 .build();
     }
 }

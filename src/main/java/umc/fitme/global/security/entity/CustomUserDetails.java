@@ -1,6 +1,5 @@
 package umc.fitme.global.security.entity;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,7 +10,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
-    @Getter
     private final Long userId;
 
     private final String role;
