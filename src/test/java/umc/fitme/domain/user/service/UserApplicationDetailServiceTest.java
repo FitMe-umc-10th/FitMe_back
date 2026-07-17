@@ -141,8 +141,8 @@ class UserApplicationDetailServiceTest {
     }
 
     @Test
-    @DisplayName("지원 이력 스냅샷이 없으면 예외를 던진다.")
-    void getDetail_snapshotNotFound_throwsException() {
+    @DisplayName("지원 이력 스냅샷이 없으면 원본 공고 기준으로 상세 정보를 반환한다.")
+    void getDetail_snapshotNotFound_returnsPostFallbackDetail() {
         // given
         User user = createUser();
         Post post = createPost();
@@ -161,11 +161,15 @@ class UserApplicationDetailServiceTest {
         when(userApplicationPostSnapshotRepository.findByUserApplication(userApplication))
                 .thenReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() -> userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID))
-                .isInstanceOf(ProjectException.class)
-                .extracting("errorCode")
-                .isEqualTo(UserApplicationErrorCode.USER_APPLICATION_SNAPSHOT_NOT_FOUND);
+        // when
+        UserApplicationResponseDto.DetailResponse response =
+                userApplicationService.getDetail(USER_ID, USER_APPLICATION_ID);
+
+        // then
+        assertThat(response.post().title()).isEqualTo(post.getTitle());
+        assertThat(response.post().organizer()).isEqualTo(post.getOrganizer());
+        assertThat(response.post().viewCount()).isEqualTo(post.getViewCount());
+        assertThat(response.post().savedCount()).isEqualTo(post.getSavedCount());
     }
 
     @Test
