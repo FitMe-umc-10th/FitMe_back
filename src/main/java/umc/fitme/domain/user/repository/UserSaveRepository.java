@@ -9,6 +9,7 @@ import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
+import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -121,16 +122,16 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
     );
 
     @Query("""
-        select us
+        select new umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget(u, p, uns.notificationEmail)
         from UserSave us
-        join fetch us.user u
-        join fetch us.post p
+        join us.user u
+        join us.post p
         join UserNotificationSetting uns on uns.user = u
         where us.isSaved = true
             and p.applyEndAt in :applyEndDates
             and uns.reminderEnabled = true
     """)
-    List<UserSave> findDeadlineEmailReminderTargets(
+    List<DeadlineEmailReminderTarget> findDeadlineEmailReminderTargets(
             @Param("applyEndDates") List<LocalDate> applyEndDates
     );
 }
