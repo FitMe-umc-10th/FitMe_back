@@ -5,7 +5,7 @@ import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
 import umc.fitme.domain.user.entity.mapping.UserSave;
 import umc.fitme.domain.user.enums.SavedPostCategory;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
+import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;
@@ -87,7 +87,7 @@ public class SavedPostConverter {
         return switch (category) {
             case SCHOLARSHIP -> PostType.SCHOLARSHIP;
             case CONTEST -> PostType.CONTEST;
-            default -> throw new ProjectException(GeneralErrorCode.INVALID_CATEGORY);
+            default -> throw new ProjectException(SavedPostErrorCode.INVALID_CATEGORY);
         };
     }
 
