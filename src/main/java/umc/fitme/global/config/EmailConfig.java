@@ -18,7 +18,10 @@ public class EmailConfig {
     private final boolean auth;
     private final boolean starttlsEnable;
     private final boolean starttlsRequired;
-    private final int timeout;
+    private final int connectionTimeout;
+    private final int writeTimeout;
+    private final int responseTimeout;
+
 
     public EmailConfig(
             @Value("${spring.mail.host}") String host,
@@ -28,7 +31,9 @@ public class EmailConfig {
             @Value("${spring.mail.properties.mail.smtp.auth}") boolean auth,
             @Value("${spring.mail.properties.mail.smtp.starttls.enable}") boolean starttlsEnable,
             @Value("${spring.mail.properties.mail.smtp.starttls.require}") boolean starttlsRequired,
-            @Value("${spring.mail.properties.mail.smtp.timeout}") int timeout) {
+            @Value("${spring.mail.properties.mail.smtp.response-timeout}") int responseTimeout,
+            @Value("${spring.mail.properties.mail.smtp.connection-timeout}") int connectionTimeout,
+            @Value("${spring.mail.properties.mail.smtp.write-timeout}") int writeTimeout) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -36,7 +41,9 @@ public class EmailConfig {
         this.auth = auth;
         this.starttlsEnable = starttlsEnable;
         this.starttlsRequired = starttlsRequired;
-        this.timeout = timeout;
+        this.responseTimeout = responseTimeout;
+        this.connectionTimeout = connectionTimeout;
+        this.writeTimeout = writeTimeout;
     }
 
     // 해당 빈을 통해 메일을 보낼 수 있다.
@@ -55,10 +62,12 @@ public class EmailConfig {
 
     private Properties getmailProperties(){
         Properties props = new Properties();
-        props.put("mail.smtp.auth", auth);
-        props.put("mail.smtp.starttls.enable", starttlsEnable);
-        props.put("mail.smtp.starttls.required", starttlsRequired);
-        props.put("mail.smtp.timeout", timeout);
+        props.setProperty("mail.smtp.auth", String.valueOf(auth));
+        props.setProperty("mail.smtp.starttls.enable", String.valueOf(starttlsEnable));
+        props.setProperty("mail.smtp.starttls.required", String.valueOf(starttlsRequired));
+        props.setProperty("mail.smtp.response-timeout", String.valueOf(responseTimeout));
+        props.setProperty("mail.smtp.connection-timeout", String.valueOf(connectionTimeout));
+        props.setProperty("mail.smtp.write-timeout", String.valueOf(writeTimeout));
 
         return props;
     }

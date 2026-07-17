@@ -19,7 +19,7 @@ public class EmailVerificationDto {
             @Schema(example = "fitme@example.com")
             String email,
 
-            @Schema(example = "300s", description = "인증 코드 만료까지 남은 시간(초)")
-            Long expiresInSecondes
+            @Schema(example = "300", description = "인증 코드 만료까지 남은 시간(초)")
+            Long expiresInSeconds
     ){}
 }

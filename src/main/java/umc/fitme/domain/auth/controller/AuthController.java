@@ -15,7 +15,6 @@ import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
-import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 
 @RequestMapping("/api/auth")
 @Tag(name = "인증 및 로그인 관련 API")

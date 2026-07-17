@@ -62,7 +62,9 @@ spring:
           starttls: # TLS = 데이터를 암호화해 안전한 전송을 보장하는 프로토콜
             enable: true
             require: true
-          timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답 대기애햐 하는 시간 (msec)
+          response-timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답 대기해야 하는 시간 (msec)
+          connection-timeout: 5000 # 클라이언트가 SMTP 서버와 연결하는 시간 (msec)
+          write-timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답 대기애햐 하는 시간 (msec)
 
 jwt:
   secret: ${JWT_SECRET}
