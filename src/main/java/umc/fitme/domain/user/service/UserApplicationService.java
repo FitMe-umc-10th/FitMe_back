@@ -12,8 +12,10 @@ import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 
 import java.util.List;
 
@@ -22,23 +24,23 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class UserApplicationService {
 
-    private static final Long TEMP_USER_ID = 1L;
-
     private final UserApplicationRepository userApplicationRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
     @Transactional
     public UserApplicationResponseDto.CreateResponse create(
+            Long userId,
             UserApplicationRequestDto.CreateRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+
+        User user = getUser(userId);
+
 
         Post post = postRepository.findById(request.postId())
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
-        UserApplication userApplication = userApplicationRepository.findByUserAndPost(user, post)
+        UserApplication userApplication = userApplicationRepository.findByUserAndPostAndDeletedAtIsNull(user, post)
                 .orElseGet(() -> userApplicationRepository.save(
                         UserApplication.builder()
                                 .user(user)
@@ -52,9 +54,9 @@ public class UserApplicationService {
         return UserApplicationResponseDto.CreateResponse.from(userApplication);
     }
 
-    public UserApplicationResponseDto.ListResponse getList(String tab) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+    public UserApplicationResponseDto.ListResponse getList(Long userId, String tab) {
+        User user = getUser(userId);
+
 
         List<Status> statuses = switch (tab) {
             case "IN_PROGRESS" -> List.of(
@@ -63,11 +65,11 @@ public class UserApplicationService {
                     Status.DOCUMENT_PASSED
             );
             case "FINAL_PASSED" -> List.of(Status.FINAL_PASSED);
-            default -> throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_TAB);
+            default -> throw new ProjectException(UserApplicationErrorCode.INVALID_USER_APPLICATION_TAB);
         };
 
         List<UserApplication> userApplications =
-                userApplicationRepository.findAllByUserAndStatusInOrderByUpdatedAtDescIdDesc(
+                userApplicationRepository.findAllByUserAndDeletedAtIsNullAndStatusInOrderByUpdatedAtDescIdDesc(
                         user, statuses
                 );
 
@@ -75,12 +77,11 @@ public class UserApplicationService {
     }
 
     @Transactional
-    public UserApplicationResponseDto.DetailResponse getDetail(Long userApplicationId) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+    public UserApplicationResponseDto.DetailResponse getDetail(Long userId, Long userApplicationId) {
+        User user = getUser(userId);
 
-        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         userApplication.getPost().increaseViewCount();
 
@@ -89,19 +90,18 @@ public class UserApplicationService {
 
     @Transactional
     public UserApplicationResponseDto.UpdateStatusResponse updateStatus(
+            Long userId,
             Long userApplicationId,
             UserApplicationRequestDto.UpdateStatusRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
+        User user = getUser(userId);
 
         UserApplication userApplication =
-                userApplicationRepository.findByIdAndUser(
-                        userApplicationId, user
-                ).orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+                userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
+                        .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         if (request.status() == null || request.status() == Status.NONE) {
-            throw new ProjectException(GeneralErrorCode.INVALID_USER_APPLICATION_STATUS);
+            throw new ProjectException(UserApplicationErrorCode.INVALID_USER_APPLICATION_STATUS);
         }
 
         userApplication.updateStatus(request.status());
@@ -111,20 +111,21 @@ public class UserApplicationService {
 
     @Transactional
     public UserApplicationResponseDto.UpdateMemoResponse updateMemo(
+            Long userId,
             Long userApplicationId,
             UserApplicationRequestDto.UpdateMemoRequest request
     ) {
-        User user = userRepository.findById(TEMP_USER_ID)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_NOT_FOUND));
 
-        UserApplication userApplication = userApplicationRepository.findByIdAndUser(userApplicationId, user)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.USER_APPLICATION_NOT_FOUND));
+        User user = getUser(userId);
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
 
         // 정책 확정: API로 들어온 원본 memo 기준 1000자 검증, 그 후 trim 처리, trim 후 빈 문자열이면 null 저장
         String memo = request.memo();
 
         if (memo != null && memo.length() > 1000) {
-            throw new ProjectException(GeneralErrorCode.MEMO_TOO_LONG);
+            throw new ProjectException(UserApplicationErrorCode.MEMO_TOO_LONG);
         }
 
         String trimmedMemo = memo == null ? null : memo.trim();
@@ -135,7 +136,20 @@ public class UserApplicationService {
     }
 
     @Transactional
-    public UserApplicationResponseDto.DeleteResponse delete(Long userApplicationId) {
-        throw new UnsupportedOperationException("아직 구현되지 않았습니다.");
+    public UserApplicationResponseDto.DeleteResponse delete(Long userId, Long userApplicationId) {
+        User user = getUser(userId);
+
+        UserApplication userApplication = userApplicationRepository.findByIdAndUserAndDeletedAtIsNull(userApplicationId, user)
+                .orElseThrow(() -> new ProjectException(UserApplicationErrorCode.USER_APPLICATION_NOT_FOUND));
+
+        userApplication.softDelete();
+
+        return UserApplicationResponseDto.DeleteResponse.from(userApplication);
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
+
     }
 }
