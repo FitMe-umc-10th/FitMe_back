@@ -52,6 +52,9 @@ public class Post {
     @Column(name = "application_url", nullable = false)
     private String applicationUrl;
 
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
+
     @Column(name = "view_count")
     @Builder.Default
     private int viewCount = 0;
