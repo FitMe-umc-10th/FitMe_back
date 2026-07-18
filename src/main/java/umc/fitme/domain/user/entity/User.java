@@ -56,4 +56,8 @@ public class User extends BaseEntity {
     @Column(name = "apply_count")
     @Builder.Default
     private int applyCount = 0;
+
+    public void completeOnboarding() {
+        this.isOnboarded = true;
+    }
 }
