@@ -6,19 +6,6 @@ spring:
     properties: # 출력된 SQL 쿼리를 읽기 쉽게 정렬
       hibernate:
         format_sql: true
-
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
   security:
     oauth2:
       client:
