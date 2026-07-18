@@ -1,6 +1,8 @@
 package umc.fitme.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,6 +39,13 @@ public class UserApplicationController {
     @GetMapping
     public ApiResponse<UserApplicationResponseDto.ListResponse> getList(
             @AuthenticationPrincipal CustomUserDetails principal,
+            @Parameter(
+                    description = "조회할 지원 이력 탭 값",
+                    example = "IN_PROGRESS",
+                    schema = @Schema(
+                            allowableValues = {"IN_PROGRESS", "FINAL_PASSED"}
+                    )
+            )
             @RequestParam String tab
     ) {
         return ApiResponse.onSuccess(
