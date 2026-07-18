@@ -15,7 +15,7 @@ import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.user.repository.EmailVerificationRepository;
+import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
