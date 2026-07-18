@@ -108,6 +108,39 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             // then: 공모전(Contest)은 상속 조인에서 걸러지고 장학금 금액만 합산된다.
             assertThat(total).isEqualTo(5_000_000L);
         }
+
+        @Test
+        @DisplayName("soft delete 된 이력의 금액은 합계에서 제외된다")
+        void 삭제된_이력은_합계에서_제외된다() {
+            // given: 100만원 + 삭제된 500만원 (둘 다 FINAL_PASSED)
+            User user = persistUser("sum-deleted@test.com");
+            persistApplication(user, persistScholarship("100만원"), Status.FINAL_PASSED);
+            persistDeletedApplication(user, persistScholarship("500만원"), Status.FINAL_PASSED);
+            flushAndClear();
+
+            // when
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
+
+            // then: 삭제분이 빠져 100만원만 합산된다
+            assertThat(total).isEqualTo(1_000_000L);
+        }
+
+        @Test
+        @DisplayName("이력이 모두 soft delete 되었으면 0을 반환한다")
+        void 전부_삭제되면_0() {
+            // given
+            User user = persistUser("sum-all-deleted@test.com");
+            persistDeletedApplication(user, persistScholarship("300만원"), Status.FINAL_PASSED);
+            flushAndClear();
+
+            // when
+            long total = userApplicationRepository
+                    .sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED);
+
+            // then
+            assertThat(total).isZero();
+        }
     }
 
     // 지원 "완료"로 간주하는 상태 집합 (MyPageService 기준)
@@ -115,7 +148,7 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             List.of(Status.PENDING_RESULT, Status.DOCUMENT_PASSED, Status.FINAL_PASSED);
 
     @Nested
-    @DisplayName("countByUserAndStatusIn (완료 건수)")
+    @DisplayName("countByUserAndStatusInAndDeletedAtIsNull (완료 건수)")
     class CountByUserAndStatusIn {
 
         @Test
@@ -130,7 +163,7 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             flushAndClear();
 
             // when
-            long count = userApplicationRepository.countByUserAndStatusIn(user, COMPLETED_STATUSES);
+            long count = userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(user, COMPLETED_STATUSES);
 
             // then
             assertThat(count).isEqualTo(3L);
@@ -146,15 +179,34 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             flushAndClear();
 
             // when
-            long count = userApplicationRepository.countByUserAndStatusIn(user, COMPLETED_STATUSES);
+            long count = userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(user, COMPLETED_STATUSES);
 
             // then
             assertThat(count).isZero();
         }
+
+        @Test
+        @DisplayName("soft delete 된 이력은 완료 건수에서 제외된다")
+        void 삭제된_이력은_완료건수에서_제외된다() {
+            // given: 완료 2건 + 삭제된 완료 2건 + NONE 1건
+            User user = persistUser("completed-deleted@test.com");
+            persistApplication(user, persistScholarship("장학금1"), Status.PENDING_RESULT);
+            persistApplication(user, persistScholarship("장학금2"), Status.FINAL_PASSED);
+            persistDeletedApplication(user, persistScholarship("장학금3"), Status.DOCUMENT_PASSED);
+            persistDeletedApplication(user, persistScholarship("장학금4"), Status.FINAL_PASSED);
+            persistApplication(user, persistScholarship("장학금5"), Status.NONE);
+            flushAndClear();
+
+            // when
+            long count = userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(user, COMPLETED_STATUSES);
+
+            // then: 삭제되지 않은 완료 2건만 카운트된다
+            assertThat(count).isEqualTo(2L);
+        }
     }
 
     @Nested
-    @DisplayName("countByUserAndStatus (대기 건수)")
+    @DisplayName("countByUserAndStatusAndDeletedAtIsNull (대기 건수)")
     class CountByUserAndStatus {
 
         @Test
@@ -170,10 +222,27 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
             flushAndClear();
 
             // when
-            long count = userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT);
+            long count = userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT);
 
             // then
             assertThat(count).isEqualTo(2L);
+        }
+
+        @Test
+        @DisplayName("soft delete 된 이력은 대기 건수에서 제외된다")
+        void 삭제된_이력은_대기건수에서_제외된다() {
+            // given: PENDING_RESULT 1건 + 삭제된 PENDING_RESULT 2건
+            User user = persistUser("pending-deleted@test.com");
+            persistApplication(user, persistScholarship("장학금1"), Status.PENDING_RESULT);
+            persistDeletedApplication(user, persistScholarship("장학금2"), Status.PENDING_RESULT);
+            persistDeletedApplication(user, persistScholarship("장학금3"), Status.PENDING_RESULT);
+            flushAndClear();
+
+            // when
+            long count = userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT);
+
+            // then
+            assertThat(count).isEqualTo(1L);
         }
     }
 
@@ -199,6 +268,13 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
                 .status(status)
                 .build();
         return em.persist(application);
+    }
+
+    /** soft delete 된(deletedAt 이 채워진) 지원 이력. 집계에서 제외되어야 한다. */
+    private UserApplication persistDeletedApplication(User user, Post post, Status status) {
+        UserApplication application = persistApplication(user, post, status);
+        application.softDelete();
+        return application;
     }
 
     private Scholarship persistScholarship(String supportAmount) {
@@ -233,5 +309,6 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
         ReflectionTestUtils.setField(post, "applicationMethod", "온라인 접수");
         ReflectionTestUtils.setField(post, "applicationUrl", "https://example.com");
         ReflectionTestUtils.setField(post, "createdAt", LocalDateTime.of(2026, 1, 1, 0, 0));
+        ReflectionTestUtils.setField(post, "imageUrl", "https://example.com/image.png");
     }
 }

@@ -86,9 +86,9 @@ class MyPageServiceTest {
             given(userDetailRepository.findByUser(user)).willReturn(Optional.of(userDetail));
 
             ArgumentCaptor<List<Status>> statusesCaptor = ArgumentCaptor.forClass(List.class);
-            given(userApplicationRepository.countByUserAndStatusIn(eq(user), statusesCaptor.capture()))
+            given(userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(eq(user), statusesCaptor.capture()))
                     .willReturn(3L);
-            given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
+            given(userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT))
                     .willReturn(0L);
             given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
                     .willReturn(0L);
@@ -110,9 +110,9 @@ class MyPageServiceTest {
             // given
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
             given(userDetailRepository.findByUser(user)).willReturn(Optional.of(userDetail));
-            given(userApplicationRepository.countByUserAndStatusIn(eq(user), anyList()))
+            given(userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(eq(user), anyList()))
                     .willReturn(0L);
-            given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
+            given(userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT))
                     .willReturn(2L);
             given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
                     .willReturn(0L);
@@ -122,7 +122,7 @@ class MyPageServiceTest {
 
             // then
             assertThat(response.activitySummary().pendingResultCount()).isEqualTo(2L);
-            verify(userApplicationRepository).countByUserAndStatus(user, Status.PENDING_RESULT);
+            verify(userApplicationRepository).countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT);
         }
 
         @Test
@@ -131,9 +131,9 @@ class MyPageServiceTest {
             // given
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
             given(userDetailRepository.findByUser(user)).willReturn(Optional.of(userDetail));
-            given(userApplicationRepository.countByUserAndStatusIn(eq(user), anyList()))
+            given(userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(eq(user), anyList()))
                     .willReturn(0L);
-            given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
+            given(userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT))
                     .willReturn(0L);
             given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
                     .willReturn(0L);
@@ -153,9 +153,9 @@ class MyPageServiceTest {
             // given
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
             given(userDetailRepository.findByUser(user)).willReturn(Optional.of(userDetail));
-            given(userApplicationRepository.countByUserAndStatusIn(eq(user), anyList()))
+            given(userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(eq(user), anyList()))
                     .willReturn(0L);
-            given(userApplicationRepository.countByUserAndStatus(user, Status.PENDING_RESULT))
+            given(userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(user, Status.PENDING_RESULT))
                     .willReturn(0L);
             given(userApplicationRepository.sumFinalPassedScholarshipAmount(user, Status.FINAL_PASSED))
                     .willReturn(3_000_000L);

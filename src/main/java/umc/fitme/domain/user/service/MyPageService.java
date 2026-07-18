@@ -37,12 +37,12 @@ public class MyPageService {
         UserDetail userDetail = userDetailRepository.findByUser(user)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_DETAIL_NOT_FOUND));
 
-        long completedApplicationCount = userApplicationRepository.countByUserAndStatusIn(
+        long completedApplicationCount = userApplicationRepository.countByUserAndStatusInAndDeletedAtIsNull(
                 user,
                 List.of(Status.PENDING_RESULT, Status.DOCUMENT_PASSED, Status.FINAL_PASSED)
         );
 
-        long pendingResultCount = userApplicationRepository.countByUserAndStatus(
+        long pendingResultCount = userApplicationRepository.countByUserAndStatusAndDeletedAtIsNull(
                 user, Status.PENDING_RESULT
         );
 
