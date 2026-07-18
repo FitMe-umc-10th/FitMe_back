@@ -8,7 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
+import umc.fitme.domain.notify.entity.DeadlineEmailNotificationLog;
 import umc.fitme.domain.notify.enums.DeadlineReminderType;
+import umc.fitme.domain.notify.enums.EmailSendStatus;
 import umc.fitme.domain.notify.repository.DeadlineEmailNotificationLogRepository;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 import umc.fitme.domain.notify.service.DeadlineEmailSender;
@@ -22,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -103,5 +106,44 @@ class DeadlineEmailNotificationServiceTest {
                 .imageUrl("https://example.com/image.png")
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Test
+    @DisplayName("이메일 발송에 성공하면 SUCCESS 이력을 저장한다")
+    void sendDeadlineReminderEmails_saveSuccessLog() {
+        LocalDate today = LocalDate.of(2026, 7, 18);
+        User user = User.builder().id(1L).email("user@example.com").build();
+        Post post = createPost(1L, today.plusDays(7));
+
+        DeadlineEmailReminderTarget target =
+                new DeadlineEmailReminderTarget(user, post, "notify@example.com");
+
+        when(userSaveRepository.findDeadlineEmailReminderTargets(anyList()))
+                .thenReturn(List.of(target));
+
+        when(deadlineEmailNotificationLogRepository.existsByUserAndPostAndReminderTypeAndApplyEndAt(
+                eq(user),
+                eq(post),
+                eq(DeadlineReminderType.D_MINUS_7),
+                eq(post.getApplyEndAt())
+        )).thenReturn(false);
+
+        deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
+
+        verify(deadlineEmailSender)
+                .send("notify@example.com", post, DeadlineReminderType.D_MINUS_7);
+
+        ArgumentCaptor<DeadlineEmailNotificationLog> captor =
+                ArgumentCaptor.forClass(DeadlineEmailNotificationLog.class);
+
+        verify(deadlineEmailNotificationLogRepository).save(captor.capture());
+
+        DeadlineEmailNotificationLog log = captor.getValue();
+
+        assertSame(user, log.getUser());
+        assertSame(post, log.getPost());
+        assertEquals(DeadlineReminderType.D_MINUS_7, log.getReminderType());
+        assertEquals(post.getApplyEndAt(), log.getApplyEndAt());
+        assertEquals(EmailSendStatus.SUCCESS, log.getStatus());
     }
 }
