@@ -18,9 +18,12 @@ import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -58,10 +61,12 @@ public class OnboardingService {
         userDetailRepository.save(userDetail);
 
         List<String> interestNames = mergeInterestNames(request);
-        List<UserInterest> userInterests = interestNames.stream()
-                .map(name -> UserInterest.builder()
+        List<Interest> interests = resolveInterests(interestNames);
+
+        List<UserInterest> userInterests = interests.stream()
+                .map(interest -> UserInterest.builder()
                         .user(user)
-                        .interest(getOrCreateInterest(name))
+                        .interest(interest)
                         .build())
                 .toList();
         userInterestRepository.saveAll(userInterests);
@@ -97,7 +102,7 @@ public class OnboardingService {
     private int parseIncomeLevel(String incomeLevel) {
         Matcher matcher = INCOME_LEVEL_DIGIT_PATTERN.matcher(incomeLevel);
         if (!matcher.find()) {
-            throw new OnboardingException(OnboardingErrorCode.MISSING_REQUIRED_FIELD);
+            throw new OnboardingException(OnboardingErrorCode.INVALID_INCOME_LEVEL);
         }
         return Integer.parseInt(matcher.group());
     }
@@ -113,10 +118,26 @@ public class OnboardingService {
                 .toList();
     }
 
-    private Interest getOrCreateInterest(String interestName) {
-        return interestRepository.findByInterestName(interestName)
-                .orElseGet(() -> interestRepository.save(
-                        Interest.builder().interestName(interestName).build()
-                ));
+    private List<Interest> resolveInterests(List<String> interestNames) {
+        if (interestNames.isEmpty()) {
+            return List.of();
+        }
+
+        List<Interest> existingInterests = interestRepository.findByInterestNameIn(interestNames);
+        Set<String> existingNames = existingInterests.stream()
+                .map(Interest::getInterestName)
+                .collect(Collectors.toSet());
+
+        List<Interest> newInterests = interestNames.stream()
+                .filter(name -> !existingNames.contains(name))
+                .map(name -> Interest.builder().interestName(name).build())
+                .toList();
+
+        List<Interest> allInterests = new ArrayList<>(existingInterests);
+        if (!newInterests.isEmpty()) {
+            allInterests.addAll(interestRepository.saveAll(newInterests));
+        }
+
+        return allInterests;
     }
 }

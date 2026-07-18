@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,10 +66,8 @@ class OnboardingServiceTest {
         Interest backend = Interest.builder().interestName("백엔드").build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(interestRepository.findByInterestName("개발")).willReturn(Optional.of(develop));
-        given(interestRepository.findByInterestName("AI")).willReturn(Optional.of(ai));
-        given(interestRepository.findByInterestName("백엔드")).willReturn(Optional.empty());
-        given(interestRepository.save(any(Interest.class))).willReturn(backend);
+        given(interestRepository.findByInterestNameIn(anyList())).willReturn(List.of(develop, ai));
+        given(interestRepository.saveAll(anyList())).willReturn(List.of(backend));
 
         OnboardingResponseDto response = onboardingService.complete(userId, request);
 
@@ -87,7 +86,8 @@ class OnboardingServiceTest {
         verify(userInterestRepository).saveAll(userInterestCaptor.capture());
         assertThat(userInterestCaptor.getValue()).hasSize(3);
 
-        verify(interestRepository).save(any(Interest.class));
+        verify(interestRepository).findByInterestNameIn(anyList());
+        verify(interestRepository).saveAll(anyList());
     }
 
     @Test
