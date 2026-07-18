@@ -55,12 +55,12 @@ public class EmailConfig {
         mailSender.setUsername(username);
         mailSender.setPassword(password);
         mailSender.setDefaultEncoding("UTF-8");
-        mailSender.setJavaMailProperties(getmailProperties());
+        mailSender.setJavaMailProperties(getMailProperties());
 
         return mailSender;
     }
 
-    private Properties getmailProperties(){
+    private Properties getMailProperties(){
         Properties props = new Properties();
         props.setProperty("mail.smtp.auth", String.valueOf(auth));
         props.setProperty("mail.smtp.starttls.enable", String.valueOf(starttlsEnable));
