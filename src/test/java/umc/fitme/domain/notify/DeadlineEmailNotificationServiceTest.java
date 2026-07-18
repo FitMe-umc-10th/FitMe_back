@@ -146,4 +146,54 @@ class DeadlineEmailNotificationServiceTest {
         assertEquals(post.getApplyEndAt(), log.getApplyEndAt());
         assertEquals(EmailSendStatus.SUCCESS, log.getStatus());
     }
+
+    @Test
+    @DisplayName("일부 이메일 발송에 실패해도 실패 이력을 저장하고 다음 대상 발송을 계속한다")
+    void sendDeadlineReminderEmails_continueAfterFailure() {
+        LocalDate today = LocalDate.of(2026, 7, 18);
+
+        User firstUser = User.builder().id(1L).email("first@example.com").build();
+        Post firstPost = createPost(1L, today.plusDays(7));
+        DeadlineEmailReminderTarget firstTarget =
+                new DeadlineEmailReminderTarget(firstUser, firstPost, "first-notify@example.com");
+
+        User secondUser = User.builder().id(2L).email("second@example.com").build();
+        Post secondPost = createPost(2L, today.plusDays(3));
+        DeadlineEmailReminderTarget secondTarget =
+                new DeadlineEmailReminderTarget(secondUser, secondPost, "second-notify@example.com");
+
+        when(userSaveRepository.findDeadlineEmailReminderTargets(anyList()))
+                .thenReturn(List.of(firstTarget, secondTarget));
+
+        when(deadlineEmailNotificationLogRepository.existsByUserAndPostAndReminderTypeAndApplyEndAt(
+                any(User.class),
+                any(Post.class),
+                any(DeadlineReminderType.class),
+                any(LocalDate.class)
+        )).thenReturn(false);
+
+        doThrow(new RuntimeException("smtp failed"))
+                .doNothing()
+                .when(deadlineEmailSender)
+                .send(anyString(), any(Post.class), any(DeadlineReminderType.class));
+
+        deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
+
+        verify(deadlineEmailSender, times(2))
+                .send(anyString(), any(Post.class), any(DeadlineReminderType.class));
+
+        ArgumentCaptor<DeadlineEmailNotificationLog> captor =
+                ArgumentCaptor.forClass(DeadlineEmailNotificationLog.class);
+
+        verify(deadlineEmailNotificationLogRepository, times(2)).save(captor.capture());
+
+        List<DeadlineEmailNotificationLog> logs = captor.getAllValues();
+
+        assertEquals(EmailSendStatus.FAILED, logs.get(0).getStatus());
+        assertEquals(DeadlineReminderType.D_MINUS_7, logs.get(0).getReminderType());
+        assertEquals("smtp failed", logs.get(0).getErrorMessage());
+
+        assertEquals(EmailSendStatus.SUCCESS, logs.get(1).getStatus());
+        assertEquals(DeadlineReminderType.D_MINUS_3, logs.get(1).getReminderType());
+    }
 }
