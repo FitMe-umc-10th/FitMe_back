@@ -46,7 +46,7 @@ public class AuthController {
      */
     @Operation(summary = "이메일 인증 확인 API", description = "이메일 인증 번호를 검증하는 API")
     @PostMapping("/email-verifications/confirm")
-    public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerityConfirm(
+    public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerifyConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
     ){
         BaseSuccessCode successCode = AuthSuccessCode.CONFIRM_OK;
