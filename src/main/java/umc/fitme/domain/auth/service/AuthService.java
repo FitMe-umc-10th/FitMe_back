@@ -11,7 +11,7 @@ import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.user.repository.EmailVerificationRepository;
+import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 
 import java.security.SecureRandom;
@@ -72,6 +72,11 @@ public class AuthService {
         // 이메일 확인
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
+
+        // 인증 완료 코드 재사용 방지
+        if (emailVerification.getVerifiedAt() != null){
+            throw new AuthException(AuthErrorCode.CODE_ALREADY_USED);
+        }
 
         // 인증번호 만료 시 에러
         if (emailVerification.isExpired()){
