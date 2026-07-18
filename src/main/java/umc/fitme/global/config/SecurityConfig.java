@@ -31,7 +31,9 @@ public class SecurityConfig {
     private final String[] authenticatedUris = {
             "/api/v1/user-applications",
             "/api/v1/user-applications/**",
-            "/api/v1/onboarding"
+            "/api/v1/onboarding",
+            "/api/v1/mypage",
+            "/api/v1/mypage/**"
     };
 
     private final String[] allowUris = {
