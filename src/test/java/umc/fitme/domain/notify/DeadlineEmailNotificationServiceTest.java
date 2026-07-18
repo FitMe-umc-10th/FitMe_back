@@ -7,18 +7,23 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
+import umc.fitme.domain.notify.enums.DeadlineReminderType;
 import umc.fitme.domain.notify.repository.DeadlineEmailNotificationLogRepository;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 import umc.fitme.domain.notify.service.DeadlineEmailSender;
+import umc.fitme.domain.post.entity.Post;
+import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.repository.UserSaveRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DeadlineEmailNotificationServiceTest {
@@ -55,5 +60,48 @@ class DeadlineEmailNotificationServiceTest {
                 ),
                 captor.getValue()
         );
+    }
+
+    @Test
+    @DisplayName("이미 발송 이력이 있으면 이메일을 보내지 않는다")
+    void sendDeadlineReminderEmails_skipAlreadySentTarget() {
+        LocalDate today = LocalDate.of(2026, 7, 18);
+        User user = User.builder().id(1L).email("user@example.com").build();
+        Post post = createPost(1L, today.plusDays(7));
+
+        DeadlineEmailReminderTarget target =
+                new DeadlineEmailReminderTarget(user, post, "notify@example.com");
+
+        when(userSaveRepository.findDeadlineEmailReminderTargets(anyList()))
+                .thenReturn(List.of(target));
+
+        when(deadlineEmailNotificationLogRepository.existsByUserAndPostAndReminderTypeAndApplyEndAt(
+                eq(user),
+                eq(post),
+                eq(DeadlineReminderType.D_MINUS_7),
+                eq(post.getApplyEndAt())
+        )).thenReturn(true);
+
+        deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
+
+        verify(deadlineEmailSender, never())
+                .send(anyString(), any(Post.class), any(DeadlineReminderType.class));
+        verify(deadlineEmailNotificationLogRepository, never()).save(any());
+    }
+
+    private Post createPost(Long id, LocalDate applyEndAt) {
+        return Post.builder()
+                .id(id)
+                .postType(PostType.SCHOLARSHIP)
+                .title("Test Post")
+                .organizer("Test Organizer")
+                .applyStartAt(applyEndAt.minusDays(10))
+                .applyEndAt(applyEndAt)
+                .summary("summary")
+                .applicationMethod("online")
+                .applicationUrl("https://example.com/apply")
+                .imageUrl("https://example.com/image.png")
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 }
