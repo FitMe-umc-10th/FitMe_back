@@ -14,7 +14,7 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI swagger(){
-        Info info = new Info().title("핏미(fitme)").description("백엔드 팀").version("0.0.1");
+        Info info = new Info().title("FitMe API").description("FitMe 백엔드 API 문서").version("0.0.1");
 
         // JWT 토큰 헤더 방식
         String securityScheme = "JWT TOKEN";
