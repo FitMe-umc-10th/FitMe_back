@@ -2,7 +2,6 @@ package umc.fitme.domain.notify.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import umc.fitme.domain.notify.entity.DeadlineEmailNotificationLog;
 import umc.fitme.domain.notify.enums.DeadlineReminderType;
@@ -18,14 +17,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class DeadlineEmailNotificationService {
 
     private final UserSaveRepository userSaveRepository;
     private final DeadlineEmailNotificationLogRepository deadlineEmailNotificationLogRepository;
     private final DeadlineEmailSender deadlineEmailSender;
 
-    @Transactional
     public void sendDeadlineReminderEmails(LocalDate today) {
         List<LocalDate> applyEndDates = Arrays.stream(DeadlineReminderType.values())
                 .map(type -> today.plusDays(type.getDaysBefore()))
