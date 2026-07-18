@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -220,12 +218,12 @@ class MyPageProfileServiceTest {
             assertThat(response.profileImageUrl()).isEqualTo("http://img/old.png");
 
             // then: 관심분야 교체 로직은 타지 않는다
-            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).deleteAll(anyList());
             verify(userInterestRepository, never()).saveAll(anyList());
         }
 
         @Test
-        @DisplayName("모든 필드를 함께 전달하면 스칼라·이미지가 갱신되고 관심분야가 전체 교체되며 추천이 재계산된다")
+        @DisplayName("모든 필드를 함께 전달하면 스칼라·이미지가 갱신되고 관심분야가 diff 로 반영되며 추천이 재계산된다")
         void 동시_수정() {
             // given: 모든 필드 전달, 관심분야는 마케팅(1)·디자인(3) 선택
             User user = user();
@@ -236,12 +234,12 @@ class MyPageProfileServiceTest {
             List<Long> requestedIds = List.of(1L, 3L);
             given(interestRepository.findAllById(requestedIds))
                     .willReturn(List.of(marketing(), design()));
-            // 응답 조립: 전체 목록 + 교체 후 선택 상태(마케팅·디자인)
             given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
-            given(userInterestRepository.findAllByUser(user)).willReturn(List.of(
-                    userInterest(user, marketing()),
-                    userInterest(user, design())
-            ));
+            // 1번째 호출: diff 기준이 되는 현재 상태(마케팅) / 2번째 호출: 응답 조립용 반영 후 상태
+            given(userInterestRepository.findAllByUser(user)).willReturn(
+                    List.of(userInterest(user, marketing())),
+                    List.of(userInterest(user, marketing()), userInterest(user, design()))
+            );
 
             MyPageProfileRequestDto.UpdateProfileRequest request =
                     new MyPageProfileRequestDto.UpdateProfileRequest(
@@ -262,9 +260,12 @@ class MyPageProfileServiceTest {
             assertThat(response.region()).isEqualTo("부산");
             assertThat(response.profileImageUrl()).isEqualTo("http://img/new.png");
 
-            // then: 관심분야 전체 교체 (삭제 후 저장)
-            verify(userInterestRepository).deleteAllByUser(user);
-            verify(userInterestRepository).saveAll(anyList());
+            // then: 이미 있던 마케팅(1)은 건드리지 않고 디자인(3)만 추가한다
+            verify(userInterestRepository, never()).deleteAll(anyList());
+            verify(userInterestRepository).saveAll(userInterestsCaptor.capture());
+            assertThat(userInterestsCaptor.getValue())
+                    .extracting(ui -> ui.getInterest().getId())
+                    .containsExactly(3L);
 
             // then: 응답 interests 는 전체 목록 + 요청한 것만 selected=true (순서 보장)
             assertThat(response.interests())
@@ -297,7 +298,7 @@ class MyPageProfileServiceTest {
                     .isEqualTo(UserErrorCode.PROFILE_UPDATE_EMPTY);
 
             // then: 관심분야 교체·추천 재계산·엔티티 변경이 전혀 없다
-            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).deleteAll(anyList());
             verify(userInterestRepository, never()).saveAll(anyList());
             verify(recommendationRefreshService, never()).refresh(any());
             assertThat(detail.getGpa()).isEqualTo(3.5f);
@@ -329,7 +330,7 @@ class MyPageProfileServiceTest {
                     .isEqualTo(UserErrorCode.INTEREST_NOT_FOUND);
 
             // then: 삭제·저장·추천 재계산이 모두 일어나지 않는다
-            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).deleteAll(anyList());
             verify(userInterestRepository, never()).saveAll(anyList());
             verify(recommendationRefreshService, never()).refresh(any());
         }
@@ -346,8 +347,11 @@ class MyPageProfileServiceTest {
                     .willReturn(List.of(planning()));
             // 응답 조립용
             given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
-            given(userInterestRepository.findAllByUser(user))
-                    .willReturn(List.of(userInterest(user, planning())));
+            // 1번째: 현재 선택 없음 / 2번째: 응답 조립용 반영 후 상태
+            given(userInterestRepository.findAllByUser(user)).willReturn(
+                    List.of(),
+                    List.of(userInterest(user, planning()))
+            );
 
             MyPageProfileRequestDto.UpdateProfileRequest request =
                     new MyPageProfileRequestDto.UpdateProfileRequest(
@@ -364,9 +368,10 @@ class MyPageProfileServiceTest {
         }
 
         @Test
-        @DisplayName("관심분야 교체는 deleteAllByUser 후 saveAll 순서로 처리하며 개별 save 는 쓰지 않는다")
-        void 관심분야_교체_순서() {
-            // given: interests 만 변경 ([1, 3])
+        @DisplayName("관심분야 diff: 추가·삭제·유지가 섞이면 추가분만 saveAll, 삭제분만 deleteAll 하고 유지분은 건드리지 않는다")
+        void 관심분야_diff_추가_삭제_유지() {
+            // given: 현재 마케팅(1)·기획(2) → 요청 마케팅(1)·디자인(3)
+            //        유지=마케팅(1), 삭제=기획(2), 추가=디자인(3)
             User user = user();
             UserDetail detail = detail(user);
             given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
@@ -376,9 +381,51 @@ class MyPageProfileServiceTest {
             given(interestRepository.findAllById(requestedIds))
                     .willReturn(List.of(marketing(), design()));
             given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+
+            UserInterest keptMarketing = userInterest(user, marketing());
+            UserInterest removedPlanning = userInterest(user, planning());
+            given(userInterestRepository.findAllByUser(user)).willReturn(
+                    List.of(keptMarketing, removedPlanning),
+                    List.of(keptMarketing, userInterest(user, design()))
+            );
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(null, null, null, requestedIds, null);
+
+            // when
+            myPageProfileService.updateProfile(USER_ID, request);
+
+            // then: 삭제 대상은 기획(2) 하나뿐이며, 조회해 온 영속 엔티티를 그대로 넘긴다
+            verify(userInterestRepository).deleteAll(userInterestsCaptor.capture());
+            assertThat(userInterestsCaptor.getValue()).containsExactly(removedPlanning);
+
+            // then: 추가 대상은 디자인(3) 하나뿐 (유지되는 마케팅은 재삽입하지 않는다)
+            verify(userInterestRepository).saveAll(userInterestsCaptor.capture());
+            assertThat(userInterestsCaptor.getValue())
+                    .extracting(ui -> ui.getInterest().getId())
+                    .containsExactly(3L);
+
+            // then: 전량 삭제나 개별 save 는 쓰지 않는다
+            verify(userInterestRepository, never()).deleteAllByUser(any());
+            verify(userInterestRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("관심분야 diff: 요청이 현재 상태와 같으면 삭제도 저장도 하지 않는다")
+        void 관심분야_diff_변화_없음() {
+            // given: 현재 마케팅(1)·기획(2), 요청도 동일
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
+
+            List<Long> requestedIds = List.of(1L, 2L);
+            given(interestRepository.findAllById(requestedIds))
+                    .willReturn(List.of(marketing(), planning()));
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
             given(userInterestRepository.findAllByUser(user)).willReturn(List.of(
                     userInterest(user, marketing()),
-                    userInterest(user, design())
+                    userInterest(user, planning())
             ));
 
             MyPageProfileRequestDto.UpdateProfileRequest request =
@@ -387,18 +434,42 @@ class MyPageProfileServiceTest {
             // when
             myPageProfileService.updateProfile(USER_ID, request);
 
-            // then: 삭제 → 저장 순서
-            InOrder inOrder = inOrder(userInterestRepository);
-            inOrder.verify(userInterestRepository).deleteAllByUser(user);
-            inOrder.verify(userInterestRepository).saveAll(userInterestsCaptor.capture());
+            // then: 불필요한 쓰기가 전혀 나가지 않는다
+            verify(userInterestRepository, never()).deleteAll(anyList());
+            verify(userInterestRepository, never()).saveAll(anyList());
+        }
 
-            // then: 개별 save 는 호출하지 않는다
-            verify(userInterestRepository, never()).save(any());
+        @Test
+        @DisplayName("관심분야 diff: 요청이 현재의 부분집합이면 빠진 것만 삭제하고 저장은 하지 않는다")
+        void 관심분야_diff_삭제만() {
+            // given: 현재 마케팅(1)·기획(2) → 요청 마케팅(1)
+            User user = user();
+            UserDetail detail = detail(user);
+            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userDetailRepository.findByUser(user)).willReturn(Optional.of(detail));
 
-            // then: 저장된 관심분야 id 목록 내용 검증
-            assertThat(userInterestsCaptor.getValue())
-                    .extracting(ui -> ui.getInterest().getId())
-                    .containsExactly(1L, 3L);
+            List<Long> requestedIds = List.of(1L);
+            given(interestRepository.findAllById(requestedIds))
+                    .willReturn(List.of(marketing()));
+            given(interestRepository.findAllByOrderByIdAsc()).willReturn(allInterests());
+
+            UserInterest keptMarketing = userInterest(user, marketing());
+            UserInterest removedPlanning = userInterest(user, planning());
+            given(userInterestRepository.findAllByUser(user)).willReturn(
+                    List.of(keptMarketing, removedPlanning),
+                    List.of(keptMarketing)
+            );
+
+            MyPageProfileRequestDto.UpdateProfileRequest request =
+                    new MyPageProfileRequestDto.UpdateProfileRequest(null, null, null, requestedIds, null);
+
+            // when
+            myPageProfileService.updateProfile(USER_ID, request);
+
+            // then
+            verify(userInterestRepository).deleteAll(userInterestsCaptor.capture());
+            assertThat(userInterestsCaptor.getValue()).containsExactly(removedPlanning);
+            verify(userInterestRepository, never()).saveAll(anyList());
         }
     }
 }

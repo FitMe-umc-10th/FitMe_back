@@ -5,9 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 import umc.fitme.global.entity.BaseEntity;
 
 @Entity
+@DynamicUpdate
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -38,9 +40,20 @@ public class UserDetail extends BaseEntity {
     @Column(name = "profile_image_url", nullable = true)
     private String profileImageUrl;
 
-    public void updateProfile(Float gpa, int incomeBracket, String region) {
+    /** 동시 수정 시 lost update 를 막기 위한 낙관적 락 버전 */
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    public void updateGpa(Float gpa) {
         this.gpa = gpa;
+    }
+
+    public void updateIncomeBracket(int incomeBracket) {
         this.incomeBracket = incomeBracket;
+    }
+
+    public void updateRegion(String region) {
         this.region = region;
     }
 
