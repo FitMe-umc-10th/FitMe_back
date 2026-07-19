@@ -92,23 +92,23 @@ public class AuthService {
                 .build();
     }
 
+    /***
+     * 함수 기능: 이메일 기반 회원가입을 진행한다.
+     * @param dto 회원가입 시 필요한 정보
+     * @return 가입한 이메일과 시간
+     */
     public SignUpDto.SignUpRes signUp(SignUpDto.SignUpReq dto) {
+
+        // 이미 가입된 이메일로 회원가입을 시도 할 경우, "이미 가입된 이메일입니다" 반환
+        if (userRepository.existsByEmail(dto.email())){
+            throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
+        }
 
         // 이메일 인증 여부 검증
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
         if (emailVerification.getVerifiedAt() == null){
             throw new AuthException(AuthErrorCode.NEED_TO_VERIFY);
-        }
-
-        // 비밀번호 일치 검증
-        if (!dto.password().equals(dto.passwordConfirm())){
-            throw new AuthException(AuthErrorCode.PASSWORD_MISMATCH);
-        }
-
-        // 개인정보 약관 동의 여부 검증
-        if (!dto.privacyPolicyAgreed()){
-            throw new AuthException(AuthErrorCode.NEED_TO_AGREE);
         }
 
         // 비밀번호 암호화 후 DB에 저장 로직
