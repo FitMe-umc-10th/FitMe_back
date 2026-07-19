@@ -21,7 +21,7 @@ public enum AuthErrorCode implements BaseErrorCode {
     NEED_TO_VERIFY(HttpStatus.BAD_REQUEST,
             "AUTH400_4",
             "이메일 인증을 먼저 완료해주세요."),
-    PASSWORD_MISTMATCH(HttpStatus.BAD_REQUEST,
+    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST,
             "AUTH400_5",
             "비밀번호가 일치하지 않습니다."),
     NEED_TO_AGREE(HttpStatus.BAD_REQUEST,
