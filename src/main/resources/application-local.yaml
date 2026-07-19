@@ -22,4 +22,3 @@ app:
 logging:
   level:
     org.springframework.security: debug
-
