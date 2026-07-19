@@ -1,11 +1,19 @@
 package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.util.ScholarshipAmountParser;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@NoArgsConstructor
+@SuperBuilder
 @DiscriminatorValue("scholarship")
 public class Scholarship extends Post{
 
@@ -26,9 +34,50 @@ public class Scholarship extends Post{
     @Column(name = "support_amount_value")
     private Long supportAmountValue;
 
+    // 한국장학재단 CSV 원본 row를 식별하기 위한 키 (운영기관+상품명+상품구분+신청기간 조합)
+    @Column(name = "source_key", unique = true)
+    private String sourceKey;
+
+    // CSV 동기화 시 이번 회차에 존재하지 않으면 false로 전환됨
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @Column(name = "last_synced_at")
+    private LocalDateTime lastSyncedAt;
+
     @PrePersist
     @PreUpdate
     private void updateSupportAmountValue() {
         this.supportAmountValue = ScholarshipAmountParser.parse(supportAmount);
+    }
+
+    /***
+     * 함수 기능: CSV 동기화 시 기존 장학금 데이터를 최신 내용으로 갱신 처리한다.
+     * gradeRequirement/incomeRequirement/regionRequirement는 CSV 원본 컬럼과의
+     * 정확한 매핑이 확인되지 않아 이번 동기화에서는 건드리지 않는다(null로 덮어쓰지 않음).
+     */
+    public void syncFrom(
+            String title,
+            String organizer,
+            LocalDate applyStartAt,
+            LocalDate applyEndAt,
+            String summary,
+            String applicationMethod,
+            String applicationUrl,
+            String supportAmount
+    ) {
+        updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl);
+        this.supportAmount = supportAmount;
+        this.active = true;
+        this.lastSyncedAt = LocalDateTime.now();
+    }
+
+    /***
+     * 함수 기능: 이번 동기화 대상 CSV에 더 이상 존재하지 않는 장학금을 비활성화 처리한다.
+     */
+    public void deactivate() {
+        this.active = false;
+        this.lastSyncedAt = LocalDateTime.now();
     }
 }

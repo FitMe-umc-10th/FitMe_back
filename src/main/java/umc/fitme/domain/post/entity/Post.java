@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.enums.PostType;
 
 import java.time.LocalDate;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 @Table(name = "post")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(
@@ -71,5 +72,24 @@ public class Post {
 
     public void increaseViewCount() {
         this.viewCount += 1;
+    }
+
+    protected void updateCore(
+            String title,
+            String organizer,
+            LocalDate applyStartAt,
+            LocalDate applyEndAt,
+            String summary,
+            String applicationMethod,
+            String applicationUrl
+    ) {
+        this.title = title;
+        this.organizer = organizer;
+        this.applyStartAt = applyStartAt;
+        this.applyEndAt = applyEndAt;
+        this.summary = summary;
+        this.applicationMethod = applicationMethod;
+        this.applicationUrl = applicationUrl;
+        this.updatedAt = LocalDateTime.now();
     }
 }
