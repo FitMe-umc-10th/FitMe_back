@@ -29,7 +29,7 @@ public class SignUpDto {
             String verificationCode,
 
             @NotBlank(message = "비밀번호는 필수 값입니다.")
-            @Size(min = 7, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
+            @Size(min = 7, max = 20, message = "비밀번호는 7자 이상 20자 이하여야 합니다.")
             @Pattern(
                     regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$",
                     message = "비밀번호는 영문자, 숫자, 특수문자를 모두 포함해야 합니다."
@@ -46,6 +46,10 @@ public class SignUpDto {
         @AssertTrue(message = "비밀번호와 비밀번호 확인이 일치하지 않습니다.")
         @Schema(hidden = true)
         public boolean isPasswordMatching(){
+            // @Valid 검증은 정해진 순서가 없기에, 이게 가장 먼저 검증될 경우 그냥 통과시킴 (어차피 @NotBlank에서 걸러진다.)
+            if (password == null || passwordConfirm == null){
+                return true;
+            }
             return password.equals(passwordConfirm);
         }
     }

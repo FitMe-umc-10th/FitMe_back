@@ -111,6 +111,19 @@ public class AuthService {
             throw new AuthException(AuthErrorCode.NEED_TO_VERIFY);
         }
 
+        // 일회용 인증코드가 이미 사용되었다면 "이미 사용된 코드입니다" 반환
+        if (emailVerification.isUsed()){
+            throw new AuthException(AuthErrorCode.CODE_ALREADY_USED);
+        }
+
+        // 만료 시간 검증 (인증 완료된지 30분 후에 회원가입을 진행하면 "이메일 인증 시간이 초과" 반환
+        if (emailVerification.getVerifiedAt().plusMinutes(30).isBefore(LocalDateTime.now())){
+            throw new AuthException(AuthErrorCode.VERIFICATION_EXPIRED);
+        }
+
+        // 해당 인증 번호 사용처리
+        emailVerification.consume();
+
         // 비밀번호 암호화 후 DB에 저장 로직
         String encode = passwordEncoder.encode(dto.password());
 
