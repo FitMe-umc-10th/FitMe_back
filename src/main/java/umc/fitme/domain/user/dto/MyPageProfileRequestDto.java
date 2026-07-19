@@ -15,10 +15,13 @@ public class MyPageProfileRequestDto {
 
     /* PATCH 프로필 부분수정 요청 (모든 필드 nullable) */
     public record UpdateProfileRequest(
-            @DecimalMin("0.00") @DecimalMax("4.50") @Digits(integer = 1, fraction = 2)
+            @DecimalMin(value = "0.00", message = "유효하지 않은 학점입니다.")
+            @DecimalMax(value = "4.50", message = "유효하지 않은 학점입니다.")
+            @Digits(integer = 1, fraction = 2, message = "유효하지 않은 학점입니다.")
             BigDecimal gpa,
 
-            @Min(1) @Max(10)
+            @Min(value = 1, message = "유효하지 않은 소득구간입니다.")
+            @Max(value = 10, message = "유효하지 않은 소득구간입니다.")
             Integer incomeBracket,
 
             String region,
