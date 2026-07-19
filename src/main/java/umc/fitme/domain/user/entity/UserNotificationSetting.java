@@ -37,4 +37,38 @@ public class UserNotificationSetting extends BaseEntity {
     @Column(name = "reminder_enabled", nullable = false)
     @Builder.Default
     private Boolean reminderEnabled = false;
+
+    public static UserNotificationSetting createDefault(User user, String notificationEmail) {
+        return UserNotificationSetting.builder()
+                .user(user)
+                .notificationEmail(notificationEmail)
+                .pushEnabled(false)
+                .recommendedEnabled(false)
+                .reminderEnabled(false)
+                .build();
+    }
+
+    public void updateNotificationEmail(String notificationEmail) {
+        if (notificationEmail != null) {
+            this.notificationEmail = notificationEmail;
+        }
+    }
+
+    public void updatePushEnabled(Boolean pushEnabled) {
+        if (pushEnabled != null) {
+            this.pushEnabled = pushEnabled;
+        }
+    }
+
+    public void updateRecommendedEnabled(Boolean recommendedEnabled) {
+        if (recommendedEnabled != null) {
+            this.recommendedEnabled = recommendedEnabled;
+        }
+    }
+
+    public void updateReminderEnabled(Boolean reminderEnabled) {
+        if (reminderEnabled != null) {
+            this.reminderEnabled = reminderEnabled;
+        }
+    }
 }
