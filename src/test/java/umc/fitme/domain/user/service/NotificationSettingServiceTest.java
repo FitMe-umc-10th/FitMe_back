@@ -13,12 +13,15 @@ import umc.fitme.domain.user.dto.NotificationSettingRequestDto;
 import umc.fitme.domain.user.dto.NotificationSettingResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserNotificationSetting;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserNotificationSettingRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -83,7 +86,7 @@ class NotificationSettingServiceTest {
         void 설정_없으면_기본_생성() {
             // given
             User user = user();
-            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
             given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.empty());
             given(userNotificationSettingRepository.save(any(UserNotificationSetting.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
@@ -113,7 +116,7 @@ class NotificationSettingServiceTest {
         void 설정_있으면_그대로_반환() {
             // given
             User user = user();
-            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
             given(userNotificationSettingRepository.findByUser(user))
                     .willReturn(Optional.of(existingSetting(user)));
 
@@ -130,6 +133,22 @@ class NotificationSettingServiceTest {
             // then: 조회만 했으므로 새로 저장하지 않는다
             verify(userNotificationSettingRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("유저가 없거나 탈퇴한 경우(조회 쿼리가 필터) USER_NOT_FOUND ProjectException 을 던진다")
+        void 유저_없음_또는_탈퇴() {
+            // given: findByIdAndDeletedAtIsNull 이 탈퇴/미존재를 모두 empty 로 걸러낸다
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> notificationSettingService.getMyNotificationSetting(USER_ID))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(UserErrorCode.USER_NOT_FOUND);
+
+            // then: 유저 조회 실패 시 설정에는 접근하지 않는다
+            verify(userNotificationSettingRepository, never()).save(any());
+        }
     }
 
     /* ===================== updateMyNotificationSetting ===================== */
@@ -144,7 +163,7 @@ class NotificationSettingServiceTest {
             // given
             User user = user();
             UserNotificationSetting setting = existingSetting(user);
-            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
             given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
 
             // when
@@ -169,7 +188,7 @@ class NotificationSettingServiceTest {
             // given
             User user = user();
             UserNotificationSetting setting = existingSetting(user);
-            given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
             given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
 
             // when: false 는 "안 보낸 것"이 아니라 "끄라는 값"이므로 반영되어야 한다
@@ -182,6 +201,36 @@ class NotificationSettingServiceTest {
             assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
             assertThat(response.recommendedEnabled()).isTrue();
             assertThat(response.reminderEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("수정할 필드가 하나도 없으면(전 필드 null) NOTIFICATION_UPDATE_EMPTY ProjectException 을 던진다")
+        void 빈_요청() {
+            // given: 빈 요청 검증이 유저 조회보다 먼저라 스텁이 필요 없다 (strict stubbing)
+
+            // when & then
+            assertThatThrownBy(() -> notificationSettingService.updateMyNotificationSetting(
+                    USER_ID, request(null, null, null, null)))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(UserErrorCode.NOTIFICATION_UPDATE_EMPTY);
+
+            // then: 유저 조회에 도달하지 않는다
+            verify(userRepository, never()).findByIdAndDeletedAtIsNull(any());
+        }
+
+        @Test
+        @DisplayName("유저가 없거나 탈퇴한 경우 USER_NOT_FOUND ProjectException 을 던진다")
+        void 유저_없음_또는_탈퇴() {
+            // given
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> notificationSettingService.updateMyNotificationSetting(
+                    USER_ID, request("new@fitme.com", null, null, null)))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(UserErrorCode.USER_NOT_FOUND);
         }
     }
 }
