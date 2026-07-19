@@ -29,6 +29,10 @@ public class EmailVerification {
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
 
+    @Column(name = "is_used")
+    @Builder.Default
+    private boolean isUsed = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -72,5 +76,12 @@ public class EmailVerification {
      */
     public void verify(){
         this.verifiedAt = LocalDateTime.now();
+    }
+
+    /***
+     * 함수 기능: 인증 번호 사용 처리
+     */
+    public void consume() {
+        this.isUsed = true;
     }
 }
