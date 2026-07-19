@@ -5,6 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -31,8 +32,8 @@ public class EmailSender {
             helper.setText(buildContent(code), true);
 
             mailSender.send(message);
-            log.info("인증 메일 발송 성공, to = {}", email);
-        } catch (MessagingException e) {
+            log.info("인증 메일 발송 성공");
+        } catch (MessagingException | MailException e) {
             throw new AuthException(AuthErrorCode.EMAIL_SEND_FAILED);
         }
     }

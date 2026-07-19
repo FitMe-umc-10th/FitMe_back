@@ -16,7 +16,6 @@ import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
-import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 
 @RequestMapping("/api/auth")
 @Tag(name = "이메일 인증 / 이메일 기반 회원가입 / 로그인(소셜x) 관련 API")
@@ -48,7 +47,7 @@ public class AuthController {
      */
     @Operation(summary = "이메일 인증 확인 API", description = "이메일 인증 번호를 검증하는 API")
     @PostMapping("/email-verifications/confirm")
-    public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerityConfirm(
+    public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerifyConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
     ){
         BaseSuccessCode successCode = AuthSuccessCode.CONFIRM_OK;

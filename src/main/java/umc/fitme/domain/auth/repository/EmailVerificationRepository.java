@@ -1,10 +1,9 @@
-package umc.fitme.domain.user.repository;
+package umc.fitme.domain.auth.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import umc.fitme.domain.auth.entity.EmailVerification;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository

@@ -15,7 +15,7 @@ import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.user.repository.EmailVerificationRepository;
+import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
@@ -25,7 +25,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -107,7 +106,7 @@ class AuthServiceTest {
 
             // then - 응답 검증
             assertThat(response.email()).isEqualTo(EMAIL);
-            assertThat(response.expiresInSecondes()).isEqualTo(TTL_SECONDS);
+            assertThat(response.expiresInSeconds()).isEqualTo(TTL_SECONDS);
         }
     }
 

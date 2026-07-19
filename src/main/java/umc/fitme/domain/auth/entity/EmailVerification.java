@@ -54,7 +54,8 @@ public class EmailVerification {
      * @return t/f
      */
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+
+        return !LocalDateTime.now().isBefore(expiresAt); // 딱 시간이 같을때도 false 반환
     }
 
     /***
