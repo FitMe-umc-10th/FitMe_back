@@ -28,8 +28,7 @@ public class NotificationSettingService {
      */
     @Transactional
     public NotificationSettingResponseDto.NotificationSettingResponse getMyNotificationSetting(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
+        User user = getActiveUser(userId);
 
         return NotificationSettingResponseDto.NotificationSettingResponse.from(getOrCreateSetting(user));
     }
@@ -53,8 +52,7 @@ public class NotificationSettingService {
             throw new ProjectException(UserErrorCode.NOTIFICATION_UPDATE_EMPTY);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
+        User user = getActiveUser(userId);
 
         UserNotificationSetting setting = getOrCreateSetting(user);
 
@@ -65,6 +63,17 @@ public class NotificationSettingService {
         setting.updateReminderEnabled(request.reminderEnabled());
 
         return NotificationSettingResponseDto.NotificationSettingResponse.from(setting);
+    }
+
+    /**
+     * 탈퇴하지 않은 사용자를 조회합니다.
+     *
+     * @param userId 대상 사용자 식별자
+     * @return 탈퇴하지 않은 사용자
+     */
+    private User getActiveUser(Long userId) {
+        return userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
     }
 
     /**
