@@ -45,6 +45,14 @@ public class NotificationSettingService {
     public NotificationSettingResponseDto.NotificationSettingResponse updateMyNotificationSetting(
             Long userId, NotificationSettingRequestDto.UpdateNotificationSettingRequest request) {
 
+        // 부분수정인데 아무 필드도 오지 않으면 수정할 항목이 없음
+        if (request.notificationEmail() == null
+                && request.pushEnabled() == null
+                && request.recommendedEnabled() == null
+                && request.reminderEnabled() == null) {
+            throw new ProjectException(UserErrorCode.NOTIFICATION_UPDATE_EMPTY);
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
