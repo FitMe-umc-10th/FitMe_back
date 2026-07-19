@@ -5,6 +5,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
@@ -12,13 +13,12 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class DeadlineEmailNotificationScheduler {
 
-    private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul");
-
     private final DeadlineEmailNotificationService deadlineEmailNotificationService;
+    private final Clock clock;
 
-    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul") // 매일 오전 9시에 실행
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void sendDeadlineReminderEmails() {
-        LocalDate today = LocalDate.now(KOREA_ZONE);
+        LocalDate today = LocalDate.now(clock);
         deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
     }
 }
