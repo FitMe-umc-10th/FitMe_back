@@ -26,4 +26,7 @@ public class Announcement extends BaseEntity {
 
     @Column(name = "title", nullable = false)
     private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String content;
 }
