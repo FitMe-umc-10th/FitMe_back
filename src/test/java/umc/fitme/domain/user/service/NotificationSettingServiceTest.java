@@ -204,6 +204,55 @@ class NotificationSettingServiceTest {
         }
 
         @Test
+        @DisplayName("recommendedEnabled 만 false→true 로 보내면 추천공고 토글만 켜지고 이메일·나머지 토글은 유지된다")
+        void 추천공고_토글_Off_On() {
+            // given: 추천공고 토글만 꺼진 채로 시작하는 설정
+            User user = user();
+            UserNotificationSetting setting = UserNotificationSetting.builder()
+                    .id(100L)
+                    .user(user)
+                    .notificationEmail("old@fitme.com")
+                    .pushEnabled(true)
+                    .recommendedEnabled(false)
+                    .reminderEnabled(true)
+                    .build();
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: recommendedEnabled 만 true 로 켠다
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, null, true, null));
+
+            // then
+            assertThat(response.recommendedEnabled()).isTrue();
+            assertThat(response.pushEnabled()).isTrue();
+            assertThat(response.reminderEnabled()).isTrue();
+            assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
+        }
+
+        @Test
+        @DisplayName("reminderEnabled 만 true→false 로 보내면 마감임박 토글만 꺼지고 이메일·나머지 토글은 유지된다")
+        void 마감임박_토글_On_Off() {
+            // given: 세 토글이 모두 켜져 있는 기존 설정
+            User user = user();
+            UserNotificationSetting setting = existingSetting(user);
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: reminderEnabled 만 false 로 끈다
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, null, null, false));
+
+            // then
+            assertThat(response.reminderEnabled()).isFalse();
+            assertThat(response.pushEnabled()).isTrue();
+            assertThat(response.recommendedEnabled()).isTrue();
+            assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
+        }
+
+        @Test
         @DisplayName("수정할 필드가 하나도 없으면(전 필드 null) NOTIFICATION_UPDATE_EMPTY ProjectException 을 던진다")
         void 빈_요청() {
             // given: 빈 요청 검증이 유저 조회보다 먼저라 스텁이 필요 없다 (strict stubbing)
