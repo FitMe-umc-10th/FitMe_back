@@ -13,7 +13,7 @@ import umc.fitme.global.entity.BaseEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(name = "annoucement")
+@Table(name = "announcement")
 public class Announcement extends BaseEntity {
 
     @Id
