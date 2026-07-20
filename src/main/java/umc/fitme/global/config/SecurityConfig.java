@@ -36,7 +36,9 @@ public class SecurityConfig {
             "/api/v1/user-applications/**",
             "/api/v1/onboarding",
             "/api/v1/mypage",
-            "/api/v1/mypage/**"
+            "/api/v1/mypage/**",
+            "/api/v1/announcements",
+            "/api/v1/announcements/**"
     };
 
     private final String[] allowUris = {
