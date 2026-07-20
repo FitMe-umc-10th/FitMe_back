@@ -19,7 +19,7 @@ import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.global.security.entity.CustomUserDetails;
 
-@Tag(name = "고객센터", description = "FAQ 등 고객센터 관련 API")
+@Tag(name = "고객센터", description = "FAQ 조회 및 1:1 문의 등 고객센터 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
