@@ -38,7 +38,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
 
         // 회원 정보 가져오기
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        log.debug("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
+        log.info("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
 
         // 카카오, 네이버 구분
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
@@ -65,15 +65,15 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         Optional<User> optionalUser = userRepository.findBySocialTypeAndSocialUid(oAuth2Response.getProvider(), oAuth2Response.getProviderId());
 
         User user;
-        if (optionalUser.isPresent()) { // 기존 소셜 회원
+        if (optionalUser.isPresent()) { // 기존 소셜 회원일 경우
             user = optionalUser.get();
             log.info("기존 회원 로그인 성공!");
-        } else { // 이메일로 이미 가입된 계정(폼 로그인)이 있으면 계정 연결
+        } else { // 신규 소셜 회원일 경우
             Optional<User> byEmail = userRepository.findByEmail(oAuth2Response.getEmail());
-            if (byEmail.isPresent()){
-                user = byEmail.get();
-                user.linkSocial(oAuth2Response.getProvider(), oAuth2Response.getProviderId());
-                log.info("기존 폼 로그인 계정에 소셜 정보 연결 완료");
+            if (byEmail.isPresent()){ // 이미 동일한 이메일로 가입된 계정이 존재하면 계정 충돌 예외
+                log.warn("계정 충동: 이미 가입된 이메일입니다. 이메일: {}, 시도한 소셜: {}", oAuth2Response.getEmail(), oAuth2Response.getProvider());
+
+                throw new SocialLoginException(SocialLoginErrorCode.EMAIL_ALREADY_EXISTS);
             } else { // 신규 소셜 회원
                 user = userRepository.save(UserConverter.oAuthResToUser(oAuth2Response));
                 log.info("신규 소셜 회원 가입 완료");
