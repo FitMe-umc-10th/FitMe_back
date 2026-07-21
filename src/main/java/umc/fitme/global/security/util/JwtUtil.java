@@ -9,16 +9,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.user.entity.User;
-import umc.fitme.global.security.entity.CustomUserDetails;
 import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.SocialLoginException;
 import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 @Component
 @Slf4j

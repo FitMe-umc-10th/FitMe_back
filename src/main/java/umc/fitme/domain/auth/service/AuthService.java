@@ -22,7 +22,6 @@ import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.security.entity.CustomUserDetails;
 import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.JwtUtil;
 

@@ -20,7 +20,6 @@ import umc.fitme.global.security.filter.JwtAuthenticationFilter;
 import umc.fitme.global.security.handler.OAuth2FailureHandler;
 import umc.fitme.global.security.handler.OAuth2SuccessHandler;
 import umc.fitme.global.security.service.CustomOAuth2UserService;
-import umc.fitme.global.security.service.CustomUserDetailsService;
 
 @Configuration
 @RequiredArgsConstructor

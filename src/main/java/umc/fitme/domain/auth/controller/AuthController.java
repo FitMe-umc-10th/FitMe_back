@@ -20,9 +20,6 @@ import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
-import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
-import umc.fitme.global.security.entity.CustomUserDetails;
-import umc.fitme.global.security.util.JwtUtil;
 
 @RequestMapping("/api/auth")
 @Tag(name = "이메일 인증 / 이메일 기반 회원가입 / 로그인(소셜x) 관련 API")

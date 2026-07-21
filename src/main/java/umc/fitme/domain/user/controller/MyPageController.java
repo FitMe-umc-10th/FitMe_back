@@ -11,7 +11,7 @@ import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,26 +23,26 @@ public class MyPageController {
 
     @GetMapping
     public ApiResponse<MyPageResponseDto.MyPageResponse> getMyPage(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @AuthenticationPrincipal PrincipalDetails principal
     ) {
         return ApiResponse.onSuccess(
                 GeneralSuccessCode.OK,
-                myPageService.getMyPage(userDetails.getUserId())
+                myPageService.getMyPage(principal.getUser().getId())
         );
     }
 
     @GetMapping("/profile")
     public ApiResponse<MyPageProfileResponseDto.ProfileResponse> getProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal PrincipalDetails principal) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK,
-                myPageProfileService.getProfile(userDetails.getUserId()));
+                myPageProfileService.getProfile(principal.getUser().getId()));
     }
 
     @PatchMapping("/profile")
     public ApiResponse<MyPageProfileResponseDto.UpdateProfileResponse> updateProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @AuthenticationPrincipal PrincipalDetails principal,
             @Valid @RequestBody MyPageProfileRequestDto.UpdateProfileRequest request) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK,
-                myPageProfileService.updateProfile(userDetails.getUserId(), request));
+                myPageProfileService.updateProfile(principal.getUser().getId(), request));
     }
 }
