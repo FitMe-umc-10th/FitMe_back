@@ -66,7 +66,7 @@ spring:
           connection-timeout: 5000 # 클라이언트가 SMTP 서버와 연결하는 시간 (msec)
           write-timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답 대기애햐 하는 시간 (msec)
 
-  server:
+  servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB

@@ -13,7 +13,7 @@ public class WebMvcConfigure implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:5173"
                 )
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
