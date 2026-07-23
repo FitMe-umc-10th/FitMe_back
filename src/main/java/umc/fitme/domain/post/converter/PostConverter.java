@@ -1,9 +1,11 @@
 package umc.fitme.domain.post.converter;
 
+import umc.fitme.domain.post.dto.publicapi.PublicApiScholarshipDTO;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
+import umc.fitme.domain.post.enums.PostType;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -12,36 +14,34 @@ import java.util.stream.Collectors;
 
 public class PostConverter {
 
-    // 1. 단일 엔티티를 인기 공고 DTO로 변환 (기존 작성 코드)
-    public static PostResponseDTO.PopularPostDTO toPopularPostDTO(Post post) {
 
-        //마감일 전환 로직
-        Integer dDayLabel = null;
-        if (post.getApplyEndAt() != null) {
-            dDayLabel = (int) ChronoUnit.DAYS.between(LocalDate.now(), post.getApplyEndAt());
+    private static Integer calculateDDay(LocalDate applyEndAt) {
+        if (applyEndAt == null) {
+            return null;
         }
+        return (int) ChronoUnit.DAYS.between(LocalDate.now(), applyEndAt);
+    }
 
-        //포스터 이미지 URL
-        String extractedThumbnailUrl = null;
+
+    private static String extractThumbnailUrl(Post post) {
         if (post instanceof Contest) {
-            extractedThumbnailUrl = ((Contest) post).getPosterImageUrl();
-        } else {
-            // 이미지 파일이 없는 경우 기본 이미지 URL을 설정
-            extractedThumbnailUrl = "https://default-image-url.com/scholarship.png";
+            return ((Contest) post).getPosterImageUrl();
         }
+        return "https://default-image-url.com/scholarship.png";
+    }
 
+    public static PostResponseDTO.PopularPostDTO toPopularPostDTO(Post post) {
         return PostResponseDTO.PopularPostDTO.builder()
                 .postId(post.getId())
                 .type(post.getPostType().name())
                 .title(post.getTitle())
-                .deadlineLabel(dDayLabel)
-                .thumbnailUrl(extractedThumbnailUrl)
+                .deadlineLabel(calculateDDay(post.getApplyEndAt()))
+                .thumbnailUrl(extractThumbnailUrl(post))
                 .organization(post.getOrganizer())
                 .saved(false)
                 .build();
     }
 
-    // 2. 리스트 형태와 페이징 정보를 포함한 최종 응답 DTO로 변환 (기존 작성 코드)
     public static PostResponseDTO.PopularPostListDTO toPopularPostListDTO(List<Post> postList, boolean hasNext, Long nextCursor) {
         List<PostResponseDTO.PopularPostDTO> postDTOs = postList.stream()
                 .map(PostConverter::toPopularPostDTO)
@@ -56,38 +56,51 @@ public class PostConverter {
     }
 
 
+    public static PostResponseDTO.PostPreviewDTO toPostPreviewDTO(Post post, boolean isSaved) {
+        return PostResponseDTO.PostPreviewDTO.builder()
+                .postId(post.getId())
+                .type(post.getPostType().name())
+                .title(post.getTitle())
+                .deadlineLabel(calculateDDay(post.getApplyEndAt()))
+                .thumbnailUrl(extractThumbnailUrl(post))
+                .organization(post.getOrganizer())
+                .saved(isSaved)
+                .build();
+    }
 
-    //상세 공고 변환 로직
 
-    // 3. 공고 상세 조회 DTO 변환 (평면 데이터 -> 중첩 객체 조립 과정)
+    public static PostResponseDTO.PostPreviewListDTO toPostPreviewListDTO(List<Post> postList, boolean hasNext, Long nextCursor, List<Long> savedPostIds) {
+        List<PostResponseDTO.PostPreviewDTO> postDTOs = postList.stream()
+                .map(post -> {
+                    boolean isSaved = savedPostIds != null && savedPostIds.contains(post.getId());
+                    return toPostPreviewDTO(post, isSaved);
+                })
+                .collect(Collectors.toList());
+
+        return PostResponseDTO.PostPreviewListDTO.builder()
+                .hasNext(hasNext)
+                .nextCursor(nextCursor)
+                .posts(postDTOs)
+                .build();
+    }
+
+
     public static PostResponseDTO.PostDetailDTO toPostDetailDTO(Post post) {
 
-        // D-Day 계산
-        Integer dDayLabel = null;
-        if (post.getApplyEndAt() != null) {
-            dDayLabel = (int) ChronoUnit.DAYS.between(LocalDate.now(), post.getApplyEndAt());
-        }
 
-        //프론트엔드 장학금 상세 정보
         PostResponseDTO.ScholarshipDetailDTO scholarshipDetailDTO = null;
 
-        // 넘어온 Entity가 장학금(Scholarship) 타입일 때만 내부 로직을 실행
-        if (post instanceof Scholarship) {
-            Scholarship scholarship = (Scholarship) post; // 자식 클래스로 캐스팅
 
-
-            // 공공데이터를 받을 때는 PublicApiScholarshipDTO로 평면적으로(Flat) 받았고, DB에도 일렬로 저장되어 있습니다.
-            // 하지만 프론트엔드(웹)에게 응답을 줄 때는 노션 API 명세서에 약속된 대로
-            // 'scholarshipDetail' 이라는 중첩 객체(Nested Object) 상자에 따로 예쁘게 담아줍니다.
+        if (post instanceof Scholarship scholarship) {
             scholarshipDetailDTO = PostResponseDTO.ScholarshipDetailDTO.builder()
-                    .supportAmount(scholarship.getSupportAmount())       // DB에서 꺼내기
-                    .gradeRequirement(scholarship.getGradeRequirement()) // DB에서 꺼내기
-                    .incomeRequirement(scholarship.getIncomeRequirement()) // DB에서 꺼내기
-                    .regionRequirement(scholarship.getRegionRequirement()) // DB에서 꺼내기
+                    .supportAmount(scholarship.getSupportAmount())
+                    .gradeRequirement(scholarship.getGradeRequirement())
+                    .incomeRequirement(scholarship.getIncomeRequirement())
+                    .regionRequirement(scholarship.getRegionRequirement())
                     .build();
         }
 
-        // 최종적으로 가장 바깥쪽 껍데기(PostDetailDTO)를 조립합니다.
+
         return PostResponseDTO.PostDetailDTO.builder()
                 .postId(post.getId())
                 .type(post.getPostType().name())
@@ -95,15 +108,48 @@ public class PostConverter {
                 .organization(post.getOrganizer())
                 .viewCount(post.getViewCount())
                 .savedCount(post.getSavedCount())
-                .saved(false) // 로그인 연동 후 찜 여부 매핑 예정
+                .saved(false)
                 .summary(post.getSummary())
                 .applyEndDate(post.getApplyEndAt() != null ? post.getApplyEndAt().toString() : null)
-                .deadlineLabel(dDayLabel)
+                .deadlineLabel(calculateDDay(post.getApplyEndAt()))
                 .applicationMethod(post.getApplicationMethod())
-
-                // 위에서 조립한 장학금 전용 박스를 통째로 넣습니다.
-                // 만약 공모전(Contest)이었다면 이 값은 null이 되어 명세서 요구사항을 완벽히 충족합니다.
                 .scholarshipDetail(scholarshipDetailDTO)
                 .build();
+    }
+
+
+    public static Scholarship toScholarshipEntity(PublicApiScholarshipDTO dto) {
+
+        LocalDate parsedStartDate = parseDate(dto.getStartDate());
+        LocalDate parsedDeadlineDate = parseDate(dto.getDeadlineDate());
+
+        return Scholarship.builder()
+                .postType(PostType.SCHOLARSHIP)
+                .title(dto.getTitle())
+                .organizer(dto.getOrganizer())
+                .applyStartAt(parsedStartDate)
+                .applyEndAt(parsedDeadlineDate)
+                .summary(dto.getSummary())
+                .applicationMethod("홈페이지 지원")
+                .applicationUrl(dto.getApplicationUrl())
+
+
+                .gradeRequirement(dto.getGradeRequirement() != null ? dto.getGradeRequirement() : "기준 없음")
+                .incomeRequirement(dto.getIncomeRequirement() != null ? dto.getIncomeRequirement() : "기준 없음")
+                .regionRequirement(dto.getRegionRequirement() != null ? dto.getRegionRequirement() : "제한 없음")
+                .supportAmount(dto.getSummary() != null ? dto.getSummary() : "상세 참조")
+                .build();
+    }
+
+
+    private static LocalDate parseDate(String dateString) {
+        if (dateString == null || dateString.isBlank()) {
+            return LocalDate.of(2099, 12, 31);
+        }
+        try {
+            return LocalDate.parse(dateString);
+        } catch (Exception e) {
+            return LocalDate.of(2099, 12, 31);
+        }
     }
 }

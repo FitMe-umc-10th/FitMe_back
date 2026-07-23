@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PublicApiScholarshipDTO {
 
-    // 외부 API의 JSON 키값과 내부 변수명을 매핑
     @JsonProperty("상품명")
     private String title;
 
@@ -26,4 +25,13 @@ public class PublicApiScholarshipDTO {
 
     @JsonProperty("홈페이지 주소")
     private String applicationUrl;
+
+    @JsonProperty("성적기준")
+    private String gradeRequirement;
+
+    @JsonProperty("소득기준")
+    private String incomeRequirement;
+
+    @JsonProperty("지역기준")
+    private String regionRequirement;
 }
