@@ -71,4 +71,14 @@ public class UserNotificationSetting extends BaseEntity {
             this.reminderEnabled = reminderEnabled;
         }
     }
+
+    /**
+     * 마스터 스위치(pushEnabled)가 꺼진 상태면 하위 알림도 강제로 끈다.
+     */
+    public void enforcePushCascade() {
+        if (Boolean.FALSE.equals(this.pushEnabled)) {
+            this.recommendedEnabled = false;
+            this.reminderEnabled = false;
+        }
+    }
 }

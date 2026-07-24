@@ -62,6 +62,9 @@ public class NotificationSettingService {
         setting.updateRecommendedEnabled(request.recommendedEnabled());
         setting.updateReminderEnabled(request.reminderEnabled());
 
+        // 모든 필드 반영 직후 최종 pushEnabled 기준으로 불변식 강제
+        setting.enforcePushCascade();
+
         return NotificationSettingResponseDto.NotificationSettingResponse.from(setting);
     }
 

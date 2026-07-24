@@ -183,9 +183,9 @@ class NotificationSettingServiceTest {
         }
 
         @Test
-        @DisplayName("pushEnabled=false 만 보내면 해당 토글만 꺼지고 이메일과 나머지 토글은 유지된다")
+        @DisplayName("하위 토글 하나(recommendedEnabled=false)만 보내면 해당 토글만 꺼지고 이메일·나머지 토글은 유지된다")
         void 토글_하나만_수정() {
-            // given
+            // given: 마스터(push)가 켜져 있어 cascade 가 걸리지 않는 상태
             User user = user();
             UserNotificationSetting setting = existingSetting(user);
             given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
@@ -194,12 +194,12 @@ class NotificationSettingServiceTest {
             // when: false 는 "안 보낸 것"이 아니라 "끄라는 값"이므로 반영되어야 한다
             NotificationSettingResponseDto.NotificationSettingResponse response =
                     notificationSettingService.updateMyNotificationSetting(
-                            USER_ID, request(null, false, null, null));
+                            USER_ID, request(null, null, false, null));
 
-            // then
-            assertThat(response.pushEnabled()).isFalse();
+            // then: 마스터 on 이므로 cascade 없이 보낸 토글만 반영
+            assertThat(response.recommendedEnabled()).isFalse();
             assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
-            assertThat(response.recommendedEnabled()).isTrue();
+            assertThat(response.pushEnabled()).isTrue();
             assertThat(response.reminderEnabled()).isTrue();
         }
 
@@ -250,6 +250,107 @@ class NotificationSettingServiceTest {
             assertThat(response.pushEnabled()).isTrue();
             assertThat(response.recommendedEnabled()).isTrue();
             assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
+        }
+
+        @Test
+        @DisplayName("pushEnabled=false 만 보내면 하위(추천공고·마감임박) 토글도 함께 꺼진다")
+        void 마스터_Off_시_하위_cascade() {
+            // given: 세 토글이 모두 켜져 있는 기존 설정
+            User user = user();
+            UserNotificationSetting setting = existingSetting(user);
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: 마스터 스위치만 끈다
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, false, null, null));
+
+            // then: 마스터 off 이므로 하위 둘 다 강제로 꺼진다
+            assertThat(response.pushEnabled()).isFalse();
+            assertThat(response.recommendedEnabled()).isFalse();
+            assertThat(response.reminderEnabled()).isFalse();
+            assertThat(response.notificationEmail()).isEqualTo("old@fitme.com");
+        }
+
+        @Test
+        @DisplayName("pushEnabled=true 만 보내면 하위 토글은 기존값을 유지한다")
+        void 마스터_On_시_하위_유지() {
+            // given: 마스터가 꺼져 있고 하위도 꺼진 상태 (켤 때 하위를 건드리지 않는지 확인)
+            User user = user();
+            UserNotificationSetting setting = UserNotificationSetting.builder()
+                    .id(100L)
+                    .user(user)
+                    .notificationEmail("old@fitme.com")
+                    .pushEnabled(false)
+                    .recommendedEnabled(false)
+                    .reminderEnabled(false)
+                    .build();
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: 마스터 스위치만 켠다
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, true, null, null));
+
+            // then: 마스터만 켜지고 하위 값은 강제 변경 없이 기존(false) 유지
+            assertThat(response.pushEnabled()).isTrue();
+            assertThat(response.recommendedEnabled()).isFalse();
+            assertThat(response.reminderEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("마스터 off 상태에서 recommendedEnabled=true 만 밀어넣어도 불변식 방어로 최종 false 로 유지된다")
+        void 마스터_Off_상태_하위_true_방어() {
+            // given: 마스터가 꺼진 상태 (하위 true 직접 주입 시 되돌려지는지 검증)
+            User user = user();
+            UserNotificationSetting setting = UserNotificationSetting.builder()
+                    .id(100L)
+                    .user(user)
+                    .notificationEmail("old@fitme.com")
+                    .pushEnabled(false)
+                    .recommendedEnabled(false)
+                    .reminderEnabled(false)
+                    .build();
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: 마스터 off 인데 하위만 켜라는 비정상 요청
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, null, true, null));
+
+            // then: 최종 pushEnabled=false 이므로 하위는 다시 false 로 방어된다
+            assertThat(response.pushEnabled()).isFalse();
+            assertThat(response.recommendedEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("마스터 on 상태에서 recommendedEnabled=true 만 보내면 정상적으로 true 가 반영된다")
+        void 마스터_On_상태_하위_정상_반영() {
+            // given: 마스터가 켜져 있고 추천공고만 꺼진 상태
+            User user = user();
+            UserNotificationSetting setting = UserNotificationSetting.builder()
+                    .id(100L)
+                    .user(user)
+                    .notificationEmail("old@fitme.com")
+                    .pushEnabled(true)
+                    .recommendedEnabled(false)
+                    .reminderEnabled(true)
+                    .build();
+            given(userRepository.findByIdAndDeletedAtIsNull(USER_ID)).willReturn(Optional.of(user));
+            given(userNotificationSettingRepository.findByUser(user)).willReturn(Optional.of(setting));
+
+            // when: 하위 토글만 켠다
+            NotificationSettingResponseDto.NotificationSettingResponse response =
+                    notificationSettingService.updateMyNotificationSetting(
+                            USER_ID, request(null, null, true, null));
+
+            // then: 마스터 on 이므로 하위 값이 그대로 반영된다
+            assertThat(response.pushEnabled()).isTrue();
+            assertThat(response.recommendedEnabled()).isTrue();
+            assertThat(response.reminderEnabled()).isTrue();
         }
 
         @Test
