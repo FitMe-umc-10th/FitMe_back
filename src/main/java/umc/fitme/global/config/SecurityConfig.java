@@ -40,7 +40,9 @@ public class SecurityConfig {
             "/api/v1/faqs",
             "/api/v1/faqs/**",
             "/api/v1/inquiries",
-            "/api/v1/inquiries/**"
+            "/api/v1/inquiries/**",
+            "/api/v1/announcements",
+            "/api/v1/announcements/**"
     };
 
     private final String[] allowUris = {
