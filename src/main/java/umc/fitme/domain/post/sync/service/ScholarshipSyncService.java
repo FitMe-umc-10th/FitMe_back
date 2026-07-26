@@ -22,6 +22,12 @@ public class ScholarshipSyncService {
     private final ScholarshipSyncLogRepository scholarshipSyncLogRepository;
 
     public void sync() {
+        if (!scholarshipCsvClient.isConfigured()) {
+            log.warn("scholarship.sync.csv-url 또는 service-key가 설정되지 않아 동기화를 건너뜁니다.");
+            scholarshipSyncLogRepository.save(ScholarshipSyncLog.failed("csv-url 또는 service-key 미설정"));
+            return;
+        }
+
         try {
             String csv = scholarshipCsvClient.download();
             List<ScholarshipCsvRow> rows = scholarshipCsvParser.parse(csv);
