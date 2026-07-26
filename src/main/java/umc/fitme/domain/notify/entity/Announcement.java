@@ -14,7 +14,7 @@ import umc.fitme.global.entity.BaseEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(name = "annoucement")
+@Table(name = "announcement")
 public class Announcement extends BaseEntity {
 
     @Id
@@ -27,4 +27,7 @@ public class Announcement extends BaseEntity {
 
     @Column(name = "title", nullable = false)
     private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String content;
 }

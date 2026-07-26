@@ -1,39 +1,51 @@
-# FitMe Backend ⚙️
+# 🎓 FitMe Backend
 
-> 대학생 맞춤형 장학금 · 공모전 매칭 서비스 — 백엔드
+> **대학생 맞춤형 장학금 · 공모전 추천 및 지원 이력 관리 서비스 - 백엔드**
 
-## 📌 프로젝트 개요
+## 📌 프로젝트 소개
 
-- 관심사·직무 기반 개인화 공고 추천 (장학금, 공모전, 대외활동)
+**FitMe**는 대학생들이 자신에게 맞는 장학금과 공모전 정보를 효율적으로 탐색하고,
+지원 이력과 진행 상태를 한 곳에서 관리할 수 있도록 돕는 서비스입니다.
 
-- 지원 공고 진행 상태 및 이력 관리
+백엔드에서는 사용자, 공고, 지원 이력, 찜, 알림 등의 핵심 도메인을 관리하며,
+REST API를 통해 서비스의 주요 기능을 제공합니다.
 
-- 공고별 메모 및 회고 기록
+## ✨ 주요 기능
 
-- 마감일 중심 알림 기능 제공
+- 관심사 기반 장학금 · 공모전 조회 및 추천
+- 지원 이력 생성, 조회, 상태 관리
+- 지원 이력 메모 관리
+- 찜(북마크) 기능
+- 마이페이지 및 활동 정보 관리
+- 로그인 및 사용자 인증
+- 마감일 알림 기능
 
-- 스펙/활동 이력 대시보드 시각화
+## 🗂️ ERD
 
-- 탐색 비용 최소화를 통한 핵심 기회 제공
-
-## ERD
-<img width="1008" height="614" alt="image" src="https://github.com/user-attachments/assets/1d89dc22-8caa-4c96-8ea8-72d9e513863b" />
+<p align="center">
+  <img width="1008" src="https://github.com/user-attachments/assets/1d89dc22-8caa-4c96-8ea8-72d9e513863b">
+</p>
 
 ## 🛠️ 기술 스택
 
-| 구분             | 기술 |
-|----------------|------|
-| Framework      | Spring Boot |
-| Language       | Java |
-| DB             | MySQL |
-| CI/CD          | 추가 예정 |
-| Infra & DevOps | EC2, S3 |
-| External API | 한국장학재단 |
-| Collaboration/Tools | Swagger, Notion |
+| 구분                | 기술          |
+| ----------------- | ----------- |
+| Language          | Java        |
+| Framework         | Spring Boot |
+| Database          | MySQL       |
+| API Documentation | Swagger     |
+| Collaboration     | Notion      |
+| CI/CD             | 추가 예정    |
+| Infra & DevOps    | EC2, S3     |
+| External API      | 한국장학재단      |
 
-## 프로젝트 구조 (DDD)
-```
-└── java/com/umc/fitme/
+
+## 📂 프로젝트 구조
+
+도메인 중심(DDD) 구조를 기반으로 각 도메인을 독립적으로 관리합니다.
+
+```text
+src/main/java/umc/fitme/
     ├── domain
     │   ├── interest                # 관심사 도메인
     │   │   ├── controller          # 컨트롤러
@@ -46,21 +58,24 @@
     │   │   └── service             # 서비스
     │   ├── notify                  # 알림 도메인
     │   ├── post                    # 공고 도메인
-    │   ├   ├── scholarship         # 장학금 도메인
-    │   ├   └── contest             # 공모전 도메인
+    │   │   ├── scholarship         # 장학금 도메인
+    │   │   └── contest             # 공모전 도메인
     │   └── user                    # 사용자 도메인
     ├── global                      # 전역 공통 설정 및 예외 처리
     └── FitmeApplication.java
 ```
 
-## 🍆 컨벤션 
-https://difficult-grass-c0f.notion.site/e2751793c00a82a993b801e2c81ba654?source=copy_link
+## 📏 Convention
+프로젝트 개발 컨벤션은 아래 문서에서 확인할 수 있습니다.
 
-## 팀원 정보
-| 이름  | 역할      | 깃헙주소 |
-|-----|---------| ---| 
-| 장문경 | Backend : 찜 & 온보딩 api 구현 | [장문경](https://github.com/jangmk05) | 
-| 김태리 | Backend : 마이페이지 api 구현      | [김태리](https://github.com/lucky7terry) |
-| 육도연 | Backend : 홈 api 구현      | [육도연](https://github.com/yookdy) |
-| 홍진우 | Backend : 이력 api 구현     | [홍진우](https://github.com/j2nooh) |
-| 김강민 | Backend : 탐색 & 로그인 api 구현, 개발 환경 세팅     | [김강민](https://github.com/kkangmen) |
+👉 [프로젝트 컨벤션 (Notion)](https://difficult-grass-c0f.notion.site/e2751793c00a82a993b801e2c81ba654?source=copy_link)
+
+## 👥 Team
+
+| 이름 | 담당 | GitHub |
+|------|------|--------|
+| 장문경 | 찜 · 온보딩 API | [@jangmk05](https://github.com/jangmk05) |
+| 김태리 | 마이페이지 API | [@lucky7terry](https://github.com/lucky7terry) |
+| 육도연 | 홈 API | [@yookdy](https://github.com/yookdy) |
+| 홍진우 | 지원 이력 API | [@j2nooh](https://github.com/j2nooh) |
+| 김강민 | 탐색 API · 로그인 · 프로젝트 세팅 | [@kkangmen](https://github.com/kkangmen) |

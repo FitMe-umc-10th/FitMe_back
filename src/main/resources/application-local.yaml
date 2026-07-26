@@ -6,6 +6,18 @@ spring:
     properties: # 출력된 SQL 쿼리를 읽기 쉽게 정렬
       hibernate:
         format_sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          naver:
+            redirect-uri: http://localhost:8080/login/oauth2/code/naver
+          kakao:
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+
+app:
+  oauth2:
+    redirect-uri: http://localhost:8080/test.html
 
 logging:
   level:

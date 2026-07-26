@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @Table(name = "post")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(
+        name = "dtype",
+        discriminatorType = DiscriminatorType.STRING
+)
 public class Post extends BaseEntity {
 
     @Id
@@ -48,6 +52,9 @@ public class Post extends BaseEntity {
     @Column(name = "application_url", nullable = false)
     private String applicationUrl;
 
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
+
     @Column(name = "view_count")
     private int viewCount = 0;
 
@@ -57,4 +64,34 @@ public class Post extends BaseEntity {
 
     @Column(name = "saved_count")
     private int savedCount = 0;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public void increaseViewCount() {
+        this.viewCount += 1;
+    }
+
+    protected void updateCore(
+            String title,
+            String organizer,
+            LocalDate applyStartAt,
+            LocalDate applyEndAt,
+            String summary,
+            String applicationMethod,
+            String applicationUrl,
+            LocalDateTime now
+    ) {
+        this.title = title;
+        this.organizer = organizer;
+        this.applyStartAt = applyStartAt;
+        this.applyEndAt = applyEndAt;
+        this.summary = summary;
+        this.applicationMethod = applicationMethod;
+        this.applicationUrl = applicationUrl;
+        this.updatedAt = now;
+    }
 }
