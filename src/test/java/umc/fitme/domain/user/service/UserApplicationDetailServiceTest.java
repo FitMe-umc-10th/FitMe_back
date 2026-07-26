@@ -85,6 +85,7 @@ class UserApplicationDetailServiceTest {
         assertThat(response.post().postType()).isEqualTo(PostType.CONTEST.name());
         assertThat(response.post().title()).isEqualTo("테스트 공모전");
         assertThat(response.post().organizer()).isEqualTo("테스트 기관");
+        assertThat(response.post().imageUrl()).isEqualTo(post.getImageUrl());
     }
 
     @Test
@@ -118,6 +119,7 @@ class UserApplicationDetailServiceTest {
         // then
         assertThat(response.post().title()).isEqualTo(post.getTitle());
         assertThat(response.post().organizer()).isEqualTo(post.getOrganizer());
+        assertThat(response.post().imageUrl()).isEqualTo(post.getImageUrl());
         assertThat(response.post().viewCount()).isNull();
         assertThat(response.post().savedCount()).isNull();
     }
@@ -168,6 +170,7 @@ class UserApplicationDetailServiceTest {
         // then
         assertThat(response.post().title()).isEqualTo(post.getTitle());
         assertThat(response.post().organizer()).isEqualTo(post.getOrganizer());
+        assertThat(response.post().imageUrl()).isEqualTo(post.getImageUrl());
         assertThat(response.post().viewCount()).isEqualTo(post.getViewCount());
         assertThat(response.post().savedCount()).isEqualTo(post.getSavedCount());
     }
