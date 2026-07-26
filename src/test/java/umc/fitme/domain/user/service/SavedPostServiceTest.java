@@ -341,7 +341,7 @@ class SavedPostServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
         when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
-        when(userSaveRepository.save(any(UserSave.class))).thenReturn(savedUserSave);
+        when(userSaveRepository.saveAndFlush(any(UserSave.class))).thenReturn(savedUserSave);
 
         SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(1L, 10L);
 

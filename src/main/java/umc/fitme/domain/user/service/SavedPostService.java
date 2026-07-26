@@ -90,11 +90,11 @@ public class SavedPostService {
                                        throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
                                    }
                                    existing.resave();
-                                   return userSaveRepository.saveAndFlush(existing);
+                                   return existing;
                                })
-                               .orElseGet(() -> userSaveRepository.save(
-                                 UserSave.builder().user(user).post(post).isSaved(true).build()
-                                ));
+                               .orElseGet(() -> UserSave.builder().user(user).post(post).isSaved(true).build());
+
+        saved = userSaveRepository.saveAndFlush(saved);
 
         return SavedPostConverter.toSavePostResponse(saved);
     }

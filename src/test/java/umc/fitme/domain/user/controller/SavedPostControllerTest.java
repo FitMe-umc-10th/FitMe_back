@@ -118,6 +118,28 @@ class SavedPostControllerTest {
     }
 
     @Test
+    @DisplayName("잘못된 category 값이면 400과 INVALID_CATEGORY 에러 코드를 반환한다")
+    void getSavedPosts_invalidCategory_returns400() throws Exception {
+        mockMvc.perform(withAuth(get("/api/v1/saved-posts")
+                        .param("category", "FOO")
+                        .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.code").value("USER4005"));
+    }
+
+    @Test
+    @DisplayName("잘못된 sort 값이면 400과 INVALID_SORT 에러 코드를 반환한다")
+    void getSavedPosts_invalidSort_returns400() throws Exception {
+        mockMvc.perform(withAuth(get("/api/v1/saved-posts")
+                        .param("sort", "FOO")
+                        .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.code").value("SAVED_POST4002"));
+    }
+
+    @Test
     @DisplayName("저장 공고 저장 API 성공")
     void savePost_success() throws Exception {
         SavedPostRequestDto.SavePostRequest request =
@@ -143,7 +165,7 @@ class SavedPostControllerTest {
                 .andExpect(jsonPath("$.result.savedId").value(100))
                 .andExpect(jsonPath("$.result.postId").value(10))
                 .andExpect(jsonPath("$.result.saved").value(true))
-                .andExpect(jsonPath("$.result.savedAt").exists());
+                .andExpect(jsonPath("$.result.savedAt").value("2026-07-26T12:00:00"));
     }
 
     @Test
