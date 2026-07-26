@@ -2,16 +2,21 @@ package umc.fitme.domain.post.sync.util;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.List;
 import java.util.Optional;
 
 public final class ScholarshipApplyPeriodParser {
 
+    // SMART(기본값) 리졸버는 2월 30일 같은 값을 2월 28일로 조용히 보정해버리므로,
+    // 잘못된 날짜를 확실히 걸러내기 위해 STRICT 리졸버를 사용한다.
+    // STRICT 모드에서는 연호(era)에 종속되는 'y' 대신 프롤렙틱 연도 'u'를 써야 정상 파싱된다.
     private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
-            DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-            DateTimeFormatter.ofPattern("yyyy.MM.dd"),
-            DateTimeFormatter.ofPattern("yyyy/MM/dd"),
-            DateTimeFormatter.ofPattern("yyyyMMdd")
+            DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT),
+            DateTimeFormatter.ofPattern("uuuu.MM.dd").withResolverStyle(ResolverStyle.STRICT),
+            DateTimeFormatter.ofPattern("uuuu/MM/dd").withResolverStyle(ResolverStyle.STRICT),
+            DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT)
     );
 
     private ScholarshipApplyPeriodParser() {
@@ -63,7 +68,7 @@ public final class ScholarshipApplyPeriodParser {
         for (DateTimeFormatter formatter : DATE_FORMATTERS) {
             try {
                 return Optional.of(LocalDate.parse(value, formatter));
-            } catch (Exception ignored) {
+            } catch (DateTimeParseException ignored) {
                 // 다음 포맷 시도
             }
         }

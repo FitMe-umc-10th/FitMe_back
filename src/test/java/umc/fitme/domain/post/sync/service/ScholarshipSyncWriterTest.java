@@ -1,10 +1,10 @@
 package umc.fitme.domain.post.sync.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import umc.fitme.domain.post.entity.Scholarship;
@@ -12,15 +12,16 @@ import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.ScholarshipRepository;
 import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -29,11 +30,18 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class ScholarshipSyncWriterTest {
 
+    private static final Clock FIXED_CLOCK =
+            Clock.fixed(Instant.parse("2026-07-26T00:00:00Z"), ZoneId.of("Asia/Seoul"));
+
     @Mock
     private ScholarshipRepository scholarshipRepository;
 
-    @InjectMocks
     private ScholarshipSyncWriter scholarshipSyncWriter;
+
+    @BeforeEach
+    void setUp() {
+        scholarshipSyncWriter = new ScholarshipSyncWriter(scholarshipRepository, FIXED_CLOCK);
+    }
 
     @Test
     @DisplayName("존재하지 않는 sourceKey면 신규 저장하고 insertedCount가 증가한다")
@@ -43,8 +51,8 @@ class ScholarshipSyncWriterTest {
                 "대학생", "2026-05-01 ~ 2026-05-31", "최대 300만원", "200"
         );
 
-        given(scholarshipRepository.findBySourceKey(anyString())).willReturn(Optional.empty());
-        given(scholarshipRepository.findAllByActiveTrueAndSourceKeyNotIn(anySet())).willReturn(List.of());
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of());
+        given(scholarshipRepository.findAllByActiveTrue()).willReturn(List.of());
 
         ScholarshipSyncWriter.SyncResult result = scholarshipSyncWriter.applyRows(List.of(row));
 
@@ -87,8 +95,8 @@ class ScholarshipSyncWriterTest {
                 .active(true)
                 .build();
 
-        given(scholarshipRepository.findBySourceKey(sourceKey)).willReturn(Optional.of(existing));
-        given(scholarshipRepository.findAllByActiveTrueAndSourceKeyNotIn(anySet())).willReturn(List.of());
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of(existing));
+        given(scholarshipRepository.findAllByActiveTrue()).willReturn(List.of());
 
         ScholarshipSyncWriter.SyncResult result = scholarshipSyncWriter.applyRows(List.of(row));
 
@@ -116,8 +124,8 @@ class ScholarshipSyncWriterTest {
                 "대상", "2026-06-01 ~ 2026-06-30", "500만원", "50"
         );
 
-        given(scholarshipRepository.findBySourceKey(anyString())).willReturn(Optional.empty());
-        given(scholarshipRepository.findAllByActiveTrueAndSourceKeyNotIn(anySet())).willReturn(List.of());
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of());
+        given(scholarshipRepository.findAllByActiveTrue()).willReturn(List.of());
 
         ScholarshipSyncWriter.SyncResult result =
                 scholarshipSyncWriter.applyRows(List.of(invalidRow, validRow));
@@ -149,13 +157,38 @@ class ScholarshipSyncWriterTest {
                 .active(true)
                 .build();
 
-        given(scholarshipRepository.findBySourceKey(anyString())).willReturn(Optional.empty());
-        given(scholarshipRepository.findAllByActiveTrueAndSourceKeyNotIn(anySet()))
-                .willReturn(List.of(staleScholarship));
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of());
+        given(scholarshipRepository.findAllByActiveTrue()).willReturn(List.of(staleScholarship));
 
         ScholarshipSyncWriter.SyncResult result = scholarshipSyncWriter.applyRows(List.of(row));
 
         assertThat(result.inactivatedCount()).isEqualTo(1);
         assertThat(staleScholarship.isActive()).isFalse();
+    }
+
+    @Test
+    @DisplayName("모든 행이 파싱에 실패하면 기존 active 장학금을 비활성화하지 않는다")
+    void applyRows_allRowsInvalid_doesNotDeactivateAnything() {
+        ScholarshipCsvRow invalidRow1 = new ScholarshipCsvRow(
+                "기관A", "이상한상품A", "장학금", "유형",
+                "대상", "형식이상함A", "1000만원", "10"
+        );
+        ScholarshipCsvRow invalidRow2 = new ScholarshipCsvRow(
+                "기관B", "이상한상품B", "장학금", "유형",
+                "대상", "형식이상함B", "2000만원", "20"
+        );
+
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of());
+
+        ScholarshipSyncWriter.SyncResult result =
+                scholarshipSyncWriter.applyRows(List.of(invalidRow1, invalidRow2));
+
+        assertThat(result.skippedCount()).isEqualTo(2);
+        assertThat(result.insertedCount()).isZero();
+        assertThat(result.updatedCount()).isZero();
+        assertThat(result.inactivatedCount()).isZero();
+
+        verify(scholarshipRepository, never()).findAllByActiveTrue();
+        verify(scholarshipRepository, never()).save(any());
     }
 }

@@ -61,4 +61,11 @@ class ScholarshipApplyPeriodParserTest {
         assertThatThrownBy(() -> ScholarshipApplyPeriodParser.parse("모집중 ~ 마감시까지"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("존재하지 않는 날짜(2월 30일 등)면 예외를 던진다")
+    void parse_invalidCalendarDate_throwsException() {
+        assertThatThrownBy(() -> ScholarshipApplyPeriodParser.parse("2026-02-30 ~ 2026-03-05"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

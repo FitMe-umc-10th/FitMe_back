@@ -65,19 +65,20 @@ public class Scholarship extends Post{
             String summary,
             String applicationMethod,
             String applicationUrl,
-            String supportAmount
+            String supportAmount,
+            LocalDateTime now
     ) {
-        updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl);
+        updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl, now);
         this.supportAmount = supportAmount;
         this.active = true;
-        this.lastSyncedAt = LocalDateTime.now();
+        this.lastSyncedAt = now;
     }
 
     /***
      * 함수 기능: 이번 동기화 대상 CSV에 더 이상 존재하지 않는 장학금을 비활성화 처리한다.
      */
-    public void deactivate() {
+    public void deactivate(LocalDateTime now) {
         this.active = false;
-        this.lastSyncedAt = LocalDateTime.now();
+        this.lastSyncedAt = now;
     }
 }

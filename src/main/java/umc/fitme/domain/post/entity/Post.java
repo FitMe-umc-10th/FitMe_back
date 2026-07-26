@@ -81,7 +81,8 @@ public class Post {
             LocalDate applyEndAt,
             String summary,
             String applicationMethod,
-            String applicationUrl
+            String applicationUrl,
+            LocalDateTime now
     ) {
         this.title = title;
         this.organizer = organizer;
@@ -90,6 +91,6 @@ public class Post {
         this.summary = summary;
         this.applicationMethod = applicationMethod;
         this.applicationUrl = applicationUrl;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 }

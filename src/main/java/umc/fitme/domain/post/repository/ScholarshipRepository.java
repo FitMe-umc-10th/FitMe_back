@@ -11,5 +11,7 @@ public interface ScholarshipRepository extends JpaRepository<Scholarship, Long> 
 
     Optional<Scholarship> findBySourceKey(String sourceKey);
 
-    List<Scholarship> findAllByActiveTrueAndSourceKeyNotIn(Collection<String> sourceKeys);
+    List<Scholarship> findAllBySourceKeyIn(Collection<String> sourceKeys);
+
+    List<Scholarship> findAllByActiveTrue();
 }
