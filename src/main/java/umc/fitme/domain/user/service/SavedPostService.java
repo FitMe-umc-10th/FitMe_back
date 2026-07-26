@@ -90,7 +90,7 @@ public class SavedPostService {
                                        throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
                                    }
                                    existing.resave();
-                                   return existing;
+                                   return userSaveRepository.saveAndFlush(existing);
                                })
                                .orElseGet(() -> userSaveRepository.save(
                                  UserSave.builder().user(user).post(post).isSaved(true).build()
@@ -224,12 +224,8 @@ public class SavedPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
-        UserSave userSave = userSaveRepository.findByIdAndUser(savedId, user)
+        UserSave userSave = userSaveRepository.findByIdAndUserAndIsSavedTrue(savedId, user)
                 .orElseThrow(() -> new ProjectException(SavedPostErrorCode.SAVED_POST_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(userSave.getIsSaved())) {
-            throw new ProjectException(SavedPostErrorCode.ALREADY_UNSAVED_POST);
-        }
 
         userSave.cancelSave();
 

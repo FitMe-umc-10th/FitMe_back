@@ -130,6 +130,7 @@ class SavedPostControllerTest {
                         .savedId(100L)
                         .postId(10L)
                         .saved(true)
+                        .savedAt(LocalDateTime.of(2026, 7, 26, 12, 0))
                         .build();
 
         given(savedPostService.savePost(USER_ID, 10L)).willReturn(response);
@@ -141,7 +142,8 @@ class SavedPostControllerTest {
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.result.savedId").value(100))
                 .andExpect(jsonPath("$.result.postId").value(10))
-                .andExpect(jsonPath("$.result.saved").value(true));
+                .andExpect(jsonPath("$.result.saved").value(true))
+                .andExpect(jsonPath("$.result.savedAt").exists());
     }
 
     @Test

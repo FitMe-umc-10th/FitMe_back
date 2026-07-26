@@ -436,7 +436,7 @@ class SavedPostServiceTest {
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.of(userSave));
 
         SavedPostResponseDto.DeleteSavedPostResponse response = savedPostService.deleteSavedPost(1L, 100L);
 
@@ -448,14 +448,14 @@ class SavedPostServiceTest {
     }
 
     @Test
-    @DisplayName("저장 공고가 없으면 예외 발생")
+    @DisplayName("저장한 공고가 없으면 예외 발생")
     void deleteSavedPost_notFound() {
         User user = User.builder()
                 .id(1L)
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.empty());
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.empty());
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
@@ -472,34 +472,14 @@ class SavedPostServiceTest {
                 .id(1L)
                 .build();
 
-        Post post = Post.builder()
-                .id(10L)
-                .postType(PostType.CONTEST)
-                .title("공모전")
-                .organizer("주최기관")
-                .applyStartAt(LocalDate.of(2026, 7, 1))
-                .applyEndAt(LocalDate.of(2026, 7, 31))
-                .applicationMethod("온라인")
-                .applicationUrl("https://example.com")
-                .imageUrl("https://example.com/thumb.jpg")
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        UserSave userSave = UserSave.builder()
-                .id(100L)
-                .user(user)
-                .post(post)
-                .isSaved(false)
-                .build();
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.empty());
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
                 () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(SavedPostErrorCode.ALREADY_UNSAVED_POST, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.SAVED_POST_NOT_FOUND, exception.getErrorCode());
     }
 }

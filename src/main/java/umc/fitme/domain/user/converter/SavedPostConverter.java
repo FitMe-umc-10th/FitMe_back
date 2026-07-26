@@ -48,6 +48,7 @@ public class SavedPostConverter {
                 .savedId(userSave.getId())
                 .postId(userSave.getPost().getId())
                 .saved(userSave.getIsSaved())
+                .savedAt(userSave.getUpdatedAt())
                 .build();
     }
 
