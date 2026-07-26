@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 @DiscriminatorValue("contest")
-public class Contest extends Post{
+public class Contest extends Post {
 
     @Column(name = "poster_image_url")
     private String posterImageUrl;

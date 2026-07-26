@@ -3,6 +3,8 @@ package umc.fitme.domain.post.entity;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.util.ScholarshipAmountParser;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor 
 @SuperBuilder
 @DiscriminatorValue("scholarship")
 public class Scholarship extends Post{
@@ -26,6 +29,11 @@ public class Scholarship extends Post{
     @Column(name = "region_requirement")
     private String regionRequirement;
 
+    // 특정 대학 전용 공고인지 판별하기 위한 조건. 전국/제한 없음이면 모든 대학이 통과한다.
+    @Column(name = "university_requirement")
+    private String universityRequirement;
+
+    @Column(name = "support_amount", nullable = false)
     // 표시용 원본 문자열 금액
     @Column(name = "support_amount")
     private String supportAmount;

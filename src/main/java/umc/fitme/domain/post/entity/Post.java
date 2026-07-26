@@ -2,12 +2,11 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.enums.PostType;
-
+import umc.fitme.global.entity.BaseEntity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -22,7 +21,7 @@ import java.time.LocalDateTime;
         name = "dtype",
         discriminatorType = DiscriminatorType.STRING
 )
-public class Post {
+public class Post extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,11 +56,13 @@ public class Post {
     private String imageUrl;
 
     @Column(name = "view_count")
-    @Builder.Default
     private int viewCount = 0;
 
+    public void incrementViewCount() {
+        this.viewCount += 1;
+    }
+
     @Column(name = "saved_count")
-    @Builder.Default
     private int savedCount = 0;
 
     @Column(name = "created_at", nullable = false)
