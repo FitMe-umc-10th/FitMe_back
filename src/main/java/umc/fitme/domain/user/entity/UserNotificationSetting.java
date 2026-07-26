@@ -37,4 +37,48 @@ public class UserNotificationSetting extends BaseEntity {
     @Column(name = "reminder_enabled", nullable = false)
     @Builder.Default
     private Boolean reminderEnabled = false;
+
+    public static UserNotificationSetting createDefault(User user, String notificationEmail) {
+        return UserNotificationSetting.builder()
+                .user(user)
+                .notificationEmail(notificationEmail)
+                .pushEnabled(false)
+                .recommendedEnabled(false)
+                .reminderEnabled(false)
+                .build();
+    }
+
+    public void updateNotificationEmail(String notificationEmail) {
+        if (notificationEmail != null) {
+            this.notificationEmail = notificationEmail;
+        }
+    }
+
+    public void updatePushEnabled(Boolean pushEnabled) {
+        if (pushEnabled != null) {
+            this.pushEnabled = pushEnabled;
+        }
+    }
+
+    public void updateRecommendedEnabled(Boolean recommendedEnabled) {
+        if (recommendedEnabled != null) {
+            this.recommendedEnabled = recommendedEnabled;
+        }
+    }
+
+    public void updateReminderEnabled(Boolean reminderEnabled) {
+        if (reminderEnabled != null) {
+            this.reminderEnabled = reminderEnabled;
+        }
+    }
+
+    /**
+     * 마스터 스위치(pushEnabled)가 꺼진 상태면 하위 알림도 강제로 끈다.
+     */
+    public void enforcePushCascade() {
+        if (Boolean.FALSE.equals(this.pushEnabled)) {
+            this.recommendedEnabled = false;
+            this.reminderEnabled = false;
+        }
+    }
 }

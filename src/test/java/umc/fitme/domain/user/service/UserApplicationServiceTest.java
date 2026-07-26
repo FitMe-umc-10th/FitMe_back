@@ -23,6 +23,7 @@ import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,6 +87,37 @@ class UserApplicationServiceTest {
         verify(userApplicationRepository, never()).save(any(UserApplication.class));
         verify(userApplicationPostSnapshotRepository, never())
                 .save(any(UserApplicationPostSnapshot.class));
+    }
+
+    @Test
+    @DisplayName("지원 이력 목록 조회 시 카드 이미지 URL을 반환한다.")
+    void getList_returnsImageUrl() {
+        // given
+        User user = createUser();
+        Post post = createPost();
+
+        UserApplication userApplication = UserApplication.builder()
+                .user(user)
+                .post(post)
+                .status(Status.PENDING_RESULT)
+                .isApplied(true)
+                .memo(null)
+                .build();
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userApplicationRepository.findAllByUserAndDeletedAtIsNullAndStatusInOrderByUpdatedAtDescIdDesc(
+                eq(user),
+                anyList()
+        )).thenReturn(List.of(userApplication));
+
+        // when
+        UserApplicationResponseDto.ListResponse response =
+                userApplicationService.getList(USER_ID, "IN_PROGRESS");
+
+        // then
+        assertThat(response.userApplications()).hasSize(1);
+        assertThat(response.userApplications().getFirst().imageUrl())
+                .isEqualTo(post.getImageUrl());
     }
 
     @Test
