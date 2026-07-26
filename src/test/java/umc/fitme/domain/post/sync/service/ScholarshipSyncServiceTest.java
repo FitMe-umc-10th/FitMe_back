@@ -45,6 +45,7 @@ class ScholarshipSyncServiceTest {
     @Test
     @DisplayName("정상 동기화 시 성공 로그를 저장한다")
     void sync_success() {
+        given(scholarshipCsvClient.isConfigured()).willReturn(true);
         given(scholarshipCsvClient.download()).willReturn("csv-content");
         given(scholarshipCsvParser.parse("csv-content")).willReturn(List.of(SAMPLE_ROW));
         given(scholarshipSyncWriter.applyRows(List.of(SAMPLE_ROW)))
@@ -66,6 +67,7 @@ class ScholarshipSyncServiceTest {
     @Test
     @DisplayName("CSV에 유효한 행이 없으면 writer를 호출하지 않고 실패 로그를 저장한다")
     void sync_emptyRows_skipsWriter() {
+        given(scholarshipCsvClient.isConfigured()).willReturn(true);
         given(scholarshipCsvClient.download()).willReturn("csv-content");
         given(scholarshipCsvParser.parse("csv-content")).willReturn(List.of());
 
@@ -81,6 +83,7 @@ class ScholarshipSyncServiceTest {
     @Test
     @DisplayName("CSV 다운로드 중 예외가 발생하면 실패 로그를 저장한다")
     void sync_downloadFails_savesFailedLog() {
+        given(scholarshipCsvClient.isConfigured()).willReturn(true);
         given(scholarshipCsvClient.download()).willThrow(new IllegalStateException("다운로드 실패"));
 
         scholarshipSyncService.sync();
@@ -93,5 +96,20 @@ class ScholarshipSyncServiceTest {
         assertThat(savedLog.getErrorMessage()).contains("다운로드 실패");
 
         verify(scholarshipSyncWriter, never()).applyRows(anyList());
+    }
+
+    @Test
+    @DisplayName("csv-url/service-key가 설정되지 않았으면 다운로드를 시도하지 않고 실패 로그만 저장한다")
+    void sync_notConfigured_skipsDownload() {
+        given(scholarshipCsvClient.isConfigured()).willReturn(false);
+
+        scholarshipSyncService.sync();
+
+        verify(scholarshipCsvClient, never()).download();
+        verify(scholarshipSyncWriter, never()).applyRows(anyList());
+
+        ArgumentCaptor<ScholarshipSyncLog> captor = ArgumentCaptor.forClass(ScholarshipSyncLog.class);
+        verify(scholarshipSyncLogRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ScholarshipSyncStatus.FAILED);
     }
 }
