@@ -64,7 +64,7 @@ public class OnboardingService {
         List<Interest> interests = resolveInterests(interestNames);
 
         List<UserInterest> userInterests = interests.stream()
-                .map(interest -> UserInterest.builder()
+                .<UserInterest>map(interest -> UserInterest.builder()
                         .user(user)
                         .interest(interest)
                         .build())

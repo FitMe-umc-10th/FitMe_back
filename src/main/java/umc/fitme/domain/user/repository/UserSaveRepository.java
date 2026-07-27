@@ -14,10 +14,14 @@ import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
 
     Optional<UserSave> findByUserAndPost(User user, Post post);
+
+    @Query("select us.post.id from UserSave us where us.user.id = :userId and us.isSaved = true")
+    Set<Long> findSavedPostIdsByUserId(@Param("userId") Long userId);
 
     Optional<UserSave> findByIdAndUserAndIsSavedTrue(Long id, User user);
 

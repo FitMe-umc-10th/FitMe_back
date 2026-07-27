@@ -8,10 +8,11 @@ import lombok.NoArgsConstructor;
 import umc.fitme.domain.notify.enums.NotificationType;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.user.entity.User;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.global.entity.BaseEntity;
 
 @Entity
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
