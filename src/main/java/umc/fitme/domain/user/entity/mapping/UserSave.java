@@ -16,7 +16,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(name = "user_save")
+@Table(
+        name = "user_save",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_user_save_user_post",
+                columnNames = {"user_id", "post_id"}
+        )
+)
 public class UserSave extends BaseEntity {
 
     @Id
