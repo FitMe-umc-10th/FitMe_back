@@ -1,14 +1,17 @@
 package umc.fitme.domain.post.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.Getter;
+import umc.fitme.domain.post.enums.ContestCategory;
 
 @Entity
 @Getter
 @DiscriminatorValue("contest")
 public class Contest extends Post{
+
+    @Column(name = "contest_category", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ContestCategory contestCategory;
 
     @Column(name = "poster_image_url")
     private String posterImageUrl;

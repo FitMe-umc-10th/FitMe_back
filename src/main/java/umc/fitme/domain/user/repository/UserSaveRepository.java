@@ -134,4 +134,6 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
     List<DeadlineEmailReminderTarget> findDeadlineEmailReminderTargets(
             @Param("applyEndDates") List<LocalDate> applyEndDates
     );
+
+    List<UserSave> findUserSavesByUserAndPost(User user, Post post);
 }
