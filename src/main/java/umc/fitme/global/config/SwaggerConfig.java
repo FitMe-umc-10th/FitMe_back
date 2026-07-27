@@ -16,7 +16,6 @@ public class SwaggerConfig {
     public OpenAPI swagger(){
         Info info = new Info().title("FitMe API").description("FitMe 백엔드 API 문서").version("0.0.1");
 
-        // JWT 토큰 헤더 방식
         String securityScheme = "JWT TOKEN";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(securityScheme);
 

@@ -15,7 +15,7 @@ spring:
 
 app:
   oauth2:
-    redirect-uri: https://api.fit-me.site/test.html # 추후 프론트엔드 주소 기입
+    redirect-uri: http://localhost:5173/oauth2/callback # 추후 프론트엔드 주소 기입
 
 logging:
   level:
