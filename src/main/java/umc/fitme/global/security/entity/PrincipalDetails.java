@@ -40,7 +40,7 @@ public class PrincipalDetails implements OAuth2User, UserDetails {
 
         Collection<GrantedAuthority> collection = new ArrayList<>();
 
-        collection.add(new SimpleGrantedAuthority("ROLE+" + role));
+        collection.add(new SimpleGrantedAuthority("ROLE_" + role));
         return collection;
     }
 
