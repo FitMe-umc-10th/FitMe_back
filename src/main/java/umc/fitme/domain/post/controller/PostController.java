@@ -8,8 +8,8 @@ import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
-import umc.fitme.domain.user.dto.request.UserApplicationRequestDTO;
-import umc.fitme.domain.user.dto.response.UserApplicationResponseDTO;
+import umc.fitme.domain.user.dto.UserApplicationRequestDto;
+import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import java.util.List;
@@ -78,14 +78,14 @@ public class PostController {
      * 외부 URL 이동은 응답의 applicationUrl을 받은 프론트엔드가 수행한다.
      */
     @PatchMapping("/{postId}/application")
-    public ApiResponse<UserApplicationResponseDTO.ApplicationResponse> startApplication(
+    public ApiResponse<UserApplicationResponseDto.CreateResponse> startApplication(
             @PathVariable Long postId,
             // 로그인 연결 전 Swagger 테스트용. 이후 인증 사용자 ID로 교체한다.
             @RequestParam Long userId) {
-        UserApplicationResponseDTO.ApplicationResponse response =
-                userApplicationService.createApplication(
+        UserApplicationResponseDto.CreateResponse response =
+                userApplicationService.create(
                         userId,
-                        new UserApplicationRequestDTO.CreateRequest(postId)
+                        new UserApplicationRequestDto.CreateRequest(postId)
                 );
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }

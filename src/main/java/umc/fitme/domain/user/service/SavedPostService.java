@@ -1,6 +1,7 @@
 package umc.fitme.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -92,9 +93,16 @@ public class SavedPostService {
                                    existing.resave();
                                    return existing;
                                })
-                               .orElseGet(() -> userSaveRepository.save(
-                                 UserSave.builder().user(user).post(post).isSaved(true).build()
-                                ));
+                               .orElseGet(() -> UserSave.builder().user(user).post(post).isSaved(true).build());
+
+        try {
+            saved = userSaveRepository.saveAndFlush(saved);
+        } catch (DataIntegrityViolationException e) {
+            // findByUserAndPost 조회와 saveAndFlush 사이의 경합으로 동시에 두 요청이
+            // 둘 다 "미저장"으로 판단해 INSERT를 시도할 수 있다. (user_id, post_id) 유니크 제약이
+            // 이를 막아주고, 진 쪽은 여기서 ALREADY_SAVED_POST(409)로 변환되어 500을 피한다.
+            throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
+        }
 
         return SavedPostConverter.toSavePostResponse(saved);
     }
@@ -224,12 +232,8 @@ public class SavedPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
-        UserSave userSave = userSaveRepository.findByIdAndUser(savedId, user)
+        UserSave userSave = userSaveRepository.findByIdAndUserAndIsSavedTrue(savedId, user)
                 .orElseThrow(() -> new ProjectException(SavedPostErrorCode.SAVED_POST_NOT_FOUND));
-
-        if (!Boolean.TRUE.equals(userSave.getIsSaved())) {
-            throw new ProjectException(SavedPostErrorCode.ALREADY_UNSAVED_POST);
-        }
 
         userSave.cancelSave();
 
