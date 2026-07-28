@@ -2,12 +2,12 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.global.entity.BaseEntity;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 

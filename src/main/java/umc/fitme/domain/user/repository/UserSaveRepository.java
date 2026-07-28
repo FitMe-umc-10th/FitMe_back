@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
-import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 
 import java.time.LocalDate;
 import java.util.List;

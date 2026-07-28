@@ -15,15 +15,15 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
 import umc.fitme.domain.user.enums.Status;
+import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
-import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -9,11 +9,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
 import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseErrorCode;
 import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
 
 import java.util.HashMap;
 import java.util.Map;

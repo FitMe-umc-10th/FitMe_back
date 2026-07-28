@@ -1,16 +1,16 @@
 package umc.fitme.domain.post.converter;
 
-import umc.fitme.domain.post.dto.publicapi.PublicApiScholarshipDTO;
-import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import org.jspecify.annotations.NonNull;
 import umc.fitme.domain.post.dto.PostSearchDto;
 import umc.fitme.domain.post.dto.SearchViewDto;
+import umc.fitme.domain.post.dto.publicapi.PublicApiScholarshipDTO;
+import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
-import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.FluctuationType;
+import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.SearchRecent;
 
 import java.time.LocalDate;

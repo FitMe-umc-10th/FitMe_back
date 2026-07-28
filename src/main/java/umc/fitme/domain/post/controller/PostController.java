@@ -5,23 +5,23 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
-import umc.fitme.domain.post.service.PostQueryService;
-import umc.fitme.domain.post.service.PublicDataSyncService;
-import umc.fitme.domain.post.enums.ClosingSoonSort;
-import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.dto.PostSearchDto;
 import umc.fitme.domain.post.dto.SearchViewDto;
-import umc.fitme.domain.post.exception.code.PostSuccessCode;
-import umc.fitme.domain.post.service.PostService;
-import umc.fitme.global.apiPayload.ApiResponse;
-import umc.fitme.global.apiPayload.code.BaseSuccessCode;
-import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
+import umc.fitme.domain.post.enums.ClosingSoonSort;
+import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.exception.code.PostSuccessCode;
+import umc.fitme.domain.post.service.PostQueryService;
+import umc.fitme.domain.post.service.PostService;
+import umc.fitme.domain.post.service.PublicDataSyncService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
-import java.util.List;
+import umc.fitme.global.apiPayload.ApiResponse;
+import umc.fitme.global.apiPayload.code.BaseSuccessCode;
+import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 
+import java.util.List;
 
 
 @RestController

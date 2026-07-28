@@ -2,9 +2,9 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import umc.fitme.domain.post.enums.ContestCategory;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import umc.fitme.domain.post.enums.ContestCategory;
 
 @Entity
 @Getter
