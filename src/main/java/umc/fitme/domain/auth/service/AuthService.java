@@ -167,17 +167,14 @@ public class AuthService {
         String role = principal.getRole();
         String email = principal.getUsername();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-
         String accessToken = jwtUtil.createAccessToken(userId, role, email);
         String refreshToken = jwtUtil.createRefreshToken(userId);
 
         LoginDto.LoginRes.Member member = LoginDto.LoginRes.Member.builder()
                 .memberId(userId)
-                .email(user.getEmail())
-                .name(user.getName())
-                .isOnboarded(user.getIsOnboarded())
+                .email(email)
+                .name(principal.getUser().getName())
+                .isOnboarded(principal.getUser().getIsOnboarded())
                 .build();
 
         return LoginDto.LoginRes.builder()
