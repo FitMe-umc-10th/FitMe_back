@@ -17,10 +17,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import umc.fitme.domain.user.dto.SavedPostRequestDto;
 import umc.fitme.domain.user.dto.SavedPostResponseDto;
+import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
 import umc.fitme.domain.user.service.SavedPostService;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.time.LocalDate;
@@ -59,9 +60,12 @@ class SavedPostControllerTest {
 
     // addFilters = false라 필터 체인이 돌지 않으므로 SecurityContextHolder에 직접 인증 정보를 채운다.
     private MockHttpServletRequestBuilder withAuth(MockHttpServletRequestBuilder builder) {
-        CustomUserDetails userDetails = new CustomUserDetails(USER_ID, "USER", "테스트유저");
+        User user = User.builder()
+                .id(USER_ID)
+                .build();
+        PrincipalDetails principal = new PrincipalDetails(user, "USER");
         Authentication authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         return builder;
     }

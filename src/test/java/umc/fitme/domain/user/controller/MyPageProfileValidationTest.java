@@ -18,7 +18,7 @@ import umc.fitme.domain.user.dto.MyPageProfileRequestDto;
 import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
 import umc.fitme.global.config.SecurityConfig;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.CustomAccessDenied;
 import umc.fitme.global.security.exception.CustomEntryPoint;
 import umc.fitme.global.security.handler.OAuth2FailureHandler;
@@ -70,8 +70,8 @@ class MyPageProfileValidationTest {
     private OAuth2FailureHandler oAuth2FailureHandler;
 
     private RequestPostProcessor loginUser() {
-        CustomUserDetails principal = org.mockito.Mockito.mock(CustomUserDetails.class);
-        BDDMockito.given(principal.getUserId()).willReturn(1L);
+        PrincipalDetails principal = org.mockito.Mockito.mock(PrincipalDetails.class);
+        BDDMockito.given(principal.getUser().getId()).willReturn(1L);
         return authentication(new UsernamePasswordAuthenticationToken(
                 principal, null, AuthorityUtils.createAuthorityList("ROLE_USER")));
     }

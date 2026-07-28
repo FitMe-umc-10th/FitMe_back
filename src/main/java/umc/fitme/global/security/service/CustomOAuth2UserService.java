@@ -8,17 +8,16 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import umc.fitme.domain.user.converter.UserConverter;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.security.converter.UserConverter;
 import umc.fitme.global.security.dto.KakaoResponse;
 import umc.fitme.global.security.dto.NaverResponse;
 import umc.fitme.global.security.dto.OAuth2Response;
-import umc.fitme.global.security.entity.CustomOAuth2User;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.SocialLoginException;
 import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
-import java.lang.reflect.Member;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,7 +28,6 @@ import java.util.Optional;
 public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
-    private final UserConverter userConverter;
 
     /***
      * ResourceServer로 부터 받은 userRequest를 OAuth2Response DTO로 변환.
@@ -40,7 +38,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
 
         // 회원 정보 가져오기
         OAuth2User oAuth2User = super.loadUser(userRequest);
-        log.debug("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
+        log.info("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
 
         // 카카오, 네이버 구분
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
@@ -67,15 +65,20 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         Optional<User> optionalUser = userRepository.findBySocialTypeAndSocialUid(oAuth2Response.getProvider(), oAuth2Response.getProviderId());
 
         User user;
-        if (optionalUser.isPresent()) {
+        if (optionalUser.isPresent()) { // 기존 소셜 회원일 경우
             user = optionalUser.get();
             log.info("기존 회원 로그인 성공!");
+        } else { // 신규 소셜 회원일 경우
+            Optional<User> byEmail = userRepository.findByEmail(oAuth2Response.getEmail());
+            if (byEmail.isPresent()){ // 이미 동일한 이메일로 가입된 계정이 존재하면 계정 충돌 예외
+                log.warn("계정 충동: 이미 가입된 이메일입니다. 이메일: {}, 시도한 소셜: {}", oAuth2Response.getEmail(), oAuth2Response.getProvider());
 
-        } else {
-            // 신규회원이면 DB에 추가
-            user = userRepository.save(userConverter.convert(oAuth2Response));
-            log.info("신규회원 가입 완료! DB에 적재하였습니다.");
+                throw new SocialLoginException(SocialLoginErrorCode.EMAIL_ALREADY_EXISTS);
+            } else { // 신규 소셜 회원
+                user = userRepository.save(UserConverter.oAuthResToUser(oAuth2Response));
+                log.info("신규 소셜 회원 가입 완료");
+            }
         }
-        return new CustomOAuth2User(user.getId(), "ROLE_USER", user.getName());
+        return new PrincipalDetails(user, "USER");
     }
 }

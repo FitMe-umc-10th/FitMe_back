@@ -5,12 +5,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.dto.LoginDto;
 import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
@@ -66,5 +70,20 @@ public class AuthController {
     ){
         BaseSuccessCode successCode = AuthSuccessCode.SIGNUP_OK;
         return ApiResponse.onSuccess(successCode, authService.signUp(dto));
+    }
+
+    /**
+     * 함수 기능: 이메일 폼 로그인을 진행한다.
+     * @param dto
+     * @return
+     */
+    @Operation(summary = "이메일 로그인 API", description = "이메일 로그인 API")
+    @PostMapping("/login")
+    public ApiResponse<LoginDto.LoginRes> login(
+            @Valid @RequestBody LoginDto.LoginReq dto
+    ){
+        BaseSuccessCode successCode = AuthSuccessCode.LOGIN_OK;
+
+        return ApiResponse.onSuccess(successCode, authService.login(dto));
     }
 }

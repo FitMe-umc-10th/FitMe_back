@@ -8,15 +8,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.domain.user.entity.User;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.SocialLoginException;
 import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 @Component
 @Slf4j
@@ -45,10 +44,10 @@ public class JwtUtil {
      * 유저ID, role, 유저이름을 기반으로 AccessToken을 생성한다.
      * @param userId DB에 저장된 유저ID
      * @param role 유저 역할 (USER로 고정)
-     * @param name 유저 이름
+     * @param email 유저 이메일
      * @return accessToken
      */
-    public String createAccessToken(Long userId, String role, String name){
+    public String createAccessToken(Long userId, String role, String email){
 
         Date now = new Date();
         Date expiration = new Date(now.getTime() + accessTokenValidity);
@@ -57,7 +56,7 @@ public class JwtUtil {
                 .subject(String.valueOf(userId))
                 .claim("typ", "access")
                 .claim("role", role)
-                .claim("name", name)
+                .claim("email", email)
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey)
@@ -117,7 +116,7 @@ public class JwtUtil {
 
         long userId = Long.parseLong(payload.getSubject());
         String role = payload.get("role", String.class);
-        String name = payload.get("name", String.class);
+        String email = payload.get("email", String.class);
         String typ = payload.get("typ", String.class);
 
         // 토큰 타입이 access가 아닌 경우 예외 처리
@@ -125,7 +124,12 @@ public class JwtUtil {
             throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
         }
 
-        CustomUserDetails principal = new CustomUserDetails(userId, role, name);
+        User user = User.builder()
+                .id(userId)
+                .email(email)
+                .build();
+
+        PrincipalDetails principal = new PrincipalDetails(user, role);
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
     }
 }
