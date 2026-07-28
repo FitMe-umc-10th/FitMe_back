@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "inquiry")
 public class Inquiry {
 
@@ -27,9 +30,10 @@ public class Inquiry {
     @Column(name = "reply_email", nullable = false)
     private String replyEmail;
 
-    @Column(name = "content", length = 1000, nullable = false)
+    @Column(name = "content", length = 500, nullable = false)
     private String content;
 
-    @Column(name = "created_at", nullable = false)
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 }
