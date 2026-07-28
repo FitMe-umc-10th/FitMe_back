@@ -50,6 +50,9 @@ public class QScholarship extends EntityPathBase<Scholarship> {
     public final StringPath organizer = _super.organizer;
 
     //inherited
+    public final NumberPath<Integer> postRank = _super.postRank;
+
+    //inherited
     public final EnumPath<umc.fitme.domain.post.enums.PostType> postType = _super.postType;
 
     public final StringPath regionRequirement = createString("regionRequirement");

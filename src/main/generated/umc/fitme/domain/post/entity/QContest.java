@@ -52,6 +52,9 @@ public class QContest extends EntityPathBase<Contest> {
     public final StringPath posterImageUrl = createString("posterImageUrl");
 
     //inherited
+    public final NumberPath<Integer> postRank = _super.postRank;
+
+    //inherited
     public final EnumPath<umc.fitme.domain.post.enums.PostType> postType = _super.postType;
 
     public final StringPath rewardTotal = createString("rewardTotal");

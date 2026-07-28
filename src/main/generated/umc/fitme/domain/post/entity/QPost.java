@@ -35,6 +35,8 @@ public class QPost extends EntityPathBase<Post> {
 
     public final StringPath organizer = createString("organizer");
 
+    public final NumberPath<Integer> postRank = createNumber("postRank", Integer.class);
+
     public final EnumPath<umc.fitme.domain.post.enums.PostType> postType = createEnum("postType", umc.fitme.domain.post.enums.PostType.class);
 
     public final NumberPath<Integer> savedCount = createNumber("savedCount", Integer.class);

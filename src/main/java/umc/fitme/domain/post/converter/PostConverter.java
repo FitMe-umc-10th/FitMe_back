@@ -2,9 +2,12 @@ package umc.fitme.domain.post.converter;
 
 import org.jspecify.annotations.NonNull;
 import umc.fitme.domain.post.dto.PostSearchDto;
+import umc.fitme.domain.post.dto.SearchViewDto;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.ContestCategory;
+import umc.fitme.domain.post.enums.FluctuationType;
+import umc.fitme.domain.user.entity.SearchRecent;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -51,6 +54,25 @@ public class PostConverter {
                 .build();
     }
 
+    // SearchRecent 엔티티 -> RecentKeywordDto 응답DTO
+    public static SearchViewDto.RecentKeywordDto toRecentKeywordDto(SearchRecent searchRecent) {
+        return SearchViewDto.RecentKeywordDto.builder()
+                .searchId(searchRecent.getId())
+                .keyword(searchRecent.getKeyword())
+                .build();
+    }
+
+    // Post 엔티티 -> RealtimePostDto 응답DTO
+    public static SearchViewDto.RealtimePostDto toRealtimePostDto(Post post, int rank, FluctuationType fluctuationType) {
+        return SearchViewDto.RealtimePostDto.builder()
+                .rank(rank)
+                .postId(post.getId())
+                .type(post.getPostType())
+                .title(post.getTitle())
+                .fluctuation(fluctuationType)
+                .build();
+    }
+
     /**
      * 함수 기능: 마감 날짜의 D-DAY를 계산한다.
      * @param post
@@ -66,4 +88,5 @@ public class PostConverter {
         }
         return deadlineLabel;
     }
+
 }

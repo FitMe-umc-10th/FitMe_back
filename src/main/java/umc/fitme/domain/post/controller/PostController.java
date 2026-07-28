@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import umc.fitme.domain.post.dto.PostSearchDto;
+import umc.fitme.domain.post.dto.SearchViewDto;
+import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
@@ -31,5 +33,16 @@ public class PostController {
             ){
         BaseSuccessCode successCode = GeneralSuccessCode.OK;
         return ApiResponse.onSuccess(successCode, postService.searchPost(dto, 1L));
+    }
+
+    /***
+     * 함수 기능: 검색 대시보드 조회
+     * @return
+     */
+    @GetMapping("/search/main")
+    public ApiResponse<SearchViewDto.SearchViewRes> getSearchMain(
+    ){
+        BaseSuccessCode successCode = PostSuccessCode.SEARCH_MAIN_OK;
+        return ApiResponse.onSuccess(successCode, postService.getSearchMainPage(1L));
     }
 }

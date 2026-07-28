@@ -63,6 +63,10 @@ public class Post {
     @Builder.Default
     private int savedCount = 0;
 
+    @Column(name = "post_rank")
+    @Builder.Default
+    private int postRank = -1;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -71,5 +75,9 @@ public class Post {
 
     public void increaseViewCount() {
         this.viewCount += 1;
+    }
+
+    public void updateRank(int newRank) {
+        this.postRank = newRank;
     }
 }
