@@ -8,8 +8,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.user.entity.User;
-import umc.fitme.domain.user.exception.UserException;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
 
@@ -27,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                         log.error("존재하지 않는 이메일입니다: {}.", email);
-                        return new UserException(UserErrorCode.USER_NOT_FOUND);
+                        return new UsernameNotFoundException("존재하지 않는 이메일입니다: " + email);
                 });
 
         if (user.getPassword() == null || user.getPassword().isEmpty()){
