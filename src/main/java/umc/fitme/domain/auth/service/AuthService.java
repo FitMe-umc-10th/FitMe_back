@@ -1,12 +1,18 @@
 package umc.fitme.domain.auth.service;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.dto.LoginDto;
 import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
@@ -16,6 +22,8 @@ import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.util.JwtUtil;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -32,6 +40,8 @@ public class AuthService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
     private final SecureRandom secureRandom = new SecureRandom(); // 6자리 난수 생성
 
@@ -138,6 +148,41 @@ public class AuthService {
         return SignUpDto.SignUpRes.builder()
                 .email(dto.email())
                 .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    /***
+     * 함수 기능: 이메일 기반 로그인을 진행한다.
+     * @param dto 이메일, 비번, 로그인 유지 여부
+     * @return accessToken, refreshToken, 유저 정보
+     */
+    public LoginDto.LoginRes login(LoginDto.LoginReq dto) {
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.password());
+
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+        PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
+
+        Long userId = principal.getUser().getId();
+        String role = principal.getRole();
+        String email = principal.getUsername();
+
+        String accessToken = jwtUtil.createAccessToken(userId, role, email);
+        String refreshToken = jwtUtil.createRefreshToken(userId);
+
+        LoginDto.LoginRes.Member member = LoginDto.LoginRes.Member.builder()
+                .memberId(userId)
+                .email(email)
+                .name(principal.getUser().getName())
+                .isOnboarded(principal.getUser().getIsOnboarded())
+                .build();
+
+        return LoginDto.LoginRes.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer ")
+                .expiresIn(3600L)
+                .member(member)
                 .build();
     }
 

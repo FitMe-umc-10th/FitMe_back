@@ -18,7 +18,7 @@ import umc.fitme.domain.onboarding.dto.OnboardingRequestDto;
 import umc.fitme.domain.onboarding.dto.OnboardingResponseDto;
 import umc.fitme.domain.onboarding.service.OnboardingService;
 import umc.fitme.global.config.SecurityConfig;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.CustomAccessDenied;
 import umc.fitme.global.security.exception.CustomEntryPoint;
 import umc.fitme.global.security.handler.OAuth2FailureHandler;
@@ -70,8 +70,8 @@ class OnboardingControllerTest {
                 java.util.List.of("백엔드")
         );
 
-        CustomUserDetails principal = org.mockito.Mockito.mock(CustomUserDetails.class);
-        BDDMockito.given(principal.getUserId()).willReturn(1L);
+        PrincipalDetails principal = org.mockito.Mockito.mock(PrincipalDetails.class);
+        BDDMockito.given(principal.getUser().getId()).willReturn(1L);
         BDDMockito.given(onboardingService.complete(1L, request))
                 .willReturn(OnboardingResponseDto.of(true));
 

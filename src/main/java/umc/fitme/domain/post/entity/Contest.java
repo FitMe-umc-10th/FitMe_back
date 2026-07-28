@@ -3,11 +3,15 @@ package umc.fitme.domain.post.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import umc.fitme.domain.post.enums.ContestCategory;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Getter
+@NoArgsConstructor
+@SuperBuilder
 @DiscriminatorValue("contest")
-public class Contest extends Post{
+public class Contest extends Post {
 
     @Column(name = "contest_category", nullable = false)
     @Enumerated(EnumType.STRING)

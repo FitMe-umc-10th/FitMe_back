@@ -5,15 +5,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.notify.enums.AnnouncementCategory;
 import umc.fitme.global.entity.BaseEntity;
 
 @Entity
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-@Table(name = "annoucement")
+@Table(name = "announcement")
 public class Announcement extends BaseEntity {
 
     @Id
@@ -26,4 +27,7 @@ public class Announcement extends BaseEntity {
 
     @Column(name = "title", nullable = false)
     private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String content;
 }

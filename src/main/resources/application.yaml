@@ -66,7 +66,33 @@ spring:
           connection-timeout: 5000 # 클라이언트가 SMTP 서버와 연결하는 시간 (msec)
           write-timeout: 5000 # 클라이언트가 SMTP 서버로부터 응답 대기애햐 하는 시간 (msec)
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+cloud:
+  aws:
+    s3:
+      bucket: fitme-image-bucket-200377818137-ap-northeast-2-an
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false # 로컬 실행 시 불필요한 CloudFormation 에러 방지
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-validity: 1800000 # 30분
   refresh-token-validity: 1209600000 # 14일
+
+scholarship:
+  sync:
+    # 값이 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
+    # 실제 동기화는 ScholarshipSyncService에서 비어있으면 건너뛰도록 가드한다.
+    csv-url: ${SCHOLARSHIP_SYNC_CSV_URL:} # 공공데이터포털 한국장학재단 학자금지원정보 파일데이터 URL
+    service-key: ${SCHOLARSHIP_SYNC_SERVICE_KEY:} # 공공데이터포털 발급 인증키
+    csv-charset: EUC-KR # 공공데이터 CSV는 EUC-KR인 경우가 많음 (실제 파일 확인 후 필요 시 UTF-8로 변경)
+
+public-data:
+  api-key: ${PUBLIC_DATA_API_KEY}
+  url: ${PUBLIC_DATA_URL}

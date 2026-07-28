@@ -15,7 +15,7 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.global.security.entity.CustomOAuth2User;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.io.IOException;
@@ -43,27 +43,27 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
         // SecurityContext에서 인증객체의 principal 가져오기
-        CustomOAuth2User principal = (CustomOAuth2User) authentication.getPrincipal();
+        PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
 
-        Long userId = principal.getUserId();
+        Long userId = principal.getUser().getId();
         String role = principal.getRole();
-        String name = principal.getName();
+        String email = principal.getUsername();
 
-        String accessToken = jwtUtil.createAccessToken(userId, role, name);
+        String accessToken = jwtUtil.createAccessToken(userId, role, email);
         String refreshToken = jwtUtil.createRefreshToken(userId);
 
         log.info("발급된 accessToken: {}", accessToken); // 일단 디버깅용으로 로그에 남김
         log.info("토큰 발급 완료 - userId: {}", userId);
 
         // 소셜 로그인 성공 시, 프론트 주소로 리다이렉션
-        redirect(request, response, userId, name, accessToken, refreshToken);
+        redirect(request, response, userId, email, accessToken, refreshToken);
     }
 
     /***
      * 함수 기능: 생성된 accessToken, refreshToken과 함께 유저 정보 및 온보딩 여부도 담아 전달.
      * @param response 응답
      * @param userId 유저ID
-     * @param name 유저이름
+     * @param email 유저 이메일
      * @param accessToken
      * @param refreshToken
      * @throws IOException
@@ -71,7 +71,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private void redirect(
             HttpServletRequest request,
             HttpServletResponse response,
-            Long userId, String name, String accessToken, String refreshToken) throws IOException {
+            Long userId, String email, String accessToken, String refreshToken) throws IOException {
 
         // 온보딩 여부 조사
         User user = userRepository.findById(userId)
@@ -93,7 +93,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("userId", userId)
-                .queryParam("name", name)
+                .queryParam("email", email)
                 .queryParam("isOnboarded", isOnboarded)
                 .build()
                 .encode()
