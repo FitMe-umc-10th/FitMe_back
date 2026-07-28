@@ -1,9 +1,8 @@
 package umc.fitme.domain.post.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import umc.fitme.domain.post.service.PostQueryService;
@@ -21,7 +20,6 @@ import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
-import umc.fitme.global.apiPayload.ApiResponse;
 import java.util.List;
 
 
@@ -29,6 +27,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/post")
+@Tag(name = "공고 API", description = "인기 공고 조회/공고 상세 화면/공고 검색/검색 대시보드 조회")
 public class PostController {
     private final PostQueryService postQueryService;
     private final PublicDataSyncService publicDataSyncService; // 💡 데이터 동기화를 위한 서비스 추가
@@ -115,7 +114,8 @@ public class PostController {
      * @param dto
      * @return
      */
-    @GetMapping("/posts")
+    @GetMapping("/search-post")
+    @Operation(summary = "공고 검색 API", description = "조건에 맞는 공고를 검색한다.")
     public ApiResponse<PostSearchDto.Pagination<PostSearchDto.PostSearchRes>> searchPosts(
             @ParameterObject @ModelAttribute PostSearchDto.PostSearchReq dto
     ){
@@ -127,7 +127,8 @@ public class PostController {
      * 함수 기능: 검색 대시보드 조회
      * @return
      */
-    @GetMapping("/search/main")
+    @GetMapping("/search-main")
+    @Operation(summary = "검색 대시보드 조회 API", description = "검색 창을 누르면 나오는 화면이다.")
     public ApiResponse<SearchViewDto.SearchViewRes> getSearchMain(
     ){
         BaseSuccessCode successCode = PostSuccessCode.SEARCH_MAIN_OK;

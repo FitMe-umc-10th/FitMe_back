@@ -21,6 +21,8 @@ public class QScholarship extends EntityPathBase<Scholarship> {
 
     public final QPost _super = new QPost(this);
 
+    public final BooleanPath active = createBoolean("active");
+
     //inherited
     public final StringPath applicationMethod = _super.applicationMethod;
 
@@ -46,6 +48,8 @@ public class QScholarship extends EntityPathBase<Scholarship> {
 
     public final StringPath incomeRequirement = createString("incomeRequirement");
 
+    public final DateTimePath<java.time.LocalDateTime> lastSyncedAt = createDateTime("lastSyncedAt", java.time.LocalDateTime.class);
+
     //inherited
     public final StringPath organizer = _super.organizer;
 
@@ -60,6 +64,8 @@ public class QScholarship extends EntityPathBase<Scholarship> {
     //inherited
     public final NumberPath<Integer> savedCount = _super.savedCount;
 
+    public final StringPath sourceKey = createString("sourceKey");
+
     //inherited
     public final StringPath summary = _super.summary;
 
@@ -69,6 +75,8 @@ public class QScholarship extends EntityPathBase<Scholarship> {
 
     //inherited
     public final StringPath title = _super.title;
+
+    public final StringPath universityRequirement = createString("universityRequirement");
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;

@@ -23,6 +23,8 @@ public class QAnnouncement extends EntityPathBase<Announcement> {
 
     public final EnumPath<umc.fitme.domain.notify.enums.AnnouncementCategory> announcementCategory = createEnum("announcementCategory", umc.fitme.domain.notify.enums.AnnouncementCategory.class);
 
+    public final StringPath content = createString("content");
+
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
 
