@@ -7,13 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.user.entity.User;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

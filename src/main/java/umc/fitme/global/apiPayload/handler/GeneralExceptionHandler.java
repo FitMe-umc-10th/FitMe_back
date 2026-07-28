@@ -5,6 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import umc.fitme.domain.user.enums.SavedPostCategory;
+import umc.fitme.domain.user.enums.SavedPostSort;
+import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseErrorCode;
 import umc.fitme.global.apiPayload.code.GeneralErrorCode;
@@ -38,6 +42,27 @@ public class GeneralExceptionHandler {
         BaseErrorCode errorCode = GeneralErrorCode.BAD_REQUEST;
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, errors));
+    }
+
+    // @RequestParam enum 바인딩 실패 예외 처리 (예: category=FOO, sort=FOO)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e){
+        BaseErrorCode errorCode = resolveTypeMismatchErrorCode(e);
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiResponse.onFailure(errorCode, null));
+    }
+
+    private BaseErrorCode resolveTypeMismatchErrorCode(MethodArgumentTypeMismatchException e) {
+        Class<?> requiredType = e.getRequiredType();
+
+        if (requiredType == SavedPostCategory.class) {
+            return SavedPostErrorCode.INVALID_CATEGORY;
+        }
+        if (requiredType == SavedPostSort.class) {
+            return SavedPostErrorCode.INVALID_SORT;
+        }
+
+        return GeneralErrorCode.BAD_REQUEST;
     }
 
     // 낙관적 락 충돌 예외 처리 (동시 수정으로 커밋이 실패한 경우 409 로 재시도 유도)
