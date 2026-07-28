@@ -23,6 +23,11 @@ public class PostQueryDslImpl implements PostQueryDsl{
 
     private final JPAQueryFactory jpaQueryFactory;
 
+    /***
+     * 함수 기능: 검색 조건에 따라 동적 쿼리를 구성한다
+     * @param condition 공고 타입, 공모전 카테고리, 정렬조건, 키워드
+     * @return 공고 목록
+     */
     @Override
     public List<Post> searchPostByCondition(PostSearchDto.PostSearchReq condition) {
 
@@ -42,6 +47,7 @@ public class PostQueryDslImpl implements PostQueryDsl{
                 .fetch();
     }
 
+    // 공고 타입 동적 쿼리
     private BooleanExpression typeEq(PostType postType){
         if (postType == null || postType == PostType.ALL){
             return null;
@@ -49,6 +55,7 @@ public class PostQueryDslImpl implements PostQueryDsl{
         return QPost.post.postType.eq(postType);
     }
 
+    // 공모전 카테고리 동적 쿼리
     private BooleanExpression categoryEq(List<ContestCategory> category) {
         if (category == null || category.isEmpty()){
             return null;
@@ -57,6 +64,7 @@ public class PostQueryDslImpl implements PostQueryDsl{
         return contest.contestCategory.in(category);
     }
 
+    // 키워드 동적 쿼리
     private BooleanExpression keywordContains(String keyword){
         if (keyword == null || keyword.isBlank()){
             return null;
@@ -64,6 +72,7 @@ public class PostQueryDslImpl implements PostQueryDsl{
         return QPost.post.title.containsIgnoreCase(keyword);
     }
 
+    // 커서 동적 쿼리
     private BooleanExpression cursorCondition(SearchSortType sortType, Long idCursor, LocalDate deadlineCursor) {
 
         // 마감일순일 경우
@@ -86,6 +95,7 @@ public class PostQueryDslImpl implements PostQueryDsl{
         }
     }
 
+    // 정렬 조건 동적 쿼리
     private OrderSpecifier<?>[] getOrderSpecifiers(SearchSortType sortType){
         QPost post = QPost.post;
 

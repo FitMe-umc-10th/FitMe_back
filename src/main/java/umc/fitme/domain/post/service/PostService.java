@@ -12,6 +12,7 @@ import umc.fitme.domain.user.repository.UserSaveRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +22,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserSaveRepository userSaveRepository;
 
+    /***
+     * 조건에 맞는 공고를 탐색하고 반환한다.
+     * @param dto
+     * @param userId
+     * @return
+     */
     public PostSearchDto.Pagination<PostSearchDto.PostSearchRes> searchPost(PostSearchDto.PostSearchReq dto, Long userId){
 
+        // 조건에 맞는 Post 반환
         List<Post> postList = postRepository.searchPostByCondition(dto);
         int pageSize = dto.pageSize();
 
@@ -36,12 +44,13 @@ public class PostService {
         // 다음 커서 반환
         Long nextIdCursor = null;
         LocalDate nextDeadlineCursor = null;
+        // 마감일 정렬일 경우 -> idCursor, deadlineCursor 두 개 반환
         if (dto.sort() == null || dto.sort() == SearchSortType.DEADLINE){
             if (!postList.isEmpty()){
                 nextIdCursor = postList.getLast().getId();
                 nextDeadlineCursor = postList.getLast().getApplyEndAt();
             }
-        } else {
+        } else { // 최신순 정렬일 경우 -> idCursor만 반환
             if (!postList.isEmpty()){
                 nextIdCursor = postList.getLast().getId();
             }
@@ -49,10 +58,14 @@ public class PostService {
 
         // 가져온 공고 리스트가 saved인지를 반환 로직
         List<Long> postIds = postList.stream().map(Post::getId).toList();
-        userSaveRepository.findUserSavesByUserIdAnd
+        Set<Long> savedPostIds = userSaveRepository.findUserSaveIdsByUserIdAndPostIds(userId, postIds);
+
+        List<PostSearchDto.PostSearchRes> postResList = postList.stream()
+                .map(post -> PostConverter.toPostSearchRes(post, savedPostIds.contains(post.getId())))
+                .toList();
 
         return PostConverter.toPagination(
-                postList.stream().map((PostConverter::toPostSearchRes).toList(),
+                postResList,
                 hasNext,
                 nextIdCursor,
                 nextDeadlineCursor,

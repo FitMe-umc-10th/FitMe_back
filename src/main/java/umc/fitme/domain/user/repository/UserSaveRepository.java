@@ -14,6 +14,7 @@ import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
 
@@ -135,5 +136,12 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
             @Param("applyEndDates") List<LocalDate> applyEndDates
     );
 
-    List<UserSave> findUserSavesByUserAndPost(User user, Post post);
+    @Query("""
+        select us.post.id
+        from UserSave us
+        where us.user.id = :userId
+            and us.post.id in :postIds
+            and us.isSaved = true
+""")
+    Set<Long> findUserSaveIdsByUserIdAndPostIds(Long userId, List<Long> postIds);
 }

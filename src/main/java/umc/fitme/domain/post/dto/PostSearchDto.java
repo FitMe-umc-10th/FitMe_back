@@ -7,6 +7,7 @@ import umc.fitme.domain.post.enums.SearchSortType;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 public class PostSearchDto {
 
@@ -18,7 +19,11 @@ public class PostSearchDto {
             Long idCursor, // postId 커서
             LocalDate deadlineCursor, // 데드라인 커서
             Integer pageSize // 보여줄 갯수
-    ){}
+    ){
+        public PostSearchReq{
+            pageSize = Objects.requireNonNullElse(pageSize, 10);
+        }
+    }
 
     @Builder
     public record PostSearchRes(

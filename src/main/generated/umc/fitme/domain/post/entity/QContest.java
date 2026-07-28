@@ -33,6 +33,8 @@ public class QContest extends EntityPathBase<Contest> {
     //inherited
     public final DatePath<java.time.LocalDate> applyStartAt = _super.applyStartAt;
 
+    public final EnumPath<umc.fitme.domain.post.enums.ContestCategory> contestCategory = createEnum("contestCategory", umc.fitme.domain.post.enums.ContestCategory.class);
+
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
 
