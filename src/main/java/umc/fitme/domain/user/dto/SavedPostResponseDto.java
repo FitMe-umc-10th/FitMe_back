@@ -37,7 +37,8 @@ public class SavedPostResponseDto {
     public record SavePostResponse(
             Long savedId,
             Long postId,
-            Boolean saved
+            Boolean saved,
+            LocalDateTime savedAt
     ) {
 
     }

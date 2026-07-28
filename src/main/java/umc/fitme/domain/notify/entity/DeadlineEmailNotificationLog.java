@@ -2,9 +2,9 @@ package umc.fitme.domain.notify.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.notify.enums.DeadlineReminderType;
 import umc.fitme.domain.notify.enums.EmailSendStatus;
 import umc.fitme.domain.post.entity.Post;
@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
