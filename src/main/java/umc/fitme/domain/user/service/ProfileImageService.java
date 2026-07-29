@@ -12,6 +12,7 @@ import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ public class ProfileImageService {
     /* 프로필 이미지 업로드용 presigned URL(uploadUrl)과 최종 조회 URL(fileUrl)을 발급 (5분 유효) */
     public ProfileImageResponseDto.PresignedUrlResponse createPresignedUrl(Long userId, ProfileImageRequestDto.PresignedUrlRequest request) {
         String extension = extractExtension(request.fileName());
-        String contentType = request.contentType().toLowerCase();
+        String contentType = request.contentType().toLowerCase(Locale.ROOT);
 
         String expectedContentType = EXTENSION_TO_CONTENT_TYPE.get(extension);
         if (expectedContentType == null || !expectedContentType.equals(contentType)) {
@@ -67,6 +68,6 @@ public class ProfileImageService {
         if (lastDotIndex < 0 || lastDotIndex == fileName.length() - 1) {
             throw new ProjectException(UserErrorCode.INVALID_IMAGE_FILE_NAME);
         }
-        return fileName.substring(lastDotIndex + 1).toLowerCase();
+        return fileName.substring(lastDotIndex + 1).toLowerCase(Locale.ROOT);
     }
 }
