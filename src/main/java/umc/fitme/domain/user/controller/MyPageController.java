@@ -11,9 +11,12 @@ import umc.fitme.domain.user.dto.MyPageProfileResponseDto;
 import umc.fitme.domain.user.dto.MyPageResponseDto;
 import umc.fitme.domain.user.dto.NotificationSettingRequestDto;
 import umc.fitme.domain.user.dto.NotificationSettingResponseDto;
+import umc.fitme.domain.user.dto.ProfileImageRequestDto;
+import umc.fitme.domain.user.dto.ProfileImageResponseDto;
 import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
 import umc.fitme.domain.user.service.NotificationSettingService;
+import umc.fitme.domain.user.service.ProfileImageService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.global.security.entity.PrincipalDetails;
@@ -26,6 +29,7 @@ public class MyPageController {
     private final MyPageService myPageService;
     private final MyPageProfileService myPageProfileService;
     private final NotificationSettingService notificationSettingService;
+    private final ProfileImageService profileImageService;
 
     @GetMapping
     public ApiResponse<MyPageResponseDto.MyPageResponse> getMyPage(
@@ -50,6 +54,16 @@ public class MyPageController {
             @Valid @RequestBody MyPageProfileRequestDto.UpdateProfileRequest request) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK,
                 myPageProfileService.updateProfile(principal.getUser().getId(), request));
+    }
+
+    @Operation(summary = "프로필 이미지 업로드 presigned URL 발급",
+            description = "파일명/컨텐츠타입을 받아 S3 PUT presigned URL과 최종 조회 URL을 발급한다. jpg/jpeg/png만 허용.")
+    @PostMapping("/profile/image/presigned-url")
+    public ApiResponse<ProfileImageResponseDto.PresignedUrlResponse> issueProfileImagePresignedUrl(
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @Valid @RequestBody ProfileImageRequestDto.PresignedUrlRequest request) {
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK,
+                profileImageService.createPresignedUrl(principal.getUser().getId(), request));
     }
 
     @Tag(name = "마이페이지 - 알림 설정")
