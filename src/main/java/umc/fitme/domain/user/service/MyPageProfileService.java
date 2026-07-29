@@ -1,6 +1,7 @@
   package umc.fitme.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.interest.entity.Interest;
@@ -30,6 +31,12 @@ public class MyPageProfileService {
     private final InterestRepository interestRepository;
     private final UserInterestRepository userInterestRepository;
     private final RecommendationRefreshService recommendationRefreshService;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     /**
      * 마이페이지 프로필을 조회합니다.
@@ -85,6 +92,7 @@ public class MyPageProfileService {
         }
 
         if (request.profileImageUrl() != null) {
+            validateOwnedProfileImageUrl(userId, request.profileImageUrl());
             detail.updateProfileImage(request.profileImageUrl());
         }
 
@@ -96,6 +104,23 @@ public class MyPageProfileService {
         recommendationRefreshService.refresh(userId);
 
         return MyPageProfileResponseDto.UpdateProfileResponse.of(detail, buildInterestItems(user));
+    }
+
+    /**
+     * 프로필 이미지 URL이 본인 소유 경로(presigned URL 발급 시 사용한 key 프리픽스)인지 검증합니다.
+     * 다른 사용자 경로나 외부 도메인 URL이 그대로 저장되는 것을 막습니다.
+     *
+     * @param userId 로그인한 사용자 식별자
+     * @param profileImageUrl 요청으로 온 프로필 이미지 URL
+     */
+    private void validateOwnedProfileImageUrl(Long userId, String profileImageUrl) {
+        // TODO: CloudFront 도입 시 프리픽스(도메인) 갱신 필요
+        String expectedPrefix = String.format("https://%s.s3.%s.amazonaws.com/%s%d/",
+                bucket, region, ProfileImageService.KEY_PREFIX, userId);
+
+        if (!profileImageUrl.startsWith(expectedPrefix)) {
+            throw new ProjectException(UserErrorCode.INVALID_IMAGE_URL);
+        }
     }
 
     /**

@@ -20,6 +20,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProfileImageService {
 
+    /* 프로필 이미지 object key 프리픽스 (저장 단계 소유권 검증에서도 공유) */
+    public static final String KEY_PREFIX = "profile/";
+
     /* 허용 확장자 -> 해당 확장자에 대응하는 contentType */
     private static final Map<String, String> EXTENSION_TO_CONTENT_TYPE =
             Map.of("jpg", "image/jpeg", "jpeg", "image/jpeg", "png", "image/png");
@@ -49,7 +52,7 @@ public class ProfileImageService {
             throw new ProjectException(UserErrorCode.INVALID_IMAGE_SIZE);
         }
 
-        String key = "profile/" + userId + "/" + UUID.randomUUID() + "." + extension;
+        String key = KEY_PREFIX + userId + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
