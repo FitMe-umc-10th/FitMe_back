@@ -43,7 +43,7 @@ class ProfileImageServiceTest {
     void createPresignedUrl_invalidContentType() {
         // given
         ProfileImageRequestDto.PresignedUrlRequest request =
-                new ProfileImageRequestDto.PresignedUrlRequest("a.gif", "image/gif");
+                new ProfileImageRequestDto.PresignedUrlRequest("a.gif", "image/gif", 1024L);
 
         // when
         ProjectException exception = assertThrows(
@@ -60,7 +60,7 @@ class ProfileImageServiceTest {
     void createPresignedUrl_invalidFileName() {
         // given
         ProfileImageRequestDto.PresignedUrlRequest request =
-                new ProfileImageRequestDto.PresignedUrlRequest("avatar", "image/png");
+                new ProfileImageRequestDto.PresignedUrlRequest("avatar", "image/png", 1024L);
 
         // when
         ProjectException exception = assertThrows(
@@ -77,7 +77,7 @@ class ProfileImageServiceTest {
     void createPresignedUrl_success() throws Exception {
         // given
         ProfileImageRequestDto.PresignedUrlRequest request =
-                new ProfileImageRequestDto.PresignedUrlRequest("avatar.png", "image/png");
+                new ProfileImageRequestDto.PresignedUrlRequest("avatar.png", "image/png", 1024L);
 
         URL presignedUrl = URI.create("https://test-bucket.s3.ap-northeast-2.amazonaws.com/presigned?X-Amz-Signature=test").toURL();
         PresignedPutObjectRequest presignedRequest = org.mockito.Mockito.mock(PresignedPutObjectRequest.class);

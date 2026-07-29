@@ -1,6 +1,7 @@
 package umc.fitme.domain.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class ProfileImageRequestDto {
 
@@ -10,7 +11,10 @@ public class ProfileImageRequestDto {
             String fileName,
 
             @NotBlank(message = "파일 형식(Content-Type)은 필수입니다.")
-            String contentType
+            String contentType,
+
+            @NotNull(message = "파일 용량은 필수입니다.")
+            Long fileSize
     ) {
     }
 }

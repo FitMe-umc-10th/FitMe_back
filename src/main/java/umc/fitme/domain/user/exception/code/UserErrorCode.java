@@ -21,6 +21,7 @@ public enum UserErrorCode implements BaseErrorCode {
 
     INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "IMAGE400_1", "지원하지 않는 이미지 형식입니다. (jpg, jpeg, png만 허용됩니다.)"),
     INVALID_IMAGE_FILE_NAME(HttpStatus.BAD_REQUEST, "IMAGE400_2", "파일 확장자를 확인할 수 없습니다."),
+    INVALID_IMAGE_SIZE(HttpStatus.BAD_REQUEST, "IMAGE400_3", "파일 용량이 너무 큽니다. (최대 5MB)"),
     ;
 
     private final HttpStatus status;

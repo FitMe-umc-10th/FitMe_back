@@ -24,6 +24,7 @@ public class ProfileImageService {
     private static final Map<String, String> EXTENSION_TO_CONTENT_TYPE =
             Map.of("jpg", "image/jpeg", "jpeg", "image/jpeg", "png", "image/png");
     private static final Duration PRESIGNED_URL_DURATION = Duration.ofMinutes(5);
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
 
     private final S3Presigner s3Presigner;
 
@@ -43,12 +44,18 @@ public class ProfileImageService {
             throw new ProjectException(UserErrorCode.INVALID_IMAGE_TYPE);
         }
 
+        Long fileSize = request.fileSize();
+        if (fileSize == null || fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
+            throw new ProjectException(UserErrorCode.INVALID_IMAGE_SIZE);
+        }
+
         String key = "profile/" + userId + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .contentType(contentType)
+                .contentLength(fileSize)
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
