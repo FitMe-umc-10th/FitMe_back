@@ -114,7 +114,6 @@ public class MyPageProfileService {
      * @param profileImageUrl 요청으로 온 프로필 이미지 URL
      */
     private void validateOwnedProfileImageUrl(Long userId, String profileImageUrl) {
-        // TODO: CloudFront 도입 시 프리픽스(도메인) 갱신 필요
         String expectedPrefix = String.format("https://%s.s3.%s.amazonaws.com/%s%d/",
                 bucket, region, ProfileImageService.KEY_PREFIX, userId);
 
