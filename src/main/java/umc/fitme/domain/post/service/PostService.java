@@ -3,14 +3,21 @@ package umc.fitme.domain.post.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import umc.fitme.domain.post.converter.PostConverter;
 import umc.fitme.domain.post.dto.PostSearchDto;
 import umc.fitme.domain.post.dto.SearchViewDto;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.FluctuationType;
 import umc.fitme.domain.post.enums.SearchSortType;
+import umc.fitme.domain.post.exception.PostException;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.domain.post.repository.PostRepository;
+import umc.fitme.domain.user.entity.SearchRecent;
+import umc.fitme.domain.user.exception.UserException;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.SearchRecentRepository;
+import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
 
 import java.time.LocalDate;
@@ -24,19 +31,26 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class PostService {
 
+    private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final UserSaveRepository userSaveRepository;
     private final SearchRecentRepository searchRecentRepository;
 
     /***
-     * 조건에 맞는 공고를 탐색하고 반환한다.
+     * 함수 기능: 조건에 맞는 공고를 탐색하고 반환한다.
      * @param dto
      * @param userId
      * @return
      */
+    @Transactional
     public PostSearchDto.Pagination<PostSearchDto.PostSearchRes> searchPost(PostSearchDto.PostSearchReq dto, Long userId){
 
-        // 조건에 맞는 Post 반환
+        // 검색어가 존재한다면, SearchRecent 테이블 추가 or 업데이트
+        if (StringUtils.hasText(dto.keyword())){
+            saveOrUpdateRecentSearch(userId, dto.keyword().trim());
+        }
+
+        // 조건에 맞는 공고 리스트 반환
         List<Post> postList = postRepository.searchPostByCondition(dto);
         int pageSize = dto.pageSize();
 
@@ -80,14 +94,14 @@ public class PostService {
     }
 
     /***
-     *
-     * @param userId
-     * @return
+     * 해당 유저의 최근 검색어(10개)와 실시간 공고(8개)를 응답한다.
+     * @param userId 유저 ID
+     * @return SearchViewRes 최근 검색어 10개, 실시간 공고 8개
      */
     public SearchViewDto.SearchViewRes getSearchMainPage(Long userId) {
 
         // 최근 10개의 검색어 조회
-        List<SearchViewDto.RecentKeywordDto> recentKeywords = searchRecentRepository.findTop10ByUserId(userId)
+        List<SearchViewDto.RecentKeywordDto> recentKeywords = searchRecentRepository.findTop10ByUserIdOrderByUpdateAtDesc(userId)
                 .stream()
                 .map(PostConverter::toRecentKeywordDto)
                 .toList();
@@ -107,6 +121,7 @@ public class PostService {
             realtimePostDto.add(realtimePost);
         }
 
+        // SearchViewDto.RealtimePostGroupDto 빌드
         SearchViewDto.RealtimePostGroupDto realtimePostGroup = SearchViewDto.RealtimePostGroupDto.builder()
                 .baseTime(LocalDateTime.now())
                 .posts(realtimePostDto)
@@ -116,6 +131,35 @@ public class PostService {
                 .recentKeywords(recentKeywords)
                 .realtimePosts(realtimePostGroup)
                 .build();
+    }
+
+    /***
+     * 함수 기능: 해당 최근 검색어 ID를 테이블에서 삭제한다.
+     * @param searchId
+     */
+    @Transactional
+    public void deleteRecentKeyword(Long userId, Long searchId) {
+
+        SearchRecent searchRecent = searchRecentRepository.findByIdAndUserId(searchId, userId)
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_RECENT_SEARCH_NOT_FOUND));
+
+        searchRecentRepository.delete(searchRecent);
+    }
+
+    // 이미 존재하는 키워드인지 확인 후 업데이트 또는 신규 생성 로직
+    private void saveOrUpdateRecentSearch(Long userId, String keyword) {
+        searchRecentRepository.findByUserIdAndKeyword(userId, keyword)
+                .ifPresentOrElse(
+                        SearchRecent::updateSearchTime,
+                        () -> {
+                            SearchRecent searchRecent = SearchRecent.builder()
+                                    .user(userRepository.getReferenceById(userId))
+                                    .keyword(keyword)
+                                    .updateAt(LocalDateTime.now())
+                                    .build();
+                            searchRecentRepository.save(searchRecent);
+                        }
+                );
     }
 
     // 순위 변동 계산 로직

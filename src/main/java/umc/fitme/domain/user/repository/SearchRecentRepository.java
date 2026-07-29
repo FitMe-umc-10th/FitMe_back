@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import umc.fitme.domain.user.entity.SearchRecent;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SearchRecentRepository extends JpaRepository<SearchRecent, Long> {
 
@@ -12,8 +13,18 @@ public interface SearchRecentRepository extends JpaRepository<SearchRecent, Long
     select sr
     from SearchRecent sr
     where sr.user.id = :userId
-    order by sr.id desc
+    order by sr.updateAt desc
     limit 8
     """)
-    List<SearchRecent> findTop10ByUserId(Long userId);
+    List<SearchRecent> findTop10ByUserIdOrderByUpdateAtDesc(Long userId);
+
+    Optional<SearchRecent> findByUserIdAndKeyword(Long userId, String keyword);
+
+    @Query("""
+select sr
+from SearchRecent sr
+where sr.id = :id
+    and sr.user.id = :userId
+""")
+    Optional<SearchRecent> findByIdAndUserId(Long id, Long userId);
 }

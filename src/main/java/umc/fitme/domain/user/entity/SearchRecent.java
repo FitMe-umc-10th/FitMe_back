@@ -33,4 +33,8 @@ public class SearchRecent {
         this.keyword = keyword;
         this.updateAt = updateAt;
     }
+
+    public void updateSearchTime() {
+        this.updateAt = LocalDateTime.now();
+    }
 }

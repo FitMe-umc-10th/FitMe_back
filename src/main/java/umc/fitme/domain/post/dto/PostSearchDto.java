@@ -1,5 +1,7 @@
 package umc.fitme.domain.post.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.Builder;
 import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.PostType;
@@ -7,7 +9,6 @@ import umc.fitme.domain.post.enums.SearchSortType;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 
 public class PostSearchDto {
 
@@ -21,7 +22,30 @@ public class PostSearchDto {
             Integer pageSize // 보여줄 갯수
     ){
         public PostSearchReq{
-            pageSize = Objects.requireNonNullElse(pageSize, 10);
+            if (type == null) type = PostType.ALL;
+            if (sort == null) sort = SearchSortType.DEADLINE;
+            if (pageSize == null) pageSize = 10;
+        }
+
+        @AssertTrue(message = "공고 타입이 '전체' 혹은 '장학금'이라면, 카테고리에는 값이 포함될 수 없습니다.")
+        @JsonIgnore
+        public boolean isTypeValid(){
+            if (type != PostType.CONTEST && category != null){
+                return false;
+            }
+            return true;
+        }
+
+        @AssertTrue(message = "마감순 정렬 시 idCursor와 deadlineCursor는 모두 비어있거나(첫 페이지) 모두 존재해야 합니다(다음 페이지).")
+        @JsonIgnore
+        public boolean isSortAndCursorValid(){
+            if (sort == SearchSortType.DEADLINE){
+                boolean isFirstPage = (idCursor == null && deadlineCursor == null);
+                boolean isNextPage = (idCursor != null && deadlineCursor != null);
+
+                return isFirstPage || isNextPage;
+            }
+            return true;
         }
     }
 

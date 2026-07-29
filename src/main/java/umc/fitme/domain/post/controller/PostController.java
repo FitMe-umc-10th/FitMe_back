@@ -2,8 +2,10 @@ package umc.fitme.domain.post.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import umc.fitme.domain.post.dto.PostSearchDto;
 import umc.fitme.domain.post.dto.SearchViewDto;
@@ -20,6 +22,7 @@ import umc.fitme.domain.user.service.UserApplicationService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
+import umc.fitme.global.security.entity.PrincipalDetails;
 
 import java.util.List;
 
@@ -117,10 +120,11 @@ public class PostController {
     @GetMapping("/search-post")
     @Operation(summary = "공고 검색 API", description = "조건에 맞는 공고를 검색한다.")
     public ApiResponse<PostSearchDto.Pagination<PostSearchDto.PostSearchRes>> searchPosts(
-            @ParameterObject @ModelAttribute PostSearchDto.PostSearchReq dto
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @Valid @ParameterObject @ModelAttribute PostSearchDto.PostSearchReq dto
     ){
-        BaseSuccessCode successCode = GeneralSuccessCode.OK;
-        return ApiResponse.onSuccess(successCode, postService.searchPost(dto, 1L));
+        BaseSuccessCode successCode = PostSuccessCode.SEARCH_POST_OK;
+        return ApiResponse.onSuccess(successCode, postService.searchPost(dto, principal.getUser().getId()));
     }
 
     /***
@@ -130,8 +134,20 @@ public class PostController {
     @GetMapping("/search-main")
     @Operation(summary = "검색 대시보드 조회 API", description = "검색 창을 누르면 나오는 화면이다.")
     public ApiResponse<SearchViewDto.SearchViewRes> getSearchMain(
+            @AuthenticationPrincipal PrincipalDetails principal
     ){
         BaseSuccessCode successCode = PostSuccessCode.SEARCH_MAIN_OK;
-        return ApiResponse.onSuccess(successCode, postService.getSearchMainPage(1L));
+        return ApiResponse.onSuccess(successCode, postService.getSearchMainPage(principal.getUser().getId()));
+    }
+
+    @DeleteMapping("/search/recent/{searchId}")
+    @Operation(summary = "나의 검색 기록 삭제 API", description = "최근 검색어 목록에서 X버튼을 누르면 나의 최근검색어 목록에서 사라진다.")
+    public ApiResponse<Void> deleteRecentKeyword(
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @PathVariable Long searchId
+    ){
+        postService.deleteRecentKeyword(principal.getUser().getId(), searchId);
+        BaseSuccessCode successCode = PostSuccessCode.DELETE_RECENT_KEYWORD_OK;
+        return ApiResponse.onSuccess(successCode, null);
     }
 }
