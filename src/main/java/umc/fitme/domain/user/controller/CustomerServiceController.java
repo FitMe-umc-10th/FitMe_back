@@ -14,7 +14,7 @@ import umc.fitme.domain.user.service.FaqService;
 import umc.fitme.domain.user.service.InquiryService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 
 @Tag(name = "고객센터", description = "FAQ 조회 및 1:1 문의 등 고객센터 API")
 @RestController
@@ -37,12 +37,12 @@ public class CustomerServiceController {
     @PostMapping("/inquiries")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<InquiryResponseDto.CreateInquiryResponse> createInquiry(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @AuthenticationPrincipal PrincipalDetails principal,
             @Valid @RequestBody InquiryRequestDto.CreateInquiryRequest request
     ) {
         return ApiResponse.onSuccess(
                 GeneralSuccessCode.CREATED,
-                inquiryService.createInquiry(userDetails.getUserId(), request)
+                inquiryService.createInquiry(principal.getUser().getId(), request)
         );
     }
 }
