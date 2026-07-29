@@ -18,6 +18,9 @@ public enum UserErrorCode implements BaseErrorCode {
     INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "INTEREST404_1", "존재하지 않는 관심 분야가 포함되어 있습니다."),
 
     NOTIFICATION_UPDATE_EMPTY(HttpStatus.BAD_REQUEST, "NOTIFICATION400_1", "수정할 알림 설정 값이 없습니다."),
+
+    INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "IMAGE400_1", "지원하지 않는 이미지 형식입니다. (jpg, jpeg, png만 허용됩니다.)"),
+    INVALID_IMAGE_FILE_NAME(HttpStatus.BAD_REQUEST, "IMAGE400_2", "파일 확장자를 확인할 수 없습니다."),
     ;
 
     private final HttpStatus status;
