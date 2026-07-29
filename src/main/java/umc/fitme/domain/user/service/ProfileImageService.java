@@ -12,15 +12,16 @@ import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.Duration;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ProfileImageService {
 
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("image/jpeg", "image/png");
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
+    /* 허용 확장자 -> 해당 확장자에 대응하는 contentType */
+    private static final Map<String, String> EXTENSION_TO_CONTENT_TYPE =
+            Map.of("jpg", "image/jpeg", "jpeg", "image/jpeg", "png", "image/png");
     private static final Duration PRESIGNED_URL_DURATION = Duration.ofMinutes(5);
 
     private final S3Presigner s3Presigner;
@@ -36,7 +37,8 @@ public class ProfileImageService {
         String extension = extractExtension(request.fileName());
         String contentType = request.contentType().toLowerCase();
 
-        if (!ALLOWED_CONTENT_TYPES.contains(contentType) || !ALLOWED_EXTENSIONS.contains(extension)) {
+        String expectedContentType = EXTENSION_TO_CONTENT_TYPE.get(extension);
+        if (expectedContentType == null || !expectedContentType.equals(contentType)) {
             throw new ProjectException(UserErrorCode.INVALID_IMAGE_TYPE);
         }
 
