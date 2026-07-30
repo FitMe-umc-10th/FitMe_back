@@ -2,6 +2,8 @@ package umc.fitme.domain.post.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.PostType;
@@ -19,6 +21,9 @@ public class PostSearchDto {
             String keyword, // 검색어
             Long idCursor, // postId 커서
             LocalDate deadlineCursor, // 데드라인 커서
+
+            @Positive(message = "pageSize는 1 이상이어야 합니다")
+            @Max(value = 50, message = "pageSize는 50 이하여야 합니다")
             Integer pageSize // 보여줄 갯수
     ){
         public PostSearchReq{
