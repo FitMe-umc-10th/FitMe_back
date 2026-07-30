@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -45,18 +46,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // SecurityContext에서 인증객체의 principal 가져오기
         PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
 
-        Long userId = principal.getUser().getId();
-        String role = principal.getRole();
-        String email = principal.getUsername();
+        // 토큰 생성 후 쿠키에 저장
+        User user = principal.getUser();
+        String accessToken = jwtUtil.createAccessToken(user.getId(), principal.getRole(), user.getEmail());
+        String refreshToken = jwtUtil.createRefreshToken(user.getId());
 
-        String accessToken = jwtUtil.createAccessToken(userId, role, email);
-        String refreshToken = jwtUtil.createRefreshToken(userId);
-
-        log.info("발급된 accessToken: {}", accessToken); // 일단 디버깅용으로 로그에 남김
-        log.info("토큰 발급 완료 - userId: {}", userId);
+        log.info("토큰 발급 완료 - userId: {}", user.getId());
 
         // 소셜 로그인 성공 시, 프론트 주소로 리다이렉션
-        redirect(request, response, userId, email, accessToken, refreshToken);
+        redirect(request, response, user.getId(), user.getEmail(), accessToken, refreshToken);
     }
 
     /***
@@ -78,16 +76,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
         Boolean isOnboarded = user.getIsOnboarded();
 
-        // Refresh Token은 보안상 쿠키로 전달
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                .maxAge(1209600)
+        // RT 쿠키 생성
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .maxAge(1209600) // 14일 유효
                 .path("/")
-                .secure(true) // 배포 시 주석 해제 (HTTPS 환경)
-                .sameSite("None") // 배포 시 주석 해제 (CORS)
+                .secure(true)
+                .sameSite("None")
                 .httpOnly(true)
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString() );
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         // 프론트 URL로 리다이렉트 주소 조립
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
