@@ -242,13 +242,10 @@ public class PostConverter {
      * @return
      */
     private static @NonNull String getDeadlineLabel(Post post) {
-        long remainDays = ChronoUnit.DAYS.between(post.getApplyEndAt(), LocalDate.now());
-        String deadlineLabel = "";
-        if (remainDays == 0){
-            deadlineLabel = "D-Day";
-        } else {
-            deadlineLabel = "D-" + remainDays;
+        Integer dDay = calculateDDay(post.getApplyEndAt());
+        if (dDay == null){
+            return "";
         }
-        return deadlineLabel;
+        return dDay == 0 ? "D-day" : "D-" + dDay;
     }
 }
