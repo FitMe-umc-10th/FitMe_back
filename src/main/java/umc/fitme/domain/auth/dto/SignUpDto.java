@@ -21,7 +21,7 @@ public class SignUpDto {
             LocalDate birth,
 
             @NotBlank(message = "이메일은 필수 값입니다.")
-            @Schema(example = "fitme@example.com")
+            @Schema(example = "fitme@naver.com")
             @Email(message = "이메일 형식에 맞게 입력해주세요.")
             String email,
 
@@ -29,6 +29,7 @@ public class SignUpDto {
             String verificationCode,
 
             @NotBlank(message = "비밀번호는 필수 값입니다.")
+            @Schema(example = "qwer1234$")
             @Size(min = 7, max = 20, message = "비밀번호는 7자 이상 20자 이하여야 합니다.")
             @Pattern(
                     regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$",
@@ -57,7 +58,7 @@ public class SignUpDto {
     @Builder
     public record SignUpRes(
 
-            @Schema(example = "fitme@example.com")
+            @Schema(example = "fitme@naver.com")
             String email,
 
             LocalDateTime createdAt
