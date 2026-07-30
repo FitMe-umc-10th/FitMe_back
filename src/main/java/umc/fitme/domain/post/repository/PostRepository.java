@@ -50,7 +50,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl 
     @Query("""
     select p
     from Post p
-    order by p.viewCount desc
+    order by p.viewCount desc, p.id desc
     limit 8
     """)
     List<Post> findTop8ByViewCount();
