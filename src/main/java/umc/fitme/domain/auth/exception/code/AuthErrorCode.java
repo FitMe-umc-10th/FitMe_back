@@ -30,14 +30,15 @@ public enum AuthErrorCode implements BaseErrorCode {
     VERIFICATION_EXPIRED(HttpStatus.BAD_REQUEST,
             "AUTH400_7",
             "해당 이메일 인증이 만료되었습니다. 이메일 인증 후 30분 내 회원가입을 완료해주세요."),
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "AUTH400_8", "linkToken이 유효하지 않습니다."),
+    TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "AUTH400_9","linkToken이 만료되었습니다." ),
     EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND,
             "AUTH404_1",
             "해당 메일로 보낸 인증번호가 존재하지 않습니다. 먼저 원하는 이메일로 인증번호를 보내주세요."),
     EMAIL_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE,
                 "AUTH503_1",
-            "이메일 발송에 실패하였습니다. 메일 서버 장애"),
+            "이메일 발송에 실패하였습니다. 메일 서버 장애");
 
-    ;
 
     private final HttpStatus status;
     private final String code;
