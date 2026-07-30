@@ -21,7 +21,9 @@ public enum SocialLoginErrorCode implements BaseErrorCode {
     EMAIL_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,
             "SOCIAL_LOGIN400_1",
             "기존 이메일이 이미 존재하여 계정 충돌이 일어났습니다."),
-    ;
+    EMAIL_CONFLICT(HttpStatus.BAD_REQUEST,
+            "SOCIAL_LOGIN400_2",
+            "이미 다른 로그인 수단으로 가입된 이메일입니다. 기존 계정과 연동하시겠습니까?");
 
     private final HttpStatus status;
     private final String code;
