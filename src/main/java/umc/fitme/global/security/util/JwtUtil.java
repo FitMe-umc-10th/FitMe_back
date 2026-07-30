@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import umc.fitme.domain.auth.dto.LinkTokenDto;
 import umc.fitme.domain.user.entity.User;
+import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.security.entity.PrincipalDetails;
-import umc.fitme.global.security.exception.SocialLoginException;
-import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -83,6 +83,29 @@ public class JwtUtil {
     }
 
     /***
+     * 함수 기능: 계정 연동을 위한 linkToken
+     * @param email
+     * @param userId
+     * @return
+     */
+    public String createLinkToken(Long userId, String email, SocialType provider, String providerId) {
+
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + 180000); // 3분
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("typ", "link")
+                .claim("email", email)
+                .claim("provider", provider.toString())
+                .claim("providerId", providerId)
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /***
      * 사용자의 토큰에 대한 유효성을 검증한다.
      * @param token 사용자가 보유한 JWT 토큰
      * @return true/false
@@ -119,10 +142,10 @@ public class JwtUtil {
         String email = payload.get("email", String.class);
         String typ = payload.get("typ", String.class);
 
-        // 토큰 타입이 access가 아닌 경우 예외 처리
-        if (!"access".equals(typ)) {
-            throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
-        }
+//        // 토큰 타입이 access가 아닌 경우 예외 처리
+//        if (!"access".equals(typ)) {
+//            throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
+//        }
 
         User user = User.builder()
                 .id(userId)
@@ -131,6 +154,21 @@ public class JwtUtil {
 
         PrincipalDetails principal = new PrincipalDetails(user, role);
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+    }
+
+    public LinkTokenDto getLinkTokenInfo(String linkToken){
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(linkToken)
+                .getPayload();
+
+        return LinkTokenDto.builder()
+                .userId(Long.parseLong(claims.getSubject()))
+                .email(claims.get("email", String.class))
+                .socialType(claims.get("provider", String.class))
+                .providerId(claims.get("providerId", String.class))
+                .build();
     }
 }
 

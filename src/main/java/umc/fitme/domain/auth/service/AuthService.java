@@ -8,19 +8,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
-import umc.fitme.domain.auth.dto.EmailVerificationDto;
-import umc.fitme.domain.auth.dto.LoginDto;
-import umc.fitme.domain.auth.dto.SignUpDto;
+import umc.fitme.domain.auth.dto.*;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.entity.User;
+import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.exception.SocialLoginException;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.security.SecureRandom;
@@ -182,6 +181,56 @@ public class AuthService {
                 .expiresIn(3600L)
                 .member(member)
                 .build();
+    }
+
+    /***
+     * 함수 기능: 1. 헤더의 authorizationHeader안의 linkToken을 추출한다.
+     *           2. linkToken을 검증한다.
+     *           3. 토큰 안에 있는 정보를 바탕으로 기존 이메일에 새로운 정보를 추가한다.
+     *           4. 로그인을 진행하고 AT, RT를 발급하여 반환한다.
+     * @param authorizationHeader Bearer: {linkToken}
+     * @return LoginDto.LoginRes 로그인 성공 응답
+     */
+    public LoginDto.LoginRes linkAccount(String authorizationHeader) {
+        String linkToken = isValidateToken(authorizationHeader);
+
+        LinkTokenDto linkTokenInfo = jwtUtil.getLinkTokenInfo(linkToken);
+
+        User user = userRepository.findById(linkTokenInfo.getUserId())
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+        user.linkAccount(SocialType.valueOf(linkTokenInfo.getSocialType()), linkTokenInfo.getProviderId());
+
+        String accessToken = jwtUtil.createAccessToken(user.getId(), "USER", user.getEmail());
+        String refreshToken = jwtUtil.createRefreshToken(user.getId());
+
+        LoginDto.LoginRes.Member member = LoginDto.LoginRes.Member.builder()
+                .memberId(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .isOnboarded(user.getIsOnboarded())
+                .build();
+
+        return LoginDto.LoginRes.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer ")
+                .expiresIn(3600L)
+                .member(member)
+                .build();
+    }
+
+    // linkToken을 검증 로직
+    private String isValidateToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        String linkToken = authorizationHeader.substring(7);
+        if (!jwtUtil.validateToken(linkToken)){
+            throw new AuthException(AuthErrorCode.TOKEN_EXPIRED);
+        }
+        return linkToken;
     }
 
     /***

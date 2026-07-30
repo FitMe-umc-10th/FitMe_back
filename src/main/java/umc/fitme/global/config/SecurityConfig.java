@@ -55,6 +55,7 @@ public class SecurityConfig {
         "/v3/api-docs/**",
         "/error/**",
         "/api/**",
+        "/api/auth/**",
         "/test.html"
     };
 

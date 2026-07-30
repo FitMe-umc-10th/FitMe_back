@@ -62,7 +62,7 @@ public class User extends BaseEntity {
         this.isOnboarded = true;
     }
 
-    public void linkSocial(SocialType socialType, String socialUid) {
+    public void linkAccount(SocialType socialType, String socialUid) {
         this.socialType = socialType;
         this.socialUid = socialUid;
     }
