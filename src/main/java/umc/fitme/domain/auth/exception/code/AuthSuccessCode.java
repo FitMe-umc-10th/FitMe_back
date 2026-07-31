@@ -14,7 +14,8 @@ public enum AuthSuccessCode implements BaseSuccessCode {
     CONFIRM_OK(HttpStatus.OK,"AUTH200_2" ,"인증번호 검증에 성공하였습니다." ),
     SIGNUP_OK(HttpStatus.OK, "AUTH200_3", "회원가입이 성공적으로 완료되었습니다."),
     LOGIN_OK(HttpStatus.OK, "AUTH200_4", "로그인이 성공적으로 완료되었습니다."),
-    LINK_ACCOUNT_OK(HttpStatus.OK,"AUTH200_5", "계정 연동이 성공적으로 완료되었습니다.");
+    LINK_ACCOUNT_OK(HttpStatus.OK,"AUTH200_5", "계정 연동이 성공적으로 완료되었습니다."),
+    REISSUE_OK(HttpStatus.OK, "AUTH200_6", "새로운 AT, RT가 성공적으로 재발급되었습니다." );
 
     private final HttpStatus status;
     private final String code;
