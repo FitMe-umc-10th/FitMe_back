@@ -27,9 +27,12 @@ public class PostController {
 
     @GetMapping("/popular")
     public ApiResponse<PostResponseDTO.PopularPostListDTO> getPopularPosts(
+            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값.
+            // 비로그인도 인기 공고를 볼 수 있어야 하므로 선택 값으로 둔다. (없으면 찜 여부는 모두 false)
+            @RequestParam(name = "userId", required = false) Long userId,
             @RequestParam(name = "cursor", required = false) Long cursor,
             @RequestParam(name = "size", defaultValue = "8") Integer size) { //size 파라미터 추가 (기본값 8)
-        PostResponseDTO.PopularPostListDTO response = postQueryService.getPopularPosts(cursor, size);
+        PostResponseDTO.PopularPostListDTO response = postQueryService.getPopularPosts(userId, cursor, size);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
@@ -69,6 +72,19 @@ public class PostController {
             // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
             @RequestParam Long userId) {
         PostResponseDTO.PostDetailDTO response = postQueryService.getScholarshipPostDetail(userId, postId);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
+    }
+
+    /**
+     * 공모전 공고 상세 화면 진입 API.
+     * 상세 조회와 함께 조회 수 및 최근 조회 이력을 갱신한다.
+     */
+    @GetMapping("/contests/{postId}")
+    public ApiResponse<PostResponseDTO.PostDetailDTO> getContestPostDetail(
+            @PathVariable Long postId,
+            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
+            @RequestParam Long userId) {
+        PostResponseDTO.PostDetailDTO response = postQueryService.getContestPostDetail(userId, postId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 

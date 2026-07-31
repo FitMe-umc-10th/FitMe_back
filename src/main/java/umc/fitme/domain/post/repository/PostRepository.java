@@ -43,6 +43,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             PageRequest pageRequest
     );
 
-    @Query("SELECT p FROM Post p ORDER BY RAND()")
-    List<Post> findRandomPosts(PageRequest pageRequest);
+    // 인기 공고에 노출할 후보를 공고 종류별로 무작위 조회한다.
+    // 마감된 공고는 인기 목록에 띄우지 않는다.
+    @Query("""
+            SELECT p
+            FROM Post p
+            WHERE p.applyEndAt >= CURRENT_DATE
+              AND p.postType = :postType
+            ORDER BY RAND()
+            """)
+    List<Post> findRandomPostsByType(
+            @Param("postType") PostType postType,
+            PageRequest pageRequest
+    );
 }      

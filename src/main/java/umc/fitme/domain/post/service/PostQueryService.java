@@ -26,6 +26,7 @@ import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +46,12 @@ public class PostQueryService {
     private static final int MAX_CANDIDATE_SIZE = 500;
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
 
+    // 인기 공고는 공모전과 장학금을 3:2 비율로 노출한다.
+    private static final int POPULAR_CONTEST_RATIO = 3;
+    private static final int POPULAR_SCHOLARSHIP_RATIO = 2;
+    private static final int POPULAR_RATIO_SUM = POPULAR_CONTEST_RATIO + POPULAR_SCHOLARSHIP_RATIO;
+    private static final int POPULAR_DEFAULT_SIZE = 8;
+
     private final PostRepository postRepository;
     private final ViewHistoryRepository viewHistoryRepository;
     private final UserRepository userRepository;
@@ -54,19 +61,47 @@ public class PostQueryService {
     private final UserSaveRepository userSaveRepository;
 
 
-    public PostResponseDTO.PopularPostListDTO getPopularPosts(Long cursor, Integer size) {
+    /**
+     * 실시간 인기 공고를 공모전:장학금 = 3:2 비율로 구성한다.
+     * 한쪽 공고 수가 배정량에 못 미치면 부족한 만큼 다른 종류로 채워 요청한 개수를 유지한다.
+     * userId가 없으면(비로그인) 찜 여부는 모두 false로 내려간다.
+     */
+    public PostResponseDTO.PopularPostListDTO getPopularPosts(Long userId, Long cursor, Integer size) {
+        int totalSize = (size == null || size <= 0) ? POPULAR_DEFAULT_SIZE : size;
 
+        // 후보를 요청 개수만큼 넉넉히 뽑아두고, 한쪽이 부족할 때 나머지로 보충한다.
+        PageRequest candidateRequest = PageRequest.of(0, totalSize);
+        List<Post> contests = postRepository.findRandomPostsByType(PostType.CONTEST, candidateRequest);
+        List<Post> scholarships = postRepository.findRandomPostsByType(PostType.SCHOLARSHIP, candidateRequest);
 
+        // 3:2로 나눌 때 나머지는 비율이 큰 공모전 쪽에 준다. (size=8 -> 공모전 5, 장학금 3)
+        int contestQuota = (int) Math.ceil((double) totalSize * POPULAR_CONTEST_RATIO / POPULAR_RATIO_SUM);
+        int contestTake = Math.min(contestQuota, contests.size());
+        int scholarshipTake = Math.min(totalSize - contestQuota, scholarships.size());
 
-        PageRequest pageRequest = PageRequest.of(0, size);
-        List<Post> randomPosts = postRepository.findRandomPosts(pageRequest);
+        int shortage = totalSize - contestTake - scholarshipTake;
+        if (shortage > 0) {
+            int extraScholarship = Math.min(shortage, scholarships.size() - scholarshipTake);
+            scholarshipTake += extraScholarship;
+            shortage -= extraScholarship;
+        }
+        if (shortage > 0) {
+            contestTake += Math.min(shortage, contests.size() - contestTake);
+        }
 
+        List<Post> popularPosts = new ArrayList<>();
+        popularPosts.addAll(contests.subList(0, contestTake));
+        popularPosts.addAll(scholarships.subList(0, scholarshipTake));
+        // 종류별로 묶여 보이지 않도록 섞어서 내려준다.
+        Collections.shuffle(popularPosts);
 
-        boolean hasNext = false;
-        Long nextCursor = null;
+        // 로그인 사용자면 찜한 공고 id를 모아 카드에 찜 상태를 표시한다.
+        Set<Long> savedPostIds = userId == null
+                ? Set.of()
+                : userSaveRepository.findSavedPostIdsByUserId(userId);
 
-
-        return PostConverter.toPopularPostListDTO(randomPosts, hasNext, nextCursor);
+        // 커서 페이징은 아직 적용하지 않는다. (기존 동작 유지)
+        return PostConverter.toPopularPostListDTO(popularPosts, false, null, savedPostIds);
     }
 
 
@@ -127,6 +162,16 @@ public class PostQueryService {
     @Transactional
     public PostResponseDTO.PostDetailDTO getScholarshipPostDetail(Long userId, Long postId) {
         return getPostDetail(userId, postId, PostType.SCHOLARSHIP);
+    }
+
+    /**
+     * 공모전 공고 상세 화면 진입 API.
+     * 장학금 상세와 동일하게 조회 수 및 최근 조회 이력을 갱신한다.
+     * URL은 공모전 경로지만 다른 타입의 공고 ID가 들어오는 경우에는 조회를 허용하지 않는다.
+     */
+    @Transactional
+    public PostResponseDTO.PostDetailDTO getContestPostDetail(Long userId, Long postId) {
+        return getPostDetail(userId, postId, PostType.CONTEST);
     }
 
     private PostResponseDTO.PostDetailDTO getPostDetail(
