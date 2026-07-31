@@ -12,6 +12,8 @@ import umc.fitme.domain.auth.dto.LinkTokenDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.exception.TokenException;
+import umc.fitme.global.security.exception.code.TokenErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -108,20 +110,13 @@ public class JwtUtil {
     /***
      * 사용자의 토큰에 대한 유효성을 검증한다.
      * @param token 사용자가 보유한 JWT 토큰
-     * @return true/false
      */
-    public boolean validateToken(String token){
-        try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
-                    .clockSkewSeconds(60)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (Exception e) {
-            log.error("토큰이 유효하지 않습니다. {}", e.getMessage());
-            return false;
-        }
+    public void validateToken(String token){
+        Jwts.parser()
+                .verifyWith(secretKey)
+                .clockSkewSeconds(60)
+                .build()
+                .parseSignedClaims(token);
     }
 
     /***
@@ -142,10 +137,10 @@ public class JwtUtil {
         String email = payload.get("email", String.class);
         String typ = payload.get("typ", String.class);
 
-//        // 토큰 타입이 access가 아닌 경우 예외 처리
-//        if (!"access".equals(typ)) {
-//            throw new SocialLoginException(SocialLoginErrorCode.TOKEN_NOT_VALIDATE);
-//        }
+        // 토큰 타입이 access가 아닌 경우 예외 처리
+        if (!"access".equals(typ)) {
+            throw new TokenException(TokenErrorCode.AT_NOT_VALIDATE);
+        }
 
         User user = User.builder()
                 .id(userId)
@@ -156,18 +151,48 @@ public class JwtUtil {
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
     }
 
+    /***
+     * 함수 기능: RT에서 userId 값을 추출한다.
+     * @param token RT
+     * @return 회원 ID
+     */
+    public Long getUserIdFromRT(String token) {
+        Claims payload = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        String typ = payload.get("typ", String.class);
+        if(!"refresh".equals(typ)){
+            throw new TokenException(TokenErrorCode.RT_NOT_VALIDATE);
+        }
+
+        return Long.parseLong(payload.getSubject());
+    }
+
+    /***
+     * 함수 기능: LT에서 정보를 추출한다.
+     * @param linkToken LT
+     * @return LinkTokenDto 유저ID, 이메일, 공급자, 공급자ID
+     */
     public LinkTokenDto getLinkTokenInfo(String linkToken){
-        Claims claims = Jwts.parser()
+        Claims payload = Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(linkToken)
                 .getPayload();
 
+        String typ = payload.get("typ", String.class);
+        if (!"link".equals(typ)){
+            throw new TokenException(TokenErrorCode.LT_NOT_VALIDATE);
+        }
+
         return LinkTokenDto.builder()
-                .userId(Long.parseLong(claims.getSubject()))
-                .email(claims.get("email", String.class))
-                .socialType(claims.get("provider", String.class))
-                .providerId(claims.get("providerId", String.class))
+                .userId(Long.parseLong(payload.getSubject()))
+                .email(payload.get("email", String.class))
+                .socialType(payload.get("provider", String.class))
+                .providerId(payload.get("providerId", String.class))
                 .build();
     }
 }
