@@ -15,7 +15,8 @@ spring:
 
 app:
   oauth2:
-    redirect-uri: http://localhost:5173/oauth2/callback # 추후 프론트엔드 주소 기입
+    redirect-uri: https://fit-me-front-5526k5r7a-fitme1.vercel.app/oauth2/callback # 추후 프론트엔드 주소 기입
+    failure-redirection-uri: https://fit-me-front-5526k5r7a-fitme1.vercel.app/login
 
 logging:
   level:

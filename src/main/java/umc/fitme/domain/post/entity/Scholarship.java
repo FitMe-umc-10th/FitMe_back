@@ -1,10 +1,9 @@
 package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.util.ScholarshipAmountParser;

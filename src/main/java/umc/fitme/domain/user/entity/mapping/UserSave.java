@@ -10,8 +10,6 @@ import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.global.entity.BaseEntity;
 
-import java.time.LocalDateTime;
-
 @Entity
 @SuperBuilder
 @AllArgsConstructor
