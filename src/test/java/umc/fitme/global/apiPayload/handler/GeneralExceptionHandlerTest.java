@@ -1,28 +1,29 @@
 package umc.fitme.global.apiPayload.handler;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import umc.fitme.global.apiPayload.ApiResponse;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import umc.fitme.domain.user.controller.UserApplicationController;
+import umc.fitme.domain.user.service.UserApplicationService;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class GeneralExceptionHandlerTest {
 
-    private final GeneralExceptionHandler handler = new GeneralExceptionHandler();
-
     @Test
-    void handleMissingServletRequestParameterException_returnsBadRequest() {
-        MissingServletRequestParameterException exception =
-                new MissingServletRequestParameterException("tab", "String");
+    void getUserApplications_withoutTab_returnsBadRequest() throws Exception {
+        UserApplicationService userApplicationService = mock(UserApplicationService.class);
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(new UserApplicationController(userApplicationService))
+                .setControllerAdvice(new GeneralExceptionHandler())
+                .build();
 
-        ResponseEntity<ApiResponse<Void>> response =
-                handler.handleMissingServletRequestParameterException(exception);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getIsSuccess()).isFalse();
-        assertThat(response.getBody().getCode()).isEqualTo("COMMON400_1");
+        mockMvc.perform(get("/api/v1/user-applications"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.code").value("COMMON400_1"));
     }
 }
