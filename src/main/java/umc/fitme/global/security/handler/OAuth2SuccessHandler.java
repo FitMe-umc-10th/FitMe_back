@@ -12,11 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import umc.fitme.domain.auth.service.TokenService;
 import umc.fitme.domain.user.entity.User;
-import umc.fitme.domain.user.exception.UserException;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.util.CookieUtil;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.io.IOException;
@@ -27,7 +26,8 @@ import java.io.IOException;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private final CookieUtil cookieUtil;
+    private final TokenService tokenService;
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUrl;
@@ -53,15 +53,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("토큰 발급 완료 - userId: {}", user.getId());
 
+        // 발급한 refreshToken 저장 or 업데이트
+        tokenService.saveOrUpdateRefreshToken(user, refreshToken);
+
         // 소셜 로그인 성공 시, 프론트 주소로 리다이렉션
-        redirect(request, response, user.getId(), user.getEmail(), accessToken, refreshToken);
+        redirect(request, response, user, accessToken, refreshToken);
     }
 
     /***
      * 함수 기능: 생성된 accessToken, refreshToken과 함께 유저 정보 및 온보딩 여부도 담아 전달.
      * @param response 응답
-     * @param userId 유저ID
-     * @param email 유저 이메일
+     * @param user 회원 객체
      * @param accessToken
      * @param refreshToken
      * @throws IOException
@@ -69,29 +71,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private void redirect(
             HttpServletRequest request,
             HttpServletResponse response,
-            Long userId, String email, String accessToken, String refreshToken) throws IOException {
+            User user,
+            String accessToken,
+            String refreshToken) throws IOException {
 
         // 온보딩 여부 조사
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
         Boolean isOnboarded = user.getIsOnboarded();
 
-        // RT 쿠키 생성
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .maxAge(1209600) // 14일 유효
-                .path("/")
-                .secure(true)
-                .sameSite("None")
-                .httpOnly(true)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createRefreshTokenCookie(refreshToken, true));
 
         // 프론트 URL로 리다이렉트 주소 조립
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                 .queryParam("accessToken", accessToken)
-                .queryParam("userId", userId)
-                .queryParam("email", email)
+                .queryParam("userId", user.getId())
+                .queryParam("email", user.getEmail())
                 .queryParam("isOnboarded", isOnboarded)
                 .build()
                 .encode()
