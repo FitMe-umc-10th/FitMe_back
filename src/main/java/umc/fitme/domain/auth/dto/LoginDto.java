@@ -21,9 +21,14 @@ public class LoginDto {
     ){}
 
     @Builder
+    public record LoginResultDto(
+            LoginRes loginRes,
+            String refreshToken
+    ){}
+
+    @Builder
     public record LoginRes(
             String accessToken,
-            String refreshToken,
             String tokenType,
             Long expiresIn,
             Member member
