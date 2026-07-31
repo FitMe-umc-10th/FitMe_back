@@ -43,6 +43,11 @@ public class RefreshToken {
         this.expiresAt = expiresAt;
     }
 
+    /***
+     * 기존 RT를 갱신한다.
+     * @param token
+     * @param expiresAt
+     */
     public void updateToken(String token, LocalDateTime expiresAt){
         this.token = token;
         this.expiresAt = expiresAt;

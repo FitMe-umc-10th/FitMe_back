@@ -28,11 +28,11 @@ public class TokenService {
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(refreshTokenValidity / 1000L);
 
         refreshTokenRepository.findByUser(user)
-                .ifPresentOrElse(
+                .ifPresentOrElse( // 해당 RT가 DB에 있다면, 값 업데이트
                         existingToken -> {
                             existingToken.updateToken(refreshToken, expiresAt);
                         },
-                        () -> {
+                        () -> { // 해당 RT가 DB에 없다면, 새로 추가
                             RefreshToken newRefreshToken = RefreshToken.builder()
                                     .user(user)
                                     .token(refreshToken)
