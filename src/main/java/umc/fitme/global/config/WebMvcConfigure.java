@@ -12,7 +12,7 @@ public class WebMvcConfigure implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:5173",
-                        "https://fit-me-front-5526k5r7a-fitme1.vercel.app"
+                        "https://fit-me-front-smoky.vercel.app"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
