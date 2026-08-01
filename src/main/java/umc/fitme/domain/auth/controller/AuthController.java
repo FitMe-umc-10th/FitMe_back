@@ -92,17 +92,17 @@ public class AuthController {
 
     /***
      * 함수 기능: 계정연동을 진행한다.
-     * @param authorizationHeader Bearer: {linkToken}
+     * @param linkTokenHeader Bearer: {linkToken}
      * @return 로그인 성공 응답
      */
     @Operation(summary = "계정 연동 API", description = "충돌이 발생한 이메일과 기존 이메일을 연동한다.")
     @PatchMapping("/link")
     public ResponseEntity<ApiResponse<LoginDto.LoginRes>> linkAccount(
-            @RequestHeader(name = "Link-Token") String authorizationHeader
+            @RequestHeader(name = "Link-Token") String linkTokenHeader
     ){
         BaseSuccessCode successCode = AuthSuccessCode.LINK_ACCOUNT_OK;
 
-        LoginDto.LoginResultDto resultDto = authService.linkAccount(authorizationHeader);
+        LoginDto.LoginResultDto resultDto = authService.linkAccount(linkTokenHeader);
         String cookie = cookieUtil.createRefreshTokenCookie(resultDto.refreshToken(),true);
 
         return ResponseEntity.ok()
