@@ -54,6 +54,7 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/error/**",
+            "/api/**", // 임시
         "/api/auth/**",
         "/test.html"
     };
