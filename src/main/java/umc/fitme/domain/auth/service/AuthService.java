@@ -1,5 +1,7 @@
 package umc.fitme.domain.auth.service;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -239,7 +241,9 @@ public class AuthService {
         }
         try { // RT가 유효하지 않다면 예외 리턴
             jwtUtil.validateToken(refreshToken);
-        } catch (Exception e){
+        } catch (ExpiredJwtException e){
+            throw new TokenException(TokenErrorCode.REFRESH_TOKEN_EXPIRED);
+        } catch (JwtException e){
             throw new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN);
         }
 
@@ -252,7 +256,7 @@ public class AuthService {
         RefreshToken dbToken = refreshTokenRepository.findByUser(user)
                 .orElseThrow(() -> new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN));
         if (!dbToken.getToken().equals(refreshToken)){ // [해킹 의심 상황] RT 삭제
-            refreshTokenRepository.delete(dbToken);
+            tokenService.deleteCompromisedToken(dbToken);
             throw new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN);
         }
 
