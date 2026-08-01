@@ -233,7 +233,7 @@ public class AuthService {
      * @param refreshToken
      * @return
      */
-    public TokenDto.TokenInfoRes reissue(String refreshToken) {
+    public TokenInfoDto.TokenInfoRes reissue(String refreshToken) {
 
         // RT가 null이면 에러 리턴
         if (refreshToken == null){
@@ -266,10 +266,20 @@ public class AuthService {
         // RefreshToken 테이블에 업데이트
         tokenService.saveOrUpdateRefreshToken(user, newRefreshToken);
 
-        return TokenDto.TokenInfoRes.builder()
-                .info(TokenDto.ATInfo.builder().accessToken(newAccessToken).build())
+        return TokenInfoDto.TokenInfoRes.builder()
+                .info(TokenInfoDto.ATInfo.builder().accessToken(newAccessToken).build())
                 .refreshToken(newRefreshToken)
                 .build();
+    }
+
+    public Void logout(Long userId) {
+
+
+        // RT 삭제
+        RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
+                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_INVALID));
+        tokenService.deleteCompromisedToken(refreshToken);
+        return null;
     }
 
     // 이메일 인증번호를 위한 6자리 난수 생성
