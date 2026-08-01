@@ -1,6 +1,7 @@
 package umc.fitme.domain.notify.scheduler;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
+@Profile("ec2")
 public class DeadlineEmailNotificationScheduler {
 
     private final DeadlineEmailNotificationService deadlineEmailNotificationService;
