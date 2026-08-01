@@ -2,12 +2,14 @@ package umc.fitme.domain.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import umc.fitme.domain.auth.converter.AuthConverter;
 import umc.fitme.domain.auth.dto.*;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.entity.RefreshToken;
@@ -35,6 +37,10 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private static final long CODE_TTL_SECONDS = 300L;
+    private final SecureRandom secureRandom = new SecureRandom(); // 6자리 난수 생성
+
+    @Value("${jwt.access-token-validity}")
+    private Long accessTokenValidity;
 
     private final TokenService tokenService;
     private final UserRepository userRepository;
@@ -44,8 +50,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-
-    private final SecureRandom secureRandom = new SecureRandom(); // 6자리 난수 생성
 
     /***
      * 함수 기능: 요청된 이메일로 6자리 인증번호가 발송된다.
@@ -175,24 +179,14 @@ public class AuthService {
         // 생성된 RT를 DB에 저장/업데이트 합니다.
         tokenService.saveOrUpdateRefreshToken(principal.getUser(), refreshToken);
 
-        LoginDto.LoginRes.Member member = LoginDto.LoginRes.Member.builder()
-                .memberId(userId)
-                .email(email)
-                .name(principal.getUser().getName())
-                .isOnboarded(principal.getUser().getIsOnboarded())
-                .build();
-
-        LoginDto.LoginRes loginRes = LoginDto.LoginRes.builder()
-                .accessToken(accessToken)
-                .tokenType("Bearer ")
-                .expiresIn(3600L)
-                .member(member)
-                .build();
-
-        return LoginDto.LoginResultDto.builder()
-                .loginRes(loginRes)
-                .refreshToken(refreshToken)
-                .build();
+        return AuthConverter.toLoginRes(
+                userId,
+                email,
+                principal.getUser().getName(),
+                principal.getUser().getIsOnboarded(),
+                accessToken,
+                accessTokenValidity,
+                refreshToken);
     }
 
     /***
@@ -204,36 +198,32 @@ public class AuthService {
      * @return LoginDto.LoginRes 로그인 성공 응답
      */
     public LoginDto.LoginResultDto linkAccount(String authorizationHeader) {
-        String linkToken = isValidateToken(authorizationHeader);
 
+        // LT 검증
+        String linkToken = jwtUtil.validateLinkToken(authorizationHeader);
+
+        // LT 정보 추출
         LinkTokenDto linkTokenInfo = jwtUtil.getLinkTokenInfo(linkToken);
 
+        // LT안의 UserId가 DB에 존재하지 않으면 예외 리턴
         User user = userRepository.findById(linkTokenInfo.getUserId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
+        // 계정 연동 진행
         user.linkAccount(SocialType.valueOf(linkTokenInfo.getSocialType()), linkTokenInfo.getProviderId());
 
+        // 계정 연동 후 AT, RT 발급 후 반환
         String accessToken = jwtUtil.createAccessToken(user.getId(), "USER", user.getEmail());
         String refreshToken = jwtUtil.createRefreshToken(user.getId());
 
-        LoginDto.LoginRes.Member member = LoginDto.LoginRes.Member.builder()
-                .memberId(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .isOnboarded(user.getIsOnboarded())
-                .build();
-
-        LoginDto.LoginRes loginRes = LoginDto.LoginRes.builder()
-                .accessToken(accessToken)
-                .tokenType("Bearer ")
-                .expiresIn(3600L)
-                .member(member)
-                .build();
-
-        return LoginDto.LoginResultDto.builder()
-                .loginRes(loginRes)
-                .refreshToken(refreshToken)
-                .build();
+        return AuthConverter.toLoginRes(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getIsOnboarded(),
+                accessToken,
+                accessTokenValidity,
+                refreshToken);
     }
 
     /***
@@ -276,22 +266,6 @@ public class AuthService {
                 .info(TokenDto.ATInfo.builder().accessToken(newAccessToken).build())
                 .refreshToken(newRefreshToken)
                 .build();
-    }
-
-    // linkToken을 검증 로직
-    private String isValidateToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
-            throw new AuthException(TokenErrorCode.INVALID_LINK_TOKEN);
-        }
-
-        String linkToken = authorizationHeader.substring(7);
-
-        try {
-            jwtUtil.validateToken(linkToken);
-        } catch (Exception e){
-            throw new AuthException(TokenErrorCode.LINK_TOKEN_EXPIRED);
-        }
-        return linkToken;
     }
 
     // 이메일 인증번호를 위한 6자리 난수 생성
