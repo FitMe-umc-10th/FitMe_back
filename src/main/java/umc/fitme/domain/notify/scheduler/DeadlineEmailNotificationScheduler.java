@@ -7,7 +7,6 @@ import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 @Component
 @RequiredArgsConstructor

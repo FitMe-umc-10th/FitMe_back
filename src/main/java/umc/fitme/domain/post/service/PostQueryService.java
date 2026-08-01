@@ -9,10 +9,10 @@ import umc.fitme.domain.interest.repository.PostInterestRepository;
 import umc.fitme.domain.interest.repository.UserInterestRepository;
 import umc.fitme.domain.post.converter.PostConverter;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
-import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.entity.ViewHistory;
+import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
@@ -25,14 +25,7 @@ import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

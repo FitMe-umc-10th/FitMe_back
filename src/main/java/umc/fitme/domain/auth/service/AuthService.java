@@ -1,6 +1,5 @@
 package umc.fitme.domain.auth.service;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -9,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
 import umc.fitme.domain.auth.dto.LoginDto;
@@ -17,10 +15,10 @@ import umc.fitme.domain.auth.dto.SignUpDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
+import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.JwtUtil;
