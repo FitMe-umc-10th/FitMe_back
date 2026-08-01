@@ -1,10 +1,16 @@
 package umc.fitme.global.security.exception;
 
-import umc.fitme.global.apiPayload.code.BaseErrorCode;
-import umc.fitme.global.apiPayload.exception.ProjectException;
+import lombok.Getter;
+import org.springframework.security.core.AuthenticationException;
+import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
-public class SocialLoginException extends ProjectException {
-    public SocialLoginException(BaseErrorCode errorCode) {
-        super(errorCode);
+@Getter
+public class SocialLoginException extends AuthenticationException {
+
+    private final SocialLoginErrorCode errorCode;
+
+    public SocialLoginException(SocialLoginErrorCode errorCode) {
+        super(errorCode.getMessage()); // 시큐리티에게 에러 메시지 전달
+        this.errorCode = errorCode;
     }
 }
