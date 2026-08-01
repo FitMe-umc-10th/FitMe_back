@@ -9,6 +9,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.auth.dto.LinkTokenDto;
+import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.security.entity.PrincipalDetails;
@@ -117,6 +118,26 @@ public class JwtUtil {
                 .clockSkewSeconds(60)
                 .build()
                 .parseSignedClaims(token);
+    }
+
+    /***
+     * 함수 기능: 헤더에 담겨온 LT를 추출하고 검증한다.
+     * @param authorizationHeader
+     * @return
+     */
+    public String validateLinkToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
+            throw new AuthException(TokenErrorCode.INVALID_LINK_TOKEN);
+        }
+
+        String linkToken = authorizationHeader.substring(7);
+
+        try {
+            validateToken(linkToken);
+        } catch (Exception e){
+            throw new AuthException(TokenErrorCode.LINK_TOKEN_EXPIRED);
+        }
+        return linkToken;
     }
 
     /***
