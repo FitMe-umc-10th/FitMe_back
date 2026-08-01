@@ -2,6 +2,10 @@ package umc.fitme.domain.notify;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import umc.fitme.domain.notify.scheduler.DeadlineEmailNotificationScheduler;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 
@@ -10,6 +14,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -30,5 +36,46 @@ public class DeadlineEmailNotificationSchedulerTest {
         scheduler.sendDeadlineReminderEmails();
 
         verify(service).sendDeadlineReminderEmails(LocalDate.of(2026, 7, 18));
+    }
+
+    @Test
+    @DisplayName("local 프로필에서는 마감일 이메일 스케줄러 Bean을 등록하지 않는다")
+    void deadlineEmailNotificationSchedulerBean_notRegisteredOnLocalProfile() {
+        try (AnnotationConfigApplicationContext context = createContext("local")) {
+            assertThrows(
+                    NoSuchBeanDefinitionException.class,
+                    () -> context.getBean(DeadlineEmailNotificationScheduler.class)
+            );
+        }
+    }
+
+    @Test
+    @DisplayName("ec2 프로필에서는 마감일 이메일 스케줄러 Bean을 등록한다")
+    void deadlineEmailNotificationSchedulerBean_registeredOnEc2Profile() {
+        try (AnnotationConfigApplicationContext context = createContext("ec2")) {
+            assertNotNull(context.getBean(DeadlineEmailNotificationScheduler.class));
+        }
+    }
+
+    private AnnotationConfigApplicationContext createContext(String activeProfile) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.getEnvironment().setActiveProfiles(activeProfile);
+        context.register(DeadlineEmailNotificationScheduler.class, SchedulerTestConfig.class);
+        context.refresh();
+        return context;
+    }
+
+    @Configuration
+    static class SchedulerTestConfig {
+
+        @Bean
+        DeadlineEmailNotificationService deadlineEmailNotificationService() {
+            return mock(DeadlineEmailNotificationService.class);
+        }
+
+        @Bean
+        Clock clock() {
+            return Clock.system(ZoneId.of("Asia/Seoul"));
+        }
     }
 }
