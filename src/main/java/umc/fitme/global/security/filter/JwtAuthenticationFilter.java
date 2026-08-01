@@ -61,11 +61,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             // AT가 만료된 경우
             log.warn("AT가 만료되었습니다. {}", e.getMessage());
-            TokenErrorCode tokenExpired = TokenErrorCode.ACCESS_TOKEN_EXPIRED;
+            TokenErrorCode tokenExpired = TokenErrorCode.AT_EXPIRED;
             setErrorResponse(response, tokenExpired);
         } catch (JwtException | IllegalArgumentException e){
             log.error("유효하지 않은 토큰입니다. {}", e.getMessage());
-            TokenErrorCode tokenInvalid = TokenErrorCode.TOKEN_INVALID;
+            TokenErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
             setErrorResponse(response, tokenInvalid);
         } catch (TokenException e){
             log.error("에러 코드: {}, 에러 메시지: {}", e.getErrorCode(), e.getMessage());

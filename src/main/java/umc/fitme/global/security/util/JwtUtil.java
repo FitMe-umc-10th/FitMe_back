@@ -9,7 +9,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.auth.dto.LinkTokenDto;
-import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.security.entity.PrincipalDetails;
@@ -127,7 +126,7 @@ public class JwtUtil {
      */
     public String validateLinkToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
-            throw new TokenException(TokenErrorCode.INVALID_LINK_TOKEN);
+            throw new TokenException(TokenErrorCode.LT_INVALID);
         }
 
         String linkToken = authorizationHeader.substring(7);
@@ -135,7 +134,7 @@ public class JwtUtil {
         try {
             validateToken(linkToken);
         } catch (Exception e){
-            throw new TokenException(TokenErrorCode.LINK_TOKEN_EXPIRED);
+            throw new TokenException(TokenErrorCode.LT_EXPIRED);
         }
         return linkToken;
     }
@@ -160,7 +159,7 @@ public class JwtUtil {
 
         // 토큰 타입이 access가 아닌 경우 예외 처리
         if (!"access".equals(typ)) {
-            throw new TokenException(TokenErrorCode.AT_NOT_VALIDATE);
+            throw new TokenException(TokenErrorCode.AT_TYPE_INVALID);
         }
 
         User user = User.builder()
@@ -186,7 +185,7 @@ public class JwtUtil {
 
         String typ = payload.get("typ", String.class);
         if(!"refresh".equals(typ)){
-            throw new TokenException(TokenErrorCode.RT_NOT_VALIDATE);
+            throw new TokenException(TokenErrorCode.RT_TYPE_INVALID);
         }
 
         return Long.parseLong(payload.getSubject());
@@ -206,7 +205,7 @@ public class JwtUtil {
 
         String typ = payload.get("typ", String.class);
         if (!"link".equals(typ)){
-            throw new TokenException(TokenErrorCode.LT_NOT_VALIDATE);
+            throw new TokenException(TokenErrorCode.LT_TYPE_INVALID);
         }
 
         return LinkTokenDto.builder()

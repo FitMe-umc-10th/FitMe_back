@@ -237,14 +237,14 @@ public class AuthService {
 
         // RT가 null이면 에러 리턴
         if (refreshToken == null){
-            throw new TokenException(TokenErrorCode.REFRESH_TOKEN_NOT_FOUND);
+            throw new TokenException(TokenErrorCode.RT_NOT_FOUND);
         }
         try { // RT가 유효하지 않다면 예외 리턴
             jwtUtil.validateToken(refreshToken);
         } catch (ExpiredJwtException e){
-            throw new TokenException(TokenErrorCode.REFRESH_TOKEN_EXPIRED);
+            throw new TokenException(TokenErrorCode.RT_EXPIRED);
         } catch (JwtException e){
-            throw new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN);
+            throw new TokenException(TokenErrorCode.RT_INVALID);
         }
 
         // 유저 정보 추출
@@ -254,10 +254,10 @@ public class AuthService {
 
         // DB에 저장된 RT와 일치하는지 검증 (RTR 보안 방어)
         RefreshToken dbToken = refreshTokenRepository.findByUser(user)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN));
+                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_INVALID));
         if (!dbToken.getToken().equals(refreshToken)){ // [해킹 의심 상황] RT 삭제
             tokenService.deleteCompromisedToken(dbToken);
-            throw new TokenException(TokenErrorCode.INVALID_REFRESH_TOKEN);
+            throw new TokenException(TokenErrorCode.RT_INVALID);
         }
 
         String newAccessToken = jwtUtil.createAccessToken(userId, "USER", user.getEmail());
