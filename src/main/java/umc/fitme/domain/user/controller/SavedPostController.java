@@ -24,7 +24,7 @@ public class SavedPostController {
     public ApiResponse<SavedPostResponseDto.SavedPostListResponse> getSavedPosts(
             @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(defaultValue = "ALL") SavedPostCategory category,
-            @RequestParam(defaultValue = "RECENT") SavedPostSort sort,
+            @RequestParam(defaultValue = "DEADLINE") SavedPostSort sort,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") Integer size
     ) {

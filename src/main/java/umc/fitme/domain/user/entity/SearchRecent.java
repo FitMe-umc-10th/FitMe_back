@@ -18,7 +18,7 @@ public class SearchRecent {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_d")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "keyword", nullable = false)

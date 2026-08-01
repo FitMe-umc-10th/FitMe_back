@@ -14,7 +14,7 @@ public interface SearchRecentRepository extends JpaRepository<SearchRecent, Long
     from SearchRecent sr
     where sr.user.id = :userId
     order by sr.updateAt desc
-    limit 8
+    limit 10
     """)
     List<SearchRecent> findTop10ByUserIdOrderByUpdateAtDesc(Long userId);
 

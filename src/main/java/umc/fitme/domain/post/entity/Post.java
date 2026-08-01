@@ -2,6 +2,7 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -67,6 +68,7 @@ public class Post extends BaseEntity {
     private int savedCount = 0;
 
     @Column(name = "post_rank")
+    @Builder.Default
     private int postRank = -1;
 
     @Column(name = "created_at", nullable = false)

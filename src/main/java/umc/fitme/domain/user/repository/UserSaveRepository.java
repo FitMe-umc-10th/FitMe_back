@@ -147,6 +147,4 @@ public interface UserSaveRepository extends JpaRepository<UserSave, Long> {
             and us.isSaved = true
 """)
     Set<Long> findUserSaveIdsByUserIdAndPostIds(Long userId, List<Long> postIds);
-
-    Long user(User user);
 }
