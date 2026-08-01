@@ -45,9 +45,10 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
             String targetUrl = UriComponentsBuilder.fromUriString(failureRedirectUrl)
                     .queryParam("error", "REQUIRE_LINK")
                     .queryParam("message", ex.getMessage())
-                    .queryParam("linkToken", linkToken)
                     .encode(StandardCharsets.UTF_8)
                     .build().toUriString();
+
+            targetUrl = targetUrl + "`#linkToken'=" + linkToken;
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
         } else if (exception instanceof SocialLoginException ex){
