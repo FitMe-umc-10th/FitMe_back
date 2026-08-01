@@ -57,20 +57,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.info("SecurityContext에 Authentication 객체 저장완료: {}", authentication.getPrincipal());
             }
-            filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
             // AT가 만료된 경우
             log.warn("AT가 만료되었습니다. {}", e.getMessage());
             TokenErrorCode tokenExpired = TokenErrorCode.AT_EXPIRED;
             setErrorResponse(response, tokenExpired);
+            return;
         } catch (JwtException | IllegalArgumentException e){
             log.error("유효하지 않은 토큰입니다. {}", e.getMessage());
             TokenErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
             setErrorResponse(response, tokenInvalid);
+            return;
         } catch (TokenException e){
             log.error("에러 코드: {}, 에러 메시지: {}", e.getErrorCode(), e.getMessage());
             setErrorResponse(response, e.getErrorCode());
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 
      // 헤더에서 토큰 추출
