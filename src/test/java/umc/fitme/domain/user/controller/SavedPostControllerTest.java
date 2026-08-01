@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -119,6 +120,24 @@ class SavedPostControllerTest {
                 .andExpect(jsonPath("$.result.savedPosts[0].deadlineLabel").value("D-3"))
                 .andExpect(jsonPath("$.result.pageInfo.size").value(20))
                 .andExpect(jsonPath("$.result.pageInfo.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("sort 파라미터를 생략하면 기본값 DEADLINE이 서비스로 전달된다")
+    void getSavedPosts_defaultSort_isDeadline() throws Exception {
+        mockMvc.perform(withAuth(get("/api/v1/saved-posts")
+                        .param("category", "ALL")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk());
+
+        then(savedPostService).should().getSavedPosts(
+                USER_ID,
+                SavedPostCategory.ALL,
+                SavedPostSort.DEADLINE,
+                null,
+                20
+        );
     }
 
     @Test
