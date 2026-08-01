@@ -121,15 +121,15 @@ public class JwtUtil {
 
     /***
      * 함수 기능: 헤더에 담겨온 LT를 추출하고 검증한다.
-     * @param authorizationHeader
+     * @param linkTokenHeader
      * @return
      */
-    public String validateLinkToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
+    public String validateLinkToken(String linkTokenHeader) {
+        if (linkTokenHeader == null || !linkTokenHeader.startsWith("Bearer ")){
             throw new TokenException(TokenErrorCode.LT_INVALID);
         }
 
-        String linkToken = authorizationHeader.substring(7);
+        String linkToken = linkTokenHeader.substring(7);
 
         try {
             validateToken(linkToken);
