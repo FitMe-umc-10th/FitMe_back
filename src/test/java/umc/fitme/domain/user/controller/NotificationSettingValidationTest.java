@@ -18,6 +18,7 @@ import umc.fitme.domain.user.dto.NotificationSettingRequestDto;
 import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
 import umc.fitme.domain.user.service.NotificationSettingService;
+import umc.fitme.domain.user.service.ProfileImageService;
 import umc.fitme.global.config.SecurityConfig;
 import umc.fitme.global.security.entity.CustomUserDetails;
 import umc.fitme.global.security.exception.CustomAccessDenied;
@@ -55,6 +56,9 @@ class NotificationSettingValidationTest {
 
     @MockitoBean
     private MyPageService myPageService;
+
+    @MockitoBean
+    private ProfileImageService profileImageService;
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
