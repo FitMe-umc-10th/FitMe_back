@@ -3,6 +3,7 @@ package umc.fitme.domain.auth.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.auth.entity.RefreshToken;
 import umc.fitme.domain.auth.repository.RefreshTokenRepository;
@@ -41,5 +42,15 @@ public class TokenService {
                             refreshTokenRepository.save(newRefreshToken);
                         }
                 );
+    }
+
+    /***
+     * 함수 기능: 해킹으로 의심되는 RT를 삭제시킨다.
+     * Propagation.REQUIRES_NEW: 기존 트랜잭션을 잠시 멈추고 새로운 독립적인 물리 트랜잭션을 생성하는 전파 속성
+     * @param token RT
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteCompromisedToken(RefreshToken token) {
+        refreshTokenRepository.delete(token);
     }
 }
