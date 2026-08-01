@@ -15,9 +15,9 @@ import umc.fitme.domain.user.entity.mapping.UserApplication;
 import umc.fitme.domain.user.entity.mapping.UserApplicationPostSnapshot;
 import umc.fitme.domain.user.enums.Status;
 import umc.fitme.domain.user.exception.code.UserApplicationErrorCode;
+import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.domain.user.repository.UserApplicationPostSnapshotRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.LocalDate;

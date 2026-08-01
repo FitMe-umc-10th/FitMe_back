@@ -39,7 +39,7 @@ public class SavedPostConverter {
                 .saved(userSave.getIsSaved())
                 .deadlineLabel(toDeadlineLabel(post.getApplyEndAt()))
                 .deadlineDate(post.getApplyEndAt())
-                .savedAt(userSave.getCreatedAt())
+                .savedAt(userSave.getUpdatedAt())
                 .build();
     }
 
@@ -48,6 +48,7 @@ public class SavedPostConverter {
                 .savedId(userSave.getId())
                 .postId(userSave.getPost().getId())
                 .saved(userSave.getIsSaved())
+                .savedAt(userSave.getUpdatedAt())
                 .build();
     }
 

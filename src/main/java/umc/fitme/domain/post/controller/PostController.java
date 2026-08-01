@@ -1,28 +1,41 @@
 package umc.fitme.domain.post.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import umc.fitme.domain.post.service.PostQueryService;
-import umc.fitme.domain.post.service.PublicDataSyncService;
+import umc.fitme.domain.post.dto.PostSearchDto;
+import umc.fitme.domain.post.dto.SearchViewDto;
+import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
-import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
-import umc.fitme.domain.post.dto.response.PostResponseDTO;
-import umc.fitme.domain.user.dto.request.UserApplicationRequestDTO;
-import umc.fitme.domain.user.dto.response.UserApplicationResponseDTO;
+import umc.fitme.domain.post.exception.code.PostSuccessCode;
+import umc.fitme.domain.post.service.PostQueryService;
+import umc.fitme.domain.post.service.PostService;
+import umc.fitme.domain.post.service.PublicDataSyncService;
+import umc.fitme.domain.user.dto.UserApplicationRequestDto;
+import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
 import umc.fitme.global.apiPayload.ApiResponse;
-import java.util.List;
+import umc.fitme.global.apiPayload.code.BaseSuccessCode;
+import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
+import umc.fitme.global.security.entity.PrincipalDetails;
 
+import java.util.List;
 
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/post")
+@Tag(name = "공고 API", description = "인기 공고 조회/공고 상세 화면/공고 검색/검색 대시보드 조회")
 public class PostController {
     private final PostQueryService postQueryService;
     private final PublicDataSyncService publicDataSyncService; // 💡 데이터 동기화를 위한 서비스 추가
     private final UserApplicationService userApplicationService;
+    private final PostService postService;
 
 
     @GetMapping("/popular")
@@ -78,14 +91,14 @@ public class PostController {
      * 외부 URL 이동은 응답의 applicationUrl을 받은 프론트엔드가 수행한다.
      */
     @PatchMapping("/{postId}/application")
-    public ApiResponse<UserApplicationResponseDTO.ApplicationResponse> startApplication(
+    public ApiResponse<UserApplicationResponseDto.CreateResponse> startApplication(
             @PathVariable Long postId,
             // 로그인 연결 전 Swagger 테스트용. 이후 인증 사용자 ID로 교체한다.
             @RequestParam Long userId) {
-        UserApplicationResponseDTO.ApplicationResponse response =
-                userApplicationService.createApplication(
+        UserApplicationResponseDto.CreateResponse response =
+                userApplicationService.create(
                         userId,
-                        new UserApplicationRequestDTO.CreateRequest(postId)
+                        new UserApplicationRequestDto.CreateRequest(postId)
                 );
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
@@ -97,5 +110,44 @@ public class PostController {
 
         publicDataSyncService.syncScholarshipData(page, perPage);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, "공공데이터 동기화가 성공적으로 실행되었습니다.");
+    }
+
+    /***
+     * 함수 기능: 조건에 맞는 공고를 검색한다.
+     * @param dto
+     * @return
+     */
+    @GetMapping("/search-post")
+    @Operation(summary = "공고 검색 API", description = "조건에 맞는 공고를 검색한다.")
+    public ApiResponse<PostSearchDto.Pagination<PostSearchDto.PostSearchRes>> searchPosts(
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @Valid @ParameterObject @ModelAttribute PostSearchDto.PostSearchReq dto
+    ){
+        BaseSuccessCode successCode = PostSuccessCode.SEARCH_POST_OK;
+        return ApiResponse.onSuccess(successCode, postService.searchPost(dto, principal.getUser().getId()));
+    }
+
+    /***
+     * 함수 기능: 검색 대시보드 조회
+     * @return
+     */
+    @GetMapping("/search-main")
+    @Operation(summary = "검색 대시보드 조회 API", description = "검색 창을 누르면 나오는 화면이다.")
+    public ApiResponse<SearchViewDto.SearchViewRes> getSearchMain(
+            @AuthenticationPrincipal PrincipalDetails principal
+    ){
+        BaseSuccessCode successCode = PostSuccessCode.SEARCH_MAIN_OK;
+        return ApiResponse.onSuccess(successCode, postService.getSearchMainPage(principal.getUser().getId()));
+    }
+
+    @DeleteMapping("/search/recent/{searchId}")
+    @Operation(summary = "나의 검색 기록 삭제 API", description = "최근 검색어 목록에서 X버튼을 누르면 나의 최근검색어 목록에서 사라진다.")
+    public ApiResponse<Void> deleteRecentKeyword(
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @PathVariable Long searchId
+    ){
+        postService.deleteRecentKeyword(principal.getUser().getId(), searchId);
+        BaseSuccessCode successCode = PostSuccessCode.DELETE_RECENT_KEYWORD_OK;
+        return ApiResponse.onSuccess(successCode, null);
     }
 }

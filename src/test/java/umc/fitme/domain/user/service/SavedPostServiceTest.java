@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.exception.code.PostErrorCode;
@@ -341,7 +342,7 @@ class SavedPostServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
         when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
-        when(userSaveRepository.save(any(UserSave.class))).thenReturn(savedUserSave);
+        when(userSaveRepository.saveAndFlush(any(UserSave.class))).thenReturn(savedUserSave);
 
         SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(1L, 10L);
 
@@ -381,6 +382,41 @@ class SavedPostServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
         when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.of(existingUserSave));
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.savePost(1L, 10L)
+        );
+
+        assertEquals(SavedPostErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("동시 저장 요청으로 유니크 제약이 걸리면 ALREADY_SAVED_POST(409)로 변환된다")
+    void savePost_concurrentInsert_violatesUniqueConstraint() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        // 두 요청 모두 조회 시점엔 저장 안 된 것으로 판단(실제 동시성 상황을 mock으로 재현)
+        when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
+        when(userSaveRepository.saveAndFlush(any(UserSave.class)))
+                .thenThrow(new DataIntegrityViolationException("uk_user_save_user_post 위반"));
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
@@ -436,7 +472,7 @@ class SavedPostServiceTest {
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.of(userSave));
 
         SavedPostResponseDto.DeleteSavedPostResponse response = savedPostService.deleteSavedPost(1L, 100L);
 
@@ -448,14 +484,14 @@ class SavedPostServiceTest {
     }
 
     @Test
-    @DisplayName("저장 공고가 없으면 예외 발생")
+    @DisplayName("저장한 공고가 없으면 예외 발생")
     void deleteSavedPost_notFound() {
         User user = User.builder()
                 .id(1L)
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.empty());
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.empty());
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
@@ -472,34 +508,14 @@ class SavedPostServiceTest {
                 .id(1L)
                 .build();
 
-        Post post = Post.builder()
-                .id(10L)
-                .postType(PostType.CONTEST)
-                .title("공모전")
-                .organizer("주최기관")
-                .applyStartAt(LocalDate.of(2026, 7, 1))
-                .applyEndAt(LocalDate.of(2026, 7, 31))
-                .applicationMethod("온라인")
-                .applicationUrl("https://example.com")
-                .imageUrl("https://example.com/thumb.jpg")
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        UserSave userSave = UserSave.builder()
-                .id(100L)
-                .user(user)
-                .post(post)
-                .isSaved(false)
-                .build();
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userSaveRepository.findByIdAndUser(100L, user)).thenReturn(Optional.of(userSave));
+        when(userSaveRepository.findByIdAndUserAndIsSavedTrue(100L, user)).thenReturn(Optional.empty());
 
         ProjectException exception = assertThrows(
                 ProjectException.class,
                 () -> savedPostService.deleteSavedPost(1L, 100L)
         );
 
-        assertEquals(SavedPostErrorCode.ALREADY_UNSAVED_POST, exception.getErrorCode());
+        assertEquals(SavedPostErrorCode.SAVED_POST_NOT_FOUND, exception.getErrorCode());
     }
 }

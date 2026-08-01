@@ -7,10 +7,10 @@ import umc.fitme.domain.user.dto.MyPageResponseDto;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
 import umc.fitme.domain.user.enums.Status;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserApplicationRepository;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.List;

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.entity.BaseEntity;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "user")
@@ -59,5 +60,10 @@ public class User extends BaseEntity {
 
     public void completeOnboarding() {
         this.isOnboarded = true;
+    }
+
+    public void linkAccount(SocialType socialType, String socialUid) {
+        this.socialType = socialType;
+        this.socialUid = socialUid;
     }
 }

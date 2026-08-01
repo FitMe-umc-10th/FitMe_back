@@ -94,3 +94,13 @@ scholarship:
     # service-key가 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
     # 실제 동기화는 ScholarshipApiClient에서 비어있으면 건너뛰도록 가드한다.
     service-key: ${SCHOLARSHIP_SYNC_SERVICE_KEY:} # 공공데이터포털 발급 인증키
+
+    # 값이 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
+    # 실제 동기화는 ScholarshipSyncService에서 비어있으면 건너뛰도록 가드한다.
+    csv-url: ${SCHOLARSHIP_SYNC_CSV_URL:} # 공공데이터포털 한국장학재단 학자금지원정보 파일데이터 URL
+    service-key: ${SCHOLARSHIP_SYNC_SERVICE_KEY:} # 공공데이터포털 발급 인증키
+    csv-charset: EUC-KR # 공공데이터 CSV는 EUC-KR인 경우가 많음 (실제 파일 확인 후 필요 시 UTF-8로 변경)
+
+public-data:
+  api-key: ${PUBLIC_DATA_API_KEY}
+  url: ${PUBLIC_DATA_URL}

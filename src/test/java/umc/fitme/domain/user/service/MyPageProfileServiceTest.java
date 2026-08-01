@@ -1,5 +1,6 @@
 package umc.fitme.domain.user.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import umc.fitme.domain.user.entity.UserDetail;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.math.BigDecimal;
@@ -31,9 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MyPageProfileServiceTest {
@@ -56,6 +56,14 @@ class MyPageProfileServiceTest {
     private ArgumentCaptor<List<UserInterest>> userInterestsCaptor;
 
     private static final Long USER_ID = 1L;
+    private static final String OWNED_IMAGE_URL =
+            "https://test-bucket.s3.ap-northeast-2.amazonaws.com/profile/1/new.png";
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(myPageProfileService, "bucket", "test-bucket");
+        ReflectionTestUtils.setField(myPageProfileService, "region", "ap-northeast-2");
+    }
 
     /* ===================== 공통 픽스처 ===================== */
 
@@ -243,7 +251,7 @@ class MyPageProfileServiceTest {
 
             MyPageProfileRequestDto.UpdateProfileRequest request =
                     new MyPageProfileRequestDto.UpdateProfileRequest(
-                            new BigDecimal("2.75"), 8, "부산", requestedIds, "http://img/new.png");
+                            new BigDecimal("2.75"), 8, "부산", requestedIds, OWNED_IMAGE_URL);
 
             // when
             MyPageProfileResponseDto.UpdateProfileResponse response =
@@ -253,12 +261,12 @@ class MyPageProfileServiceTest {
             assertThat(detail.getGpa()).isEqualTo(2.75f);
             assertThat(detail.getIncomeBracket()).isEqualTo(8);
             assertThat(detail.getRegion()).isEqualTo("부산");
-            assertThat(detail.getProfileImageUrl()).isEqualTo("http://img/new.png");
+            assertThat(detail.getProfileImageUrl()).isEqualTo(OWNED_IMAGE_URL);
 
             assertThat(response.gpa()).isEqualTo(2.75f);
             assertThat(response.incomeBracket()).isEqualTo(8);
             assertThat(response.region()).isEqualTo("부산");
-            assertThat(response.profileImageUrl()).isEqualTo("http://img/new.png");
+            assertThat(response.profileImageUrl()).isEqualTo(OWNED_IMAGE_URL);
 
             // then: 이미 있던 마케팅(1)은 건드리지 않고 디자인(3)만 추가한다
             verify(userInterestRepository, never()).deleteAll(anyList());
