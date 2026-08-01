@@ -75,7 +75,7 @@ public class ProfileImageService {
     /* 파일 이름에서 마지막 '.' 뒤 확장자를 소문자로 추출 */
     private String extractExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex < 0 || lastDotIndex == fileName.length() - 1) {
+        if (lastDotIndex <= 0 || lastDotIndex == fileName.length() - 1) {
             throw new ProjectException(UserErrorCode.INVALID_IMAGE_FILE_NAME);
         }
         return fileName.substring(lastDotIndex + 1).toLowerCase(Locale.ROOT);
