@@ -3,38 +3,39 @@ package umc.fitme.domain.post.sync.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import umc.fitme.domain.post.sync.client.ScholarshipCsvClient;
-import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
+import umc.fitme.domain.post.sync.client.ScholarshipApiClient;
+import umc.fitme.domain.post.sync.dto.ScholarshipSourceRow;
 import umc.fitme.domain.post.sync.entity.ScholarshipSyncLog;
-import umc.fitme.domain.post.sync.parser.ScholarshipCsvParser;
+import umc.fitme.domain.post.sync.parser.ScholarshipRowParser;
 import umc.fitme.domain.post.sync.repository.ScholarshipSyncLogRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScholarshipSyncService {
 
-    private final ScholarshipCsvClient scholarshipCsvClient;
-    private final ScholarshipCsvParser scholarshipCsvParser;
+    private final ScholarshipApiClient scholarshipApiClient;
+    private final ScholarshipRowParser scholarshipRowParser;
     private final ScholarshipSyncWriter scholarshipSyncWriter;
     private final ScholarshipSyncLogRepository scholarshipSyncLogRepository;
 
     public void sync() {
-        if (!scholarshipCsvClient.isConfigured()) {
-            log.warn("scholarship.sync.csv-url 또는 service-key가 설정되지 않아 동기화를 건너뜁니다.");
-            scholarshipSyncLogRepository.save(ScholarshipSyncLog.failed("csv-url 또는 service-key 미설정"));
+        if (!scholarshipApiClient.isConfigured()) {
+            log.warn("scholarship.sync.service-key가 설정되지 않아 동기화를 건너뜁니다.");
+            scholarshipSyncLogRepository.save(ScholarshipSyncLog.failed("service-key 미설정"));
             return;
         }
 
         try {
-            String csv = scholarshipCsvClient.download();
-            List<ScholarshipCsvRow> rows = scholarshipCsvParser.parse(csv);
+            List<Map<String, Object>> rawRows = scholarshipApiClient.fetchAll();
+            List<ScholarshipSourceRow> rows = scholarshipRowParser.parse(rawRows);
 
             if (rows.isEmpty()) {
-                log.warn("장학금 CSV에 유효한 행이 없어 동기화를 건너뜁니다.");
-                scholarshipSyncLogRepository.save(ScholarshipSyncLog.failed("CSV에 유효한 행이 없음"));
+                log.warn("장학금 Open API 응답에 유효한 행이 없어 동기화를 건너뜁니다.");
+                scholarshipSyncLogRepository.save(ScholarshipSyncLog.failed("응답에 유효한 행이 없음"));
                 return;
             }
 

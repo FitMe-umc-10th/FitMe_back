@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.ScholarshipRepository;
-import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
+import umc.fitme.domain.post.sync.dto.ScholarshipSourceRow;
 import umc.fitme.domain.post.sync.util.ScholarshipApplyPeriodParser;
 
 import java.time.Clock;
@@ -31,7 +31,7 @@ public class ScholarshipSyncWriter {
     }
 
     @Transactional
-    public SyncResult applyRows(List<ScholarshipCsvRow> rows) {
+    public SyncResult applyRows(List<ScholarshipSourceRow> rows) {
         int insertedCount = 0;
         int updatedCount = 0;
         int skippedCount = 0;
@@ -40,7 +40,7 @@ public class ScholarshipSyncWriter {
 
         Map<String, Scholarship> existingBySourceKey = loadExistingBySourceKey(rows);
 
-        for (ScholarshipCsvRow row : rows) {
+        for (ScholarshipSourceRow row : rows) {
             try {
                 String sourceKey = buildSourceKey(row);
                 ScholarshipApplyPeriodParser.ApplyPeriod period =
@@ -77,7 +77,7 @@ public class ScholarshipSyncWriter {
         return new SyncResult(insertedCount, updatedCount, inactivatedCount, skippedCount);
     }
 
-    private Map<String, Scholarship> loadExistingBySourceKey(List<ScholarshipCsvRow> rows) {
+    private Map<String, Scholarship> loadExistingBySourceKey(List<ScholarshipSourceRow> rows) {
         List<String> sourceKeys = rows.stream()
                 .map(this::buildSourceKey)
                 .distinct()
@@ -113,7 +113,7 @@ public class ScholarshipSyncWriter {
         return chunks;
     }
 
-    private String buildSourceKey(ScholarshipCsvRow row) {
+    private String buildSourceKey(ScholarshipSourceRow row) {
         return String.join(
                 "|",
                 row.organization(),
@@ -124,7 +124,7 @@ public class ScholarshipSyncWriter {
     }
 
     private Scholarship toNewScholarship(
-            ScholarshipCsvRow row,
+            ScholarshipSourceRow row,
             String sourceKey,
             ScholarshipApplyPeriodParser.ApplyPeriod period,
             LocalDateTime now

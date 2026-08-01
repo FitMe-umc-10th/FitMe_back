@@ -87,6 +87,14 @@ jwt:
 
 scholarship:
   sync:
+    # publicDataPk는 data.go.kr 파일데이터 ID로, 비밀값이 아니라 기본값을 둔다.
+    # (15028252 = 한국장학재단_학자금지원정보(대학생)). 실제 조회 엔드포인트는 매달 바뀌므로
+    # ScholarshipOpenApiEndpointResolver가 실행 시점마다 최신 엔드포인트를 다시 찾는다.
+    public-data-pk: ${SCHOLARSHIP_SYNC_PUBLIC_DATA_PK:15028252}
+    # service-key가 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
+    # 실제 동기화는 ScholarshipApiClient에서 비어있으면 건너뛰도록 가드한다.
+    service-key: ${SCHOLARSHIP_SYNC_SERVICE_KEY:} # 공공데이터포털 발급 인증키
+
     # 값이 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
     # 실제 동기화는 ScholarshipSyncService에서 비어있으면 건너뛰도록 가드한다.
     csv-url: ${SCHOLARSHIP_SYNC_CSV_URL:} # 공공데이터포털 한국장학재단 학자금지원정보 파일데이터 URL
