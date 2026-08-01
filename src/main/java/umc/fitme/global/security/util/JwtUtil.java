@@ -127,7 +127,7 @@ public class JwtUtil {
      */
     public String validateLinkToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
-            throw new AuthException(TokenErrorCode.INVALID_LINK_TOKEN);
+            throw new TokenException(TokenErrorCode.INVALID_LINK_TOKEN);
         }
 
         String linkToken = authorizationHeader.substring(7);
@@ -135,7 +135,7 @@ public class JwtUtil {
         try {
             validateToken(linkToken);
         } catch (Exception e){
-            throw new AuthException(TokenErrorCode.LINK_TOKEN_EXPIRED);
+            throw new TokenException(TokenErrorCode.LINK_TOKEN_EXPIRED);
         }
         return linkToken;
     }
