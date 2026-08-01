@@ -1,11 +1,17 @@
 package umc.fitme.domain.post.converter;
 
+import org.jspecify.annotations.NonNull;
+import umc.fitme.domain.post.dto.PostSearchDto;
+import umc.fitme.domain.post.dto.SearchViewDto;
 import umc.fitme.domain.post.dto.publicapi.PublicApiScholarshipDTO;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
+import umc.fitme.domain.post.enums.ContestCategory;
+import umc.fitme.domain.post.enums.FluctuationType;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.user.entity.SearchRecent;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -14,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class PostConverter {
-
 
     private static Integer calculateDDay(LocalDate applyEndAt) {
         if (applyEndAt == null) {
@@ -171,5 +176,76 @@ public class PostConverter {
         } catch (Exception e) {
             return LocalDate.of(2099, 12, 31);
         }
+    }
+
+    // 선택한 조건에 맞는 Post 객체를 응답 Dto로 변환
+    public static PostSearchDto.PostSearchRes toPostSearchRes(Post post, boolean isSaved){
+
+        ContestCategory category = null;
+        if (post instanceof Contest contest){
+            category = contest.getContestCategory();
+        }
+
+        String deadlineLabel = getDeadlineLabel(post);
+
+        return PostSearchDto.PostSearchRes.builder()
+                .postId(post.getId())
+                .type(post.getPostType())
+                .title(post.getTitle())
+                .deadlineDate(post.getApplyEndAt())
+                .deadlineLabel(deadlineLabel)
+                .organization(post.getOrganizer())
+                .thumbnailUrl(post.getImageUrl())
+                .category(category)
+                .saved(isSaved)
+                .build();
+    }
+
+    // 공고 조회 페이지네이션 틀
+    public static <T> PostSearchDto.Pagination<T> toPagination(
+            List<T> data,
+            Boolean hasNext,
+            Long nextIdCursor,
+            LocalDate nextDeadlineCursor,
+            Integer pageSize){
+        return PostSearchDto.Pagination.<T>builder()
+                .data(data)
+                .hasNext(hasNext)
+                .nextIdCursor(nextIdCursor)
+                .nextDeadlineCursor(nextDeadlineCursor)
+                .pageSize(pageSize)
+                .build();
+    }
+
+    // SearchRecent 엔티티 -> RecentKeywordDto 응답DTO
+    public static SearchViewDto.RecentKeywordDto toRecentKeywordDto(SearchRecent searchRecent) {
+        return SearchViewDto.RecentKeywordDto.builder()
+                .searchId(searchRecent.getId())
+                .keyword(searchRecent.getKeyword())
+                .build();
+    }
+
+    // Post 엔티티 -> RealtimePostDto 응답DTO
+    public static SearchViewDto.RealtimePostDto toRealtimePostDto(Post post, int rank, FluctuationType fluctuationType) {
+        return SearchViewDto.RealtimePostDto.builder()
+                .rank(rank)
+                .postId(post.getId())
+                .type(post.getPostType())
+                .title(post.getTitle())
+                .fluctuation(fluctuationType)
+                .build();
+    }
+
+    /**
+     * 함수 기능: 마감 날짜의 D-DAY를 계산한다.
+     * @param post
+     * @return
+     */
+    private static @NonNull String getDeadlineLabel(Post post) {
+        Integer dDay = calculateDDay(post.getApplyEndAt());
+        if (dDay == null){
+            return "";
+        }
+        return dDay == 0 ? "D-day" : "D-" + dDay;
     }
 }
