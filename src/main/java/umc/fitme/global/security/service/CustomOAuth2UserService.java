@@ -82,7 +82,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
             User newUser = UserConverter.oAuthResToUser(oAuth2Response);
 
             userRepository.save(newUser);
-            log.info("신규 소셜 회원가입 완료 (이메일: {}", oAuth2Response.getEmail());
+            log.info("신규 소셜 회원가입 완료 (이메일: {})", oAuth2Response.getEmail());
 
             return new PrincipalDetails(newUser, "USER");
         }
@@ -93,11 +93,13 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         boolean isAlreadyLinked = false;
 
         // 카카오 이메일로 로그인 시도했는데, 기존 DB에 카카오ID가 저장되어 있다면 -> PASS
-        if (provider == SocialType.KAKAO && user.getSocialType() == SocialType.KAKAO){
+        if (provider == SocialType.KAKAO && user.getSocialType() == SocialType.KAKAO
+            && providerId.equals(user.getSocialUid())){
             isAlreadyLinked = true;
         }
         // 네이버 이메일로 로그인 시도했는데, 기존 DB에 네이버ID가 저장되어 있다면 -> PASS
-        if (provider == SocialType.NAVER && user.getSocialType() == SocialType.NAVER){
+        if (provider == SocialType.NAVER && user.getSocialType() == SocialType.NAVER
+            && providerId.equals(user.getSocialUid())){
             isAlreadyLinked = true;
         }
 
