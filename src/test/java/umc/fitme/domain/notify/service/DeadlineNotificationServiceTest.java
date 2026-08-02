@@ -7,9 +7,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import umc.fitme.domain.notify.dto.AppliedPostReminderTarget;
 import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import umc.fitme.domain.notify.entity.Notification;
 import umc.fitme.domain.notify.enums.NotificationType;
+import umc.fitme.domain.notify.repository.AppliedPostReminderRepository;
 import umc.fitme.domain.notify.repository.NotificationRepository;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
@@ -38,6 +40,9 @@ class DeadlineNotificationServiceTest {
     private UserSaveRepository userSaveRepository;
 
     @Mock
+    private AppliedPostReminderRepository appliedPostReminderRepository;
+
+    @Mock
     private NotificationRepository notificationRepository;
 
     @InjectMocks
@@ -63,6 +68,13 @@ class DeadlineNotificationServiceTest {
                 createUser(userId),
                 createPost(postId, applyEndAt),
                 "notify@example.com"
+        );
+    }
+
+    private AppliedPostReminderTarget createAppliedTarget(Long userId, Long postId, LocalDate applyEndAt) {
+        return new AppliedPostReminderTarget(
+                createUser(userId),
+                createPost(postId, applyEndAt)
         );
     }
 
@@ -143,6 +155,91 @@ class DeadlineNotificationServiceTest {
         given(notificationRepository.save(any()))
                 .willThrow(new RuntimeException("첫 번째 저장 실패"))
                 .willReturn(null);
+
+        deadlineNotificationService.createDeadlineNotifications(TODAY);
+
+        verify(notificationRepository, times(2)).save(any());
+    }
+
+    @Test
+    @DisplayName("지원 이력에 담긴 공고도 알림 대상으로 조회한다")
+    void createDeadlineNotifications_findsAppliedTargetsByReminderDates() {
+        given(userSaveRepository.findDeadlineEmailReminderTargets(anyList())).willReturn(List.of());
+        given(appliedPostReminderRepository.findDeadlineReminderTargets(anyList())).willReturn(List.of());
+
+        deadlineNotificationService.createDeadlineNotifications(TODAY);
+
+        ArgumentCaptor<List<LocalDate>> captor = ArgumentCaptor.forClass(List.class);
+        verify(appliedPostReminderRepository).findDeadlineReminderTargets(captor.capture());
+        assertThat(captor.getValue()).containsExactly(
+                LocalDate.of(2026, 8, 7),
+                LocalDate.of(2026, 8, 3),
+                LocalDate.of(2026, 8, 1)
+        );
+    }
+
+    @Test
+    @DisplayName("찜하지 않고 지원만 한 공고도 마감 임박 알림을 받는다")
+    void createDeadlineNotifications_savesNotificationForAppliedOnlyPost() {
+        given(userSaveRepository.findDeadlineEmailReminderTargets(anyList())).willReturn(List.of());
+        given(appliedPostReminderRepository.findDeadlineReminderTargets(anyList()))
+                .willReturn(List.of(createAppliedTarget(1L, 100L, TODAY.plusDays(3))));
+        given(notificationRepository.existsSince(anyLong(), anyLong(), any(), any())).willReturn(false);
+
+        deadlineNotificationService.createDeadlineNotifications(TODAY);
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+
+        Notification saved = captor.getValue();
+        assertThat(saved.getUser().getId()).isEqualTo(1L);
+        assertThat(saved.getPost().getId()).isEqualTo(100L);
+        assertThat(saved.getNotificationType()).isEqualTo(NotificationType.LAST_MINUTE);
+    }
+
+    @Test
+    @DisplayName("이미 지원한 공고에는 다시 지원하라는 문구를 보내지 않는다")
+    void createDeadlineNotifications_usesAppliedMessage() {
+        given(userSaveRepository.findDeadlineEmailReminderTargets(anyList())).willReturn(List.of());
+        given(appliedPostReminderRepository.findDeadlineReminderTargets(anyList()))
+                .willReturn(List.of(createAppliedTarget(1L, 100L, TODAY.plusDays(7))));
+        given(notificationRepository.existsSince(anyLong(), anyLong(), any(), any())).willReturn(false);
+
+        deadlineNotificationService.createDeadlineNotifications(TODAY);
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getMessage())
+                .isEqualTo("마감일이 7일 남았습니다. 지원 내용을 다시 확인해 보세요.");
+    }
+
+    @Test
+    @DisplayName("찜과 지원에 모두 걸린 공고는 알림을 한 번만 만들고 지원 문구를 사용한다")
+    void createDeadlineNotifications_deduplicatesSavedAndAppliedTarget() {
+        given(userSaveRepository.findDeadlineEmailReminderTargets(anyList()))
+                .willReturn(List.of(createTarget(1L, 100L, TODAY.plusDays(1))));
+        given(appliedPostReminderRepository.findDeadlineReminderTargets(anyList()))
+                .willReturn(List.of(createAppliedTarget(1L, 100L, TODAY.plusDays(1))));
+        given(notificationRepository.existsSince(anyLong(), anyLong(), any(), any())).willReturn(false);
+
+        deadlineNotificationService.createDeadlineNotifications(TODAY);
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, times(1)).save(captor.capture());
+
+        assertThat(captor.getValue().getMessage())
+                .isEqualTo("마감일이 1일 남았습니다. 지원 내용을 다시 확인해 보세요.");
+    }
+
+    @Test
+    @DisplayName("같은 사용자가 서로 다른 공고를 찜하고 지원했다면 각각 알림을 만든다")
+    void createDeadlineNotifications_keepsDifferentPostsSeparate() {
+        given(userSaveRepository.findDeadlineEmailReminderTargets(anyList()))
+                .willReturn(List.of(createTarget(1L, 100L, TODAY.plusDays(7))));
+        given(appliedPostReminderRepository.findDeadlineReminderTargets(anyList()))
+                .willReturn(List.of(createAppliedTarget(1L, 200L, TODAY.plusDays(7))));
+        given(notificationRepository.existsSince(anyLong(), anyLong(), any(), any())).willReturn(false);
 
         deadlineNotificationService.createDeadlineNotifications(TODAY);
 

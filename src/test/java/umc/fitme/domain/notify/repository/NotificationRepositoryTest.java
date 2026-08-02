@@ -180,32 +180,50 @@ class NotificationRepositoryTest extends RepositoryTestSupport {
     }
 
     @Test
-    @DisplayName("읽지 않은 알림을 읽음 처리하면 1건이 갱신된다")
-    void markAsRead_updatesUnreadNotification() {
+    @DisplayName("전체 읽음 처리하면 본인의 안 읽은 알림이 모두 읽음이 된다")
+    void markAllAsRead_updatesAllUnreadNotifications() {
         User user = persistUser("owner@example.com");
         Post post = persistPost("국가장학금 1유형");
-        Notification notification =
-                persistNotification(user, post, NotificationType.LAST_MINUTE, false, NOW);
+
+        persistNotification(user, post, NotificationType.LAST_MINUTE, false, NOW.minusHours(2));
+        persistNotification(user, post, NotificationType.LAST_MINUTE, false, NOW.minusHours(1));
+        persistNotification(user, post, NotificationType.LAST_MINUTE, true, NOW);
 
         em.clear();
 
-        int updated = notificationRepository.markAsRead(notification.getId());
+        int updated = notificationRepository.markAllAsRead(user.getId());
 
-        assertThat(updated).isEqualTo(1);
-        assertThat(notificationRepository.findById(notification.getId()).orElseThrow().getIsRead())
-                .isTrue();
+        assertThat(updated).isEqualTo(2);
+        assertThat(notificationRepository.countByUserIdAndIsReadFalse(user.getId())).isZero();
     }
 
     @Test
-    @DisplayName("이미 읽은 알림을 다시 읽음 처리하면 갱신되는 행이 없다")
-    void markAsRead_doesNothingWhenAlreadyRead() {
+    @DisplayName("전체 읽음 처리는 다른 사용자의 알림을 건드리지 않는다")
+    void markAllAsRead_doesNotTouchOtherUsersNotifications() {
         User user = persistUser("owner@example.com");
+        User other = persistUser("other@example.com");
         Post post = persistPost("국가장학금 1유형");
-        Notification notification =
-                persistNotification(user, post, NotificationType.LAST_MINUTE, true, NOW);
+
+        persistNotification(user, post, NotificationType.LAST_MINUTE, false, NOW);
+        persistNotification(other, post, NotificationType.LAST_MINUTE, false, NOW);
 
         em.clear();
 
-        assertThat(notificationRepository.markAsRead(notification.getId())).isZero();
+        notificationRepository.markAllAsRead(user.getId());
+
+        assertThat(notificationRepository.countByUserIdAndIsReadFalse(other.getId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("이미 모두 읽은 상태에서 전체 읽음 처리하면 갱신되는 행이 없다")
+    void markAllAsRead_doesNothingWhenNothingUnread() {
+        User user = persistUser("owner@example.com");
+        Post post = persistPost("국가장학금 1유형");
+
+        persistNotification(user, post, NotificationType.LAST_MINUTE, true, NOW);
+
+        em.clear();
+
+        assertThat(notificationRepository.markAllAsRead(user.getId())).isZero();
     }
 }

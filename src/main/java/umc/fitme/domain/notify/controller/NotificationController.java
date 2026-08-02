@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,16 +46,6 @@ public class NotificationController {
                 GeneralSuccessCode.OK,
                 notificationService.getUnreadCount(resolveUserId(principal))
         );
-    }
-
-    @Operation(summary = "알림 읽음 처리 API", description = "알림 단건을 읽음 상태로 변경하는 API")
-    @PatchMapping("/{notificationId}/read")
-    public ApiResponse<Void> markAsRead(
-            @AuthenticationPrincipal PrincipalDetails principal,
-            @PathVariable Long notificationId
-    ) {
-        notificationService.markAsRead(resolveUserId(principal), notificationId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, null);
     }
 
     private Long resolveUserId(PrincipalDetails principal) {

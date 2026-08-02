@@ -11,12 +11,10 @@ import org.springframework.data.domain.Pageable;
 import umc.fitme.domain.notify.dto.NotificationResponseDto;
 import umc.fitme.domain.notify.entity.Notification;
 import umc.fitme.domain.notify.enums.NotificationType;
-import umc.fitme.domain.notify.exception.code.NotificationErrorCode;
 import umc.fitme.domain.notify.repository.NotificationRepository;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.User;
-import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -24,10 +22,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -42,7 +38,6 @@ class NotificationServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 31, 12, 0);
 
     private static final Long USER_ID = 1L;
-    private static final Long OTHER_USER_ID = 2L;
 
     @Mock
     private NotificationRepository notificationRepository;
@@ -157,6 +152,48 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("알림 페이지에 진입해 첫 목록을 받으면 알림을 전부 읽음 처리한다")
+    void getNotifications_marksAllAsReadOnFirstPage() {
+        Notification notification = createNotification(10L, USER_ID, 100L, false, NOW.minusHours(1));
+
+        given(notificationRepository.findAllByUserIdBeforeCursor(
+                eq(USER_ID), anyLong(), org.mockito.ArgumentMatchers.any(Pageable.class)))
+                .willReturn(List.of(notification));
+
+        notificationService.getNotifications(USER_ID, null, 15);
+
+        verify(notificationRepository).markAllAsRead(USER_ID);
+    }
+
+    @Test
+    @DisplayName("커서로 다음 목록을 이어 받을 때는 읽음 처리를 다시 하지 않는다")
+    void getNotifications_doesNotMarkAllAsReadOnNextPage() {
+        given(notificationRepository.findAllByUserIdBeforeCursor(
+                eq(USER_ID), anyLong(), org.mockito.ArgumentMatchers.any(Pageable.class)))
+                .willReturn(List.of());
+
+        notificationService.getNotifications(USER_ID, 20L, 15);
+
+        verify(notificationRepository, never()).markAllAsRead(anyLong());
+    }
+
+    @Test
+    @DisplayName("첫 목록 응답에는 읽음 처리 이전의 상태를 그대로 내려준다")
+    void getNotifications_keepsUnreadFlagOnFirstPageResponse() {
+        Notification unread = createNotification(10L, USER_ID, 100L, false, NOW.minusHours(1));
+
+        given(notificationRepository.findAllByUserIdBeforeCursor(
+                eq(USER_ID), anyLong(), org.mockito.ArgumentMatchers.any(Pageable.class)))
+                .willReturn(List.of(unread));
+
+        NotificationResponseDto.NotificationListResponse result =
+                notificationService.getNotifications(USER_ID, null, 15);
+
+        assertThat(result.notifications().getFirst().isRead()).isFalse();
+        verify(notificationRepository).markAllAsRead(USER_ID);
+    }
+
+    @Test
     @DisplayName("미읽음 알림 개수를 조회한다")
     void getUnreadCount_returnsCount() {
         given(notificationRepository.countByUserIdAndIsReadFalse(USER_ID)).willReturn(4L);
@@ -166,41 +203,4 @@ class NotificationServiceTest {
         assertThat(result.unreadCount()).isEqualTo(4L);
     }
 
-    @Test
-    @DisplayName("본인 알림이면 읽음 처리한다")
-    void markAsRead_updatesOwnNotification() {
-        Notification notification = createNotification(10L, USER_ID, 100L, false, NOW.minusHours(1));
-        given(notificationRepository.findById(10L)).willReturn(Optional.of(notification));
-
-        notificationService.markAsRead(USER_ID, 10L);
-
-        verify(notificationRepository).markAsRead(10L);
-    }
-
-    @Test
-    @DisplayName("다른 사용자의 알림은 읽음 처리할 수 없다")
-    void markAsRead_rejectsOtherUsersNotification() {
-        Notification notification = createNotification(10L, OTHER_USER_ID, 100L, false, NOW.minusHours(1));
-        given(notificationRepository.findById(10L)).willReturn(Optional.of(notification));
-
-        assertThatThrownBy(() -> notificationService.markAsRead(USER_ID, 10L))
-                .isInstanceOf(ProjectException.class)
-                .extracting(e -> ((ProjectException) e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.NOTIFICATION_FORBIDDEN);
-
-        verify(notificationRepository, never()).markAsRead(anyLong());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 알림을 읽음 처리하면 예외가 발생한다")
-    void markAsRead_throwsWhenNotificationNotFound() {
-        given(notificationRepository.findById(99L)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> notificationService.markAsRead(USER_ID, 99L))
-                .isInstanceOf(ProjectException.class)
-                .extracting(e -> ((ProjectException) e).getErrorCode())
-                .isEqualTo(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
-
-        verify(notificationRepository, never()).markAsRead(anyLong());
-    }
 }
