@@ -151,6 +151,20 @@ public class AuthController {
                 .body(ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null));
     }
 
+    @Operation(summary = "회원 탈퇴", description = "회원은 서비스에서 탈퇴를 진행한다.")
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @RequestHeader("Authorization") String accessToken,
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            @AuthenticationPrincipal PrincipalDetails principal
+    ){
+        authService.deleteUser(principal.getUser().getId(),accessToken, refreshToken);
+        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, emptyCookie)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.DELETE_OK, null));
+    }
+
     /***
      * 함수 기능: 데모데이 전 임시 토큰 발급 기능
      */

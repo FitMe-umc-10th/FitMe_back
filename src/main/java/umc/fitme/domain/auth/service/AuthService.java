@@ -303,6 +303,12 @@ public class AuthService {
                 .build();
     }
 
+    public void deleteUser(Long userId, String accessToken, String refreshToken) {
+
+        // RT 삭제
+        
+    }
+
     // 이메일 인증번호를 위한 6자리 난수 생성
     private String generateCode() {
         int number = secureRandom.nextInt(900000) + 100000;
