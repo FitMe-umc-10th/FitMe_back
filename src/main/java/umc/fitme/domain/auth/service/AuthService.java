@@ -13,10 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.auth.converter.AuthConverter;
 import umc.fitme.domain.auth.dto.*;
+import umc.fitme.domain.auth.entity.Blacklist;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.entity.RefreshToken;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
+import umc.fitme.domain.auth.repository.BlacklistRepository;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.auth.repository.RefreshTokenRepository;
 import umc.fitme.domain.user.entity.User;
@@ -48,6 +50,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final BlacklistRepository blacklistRepository;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -272,19 +275,47 @@ public class AuthService {
                 .build();
     }
 
-    public Void logout(Long userId) {
+    public Void logout(String accessToken, String refreshToken) {
 
+        // AT 블랙리스트 등록
+        String tokenValue = getTokenValue(accessToken);
+        blacklistRepository.save(new Blacklist(tokenValue));
 
         // RT 삭제
-        RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_INVALID));
-        tokenService.deleteCompromisedToken(refreshToken);
+        RefreshToken findRT = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_NOT_FOUND));
+        refreshTokenRepository.delete(findRT);
+
         return null;
+    }
+
+    /***
+     * 함수 기능: 임시 토큰 발급 (데모데이 전까지 유지)
+     * @return AT
+     */
+    @Transactional(readOnly = true)
+    public TokenInfoDto.ATInfo getDemoToken() {
+
+        String accessToken = jwtUtil.createAccessToken(1L, "USER", "test@example.com");
+
+        return TokenInfoDto.ATInfo.builder()
+                .accessToken(accessToken)
+                .build();
+    }
+
+    public void deleteUser(Long userId, String accessToken, String refreshToken) {
+
+        // RT 삭제
+        
     }
 
     // 이메일 인증번호를 위한 6자리 난수 생성
     private String generateCode() {
         int number = secureRandom.nextInt(900000) + 100000;
         return String.valueOf(number);
+    }
+
+    private String getTokenValue(String token) {
+        return token.substring(7);
     }
 }

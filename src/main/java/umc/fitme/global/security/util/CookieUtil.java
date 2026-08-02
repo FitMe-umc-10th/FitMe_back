@@ -24,4 +24,19 @@ public class CookieUtil {
                 .build()
                 .toString();
     }
+
+    /**
+     * 함수 기능: RT 쿠키를 지운다.
+     * @return
+     */
+    public String deletedRefreshTokenCookie(){
+        return ResponseCookie.from("refreshToken", "")
+                .maxAge(0)
+                .path("/")
+                .secure(true)
+                .sameSite("None")
+                .httpOnly(true)
+                .build()
+                .toString();
+    }
 }
