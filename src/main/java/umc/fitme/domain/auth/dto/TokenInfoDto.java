@@ -2,7 +2,7 @@ package umc.fitme.domain.auth.dto;
 
 import lombok.Builder;
 
-public class TokenDto {
+public class TokenInfoDto {
 
     @Builder
     public record TokenInfoRes(
