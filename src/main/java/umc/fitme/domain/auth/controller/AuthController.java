@@ -15,6 +15,7 @@ import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
+import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.CookieUtil;
 
@@ -131,12 +132,33 @@ public class AuthController {
                 .body(ApiResponse.onSuccess(successCode, response.info()));
     }
 
+    /***
+     * 함수 기능: 로그아웃 기능. AT를 블랙리스트에 추가하고, RT는 삭제한다.
+     * @param accessToken
+     * @param refreshToken
+     * @return
+     */
     @Operation(summary = "로그아웃 API", description = "회원의 로그아웃을 진행한다.")
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(
-            @AuthenticationPrincipal PrincipalDetails principal
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader("Authorization") String accessToken,
+            @CookieValue(value = "refreshToken", required = false) String refreshToken
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.LOGOUT_OK;
-        return ApiResponse.onSuccess(successCode, authService.logout(principal.getUser().getId()));
+        authService.logout(accessToken, refreshToken);
+        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, emptyCookie)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null));
     }
+
+    /***
+     * 함수 기능: 데모데이 전 임시 토큰 발급 기능
+     */
+    @Operation(summary = "임시 AT, RT 토큰 발급 API", description = "데모데이 전까지만 유지. 토큰을 발급받는다.")
+    @GetMapping("/demo-token")
+    public ApiResponse<TokenInfoDto.ATInfo> getToken(){
+        BaseSuccessCode successCode = GeneralSuccessCode.OK;
+        return ApiResponse.onSuccess(successCode, authService.getDemoToken());
+    }
+
 }
