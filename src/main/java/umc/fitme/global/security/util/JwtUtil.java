@@ -9,6 +9,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.auth.dto.LinkTokenDto;
+import umc.fitme.domain.auth.repository.BlacklistRepository;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
 import umc.fitme.global.security.entity.PrincipalDetails;
@@ -26,6 +27,7 @@ public class JwtUtil {
     private final SecretKey secretKey;
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
+    private final BlacklistRepository blacklistRepository;
 
     /***
      * JwtUtil 생성자
@@ -36,10 +38,12 @@ public class JwtUtil {
     public JwtUtil(
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.access-token-validity}") long accessTokenValidity,
-            @Value("${jwt.refresh-token-validity}") long refreshTokenValidity) {
+            @Value("${jwt.refresh-token-validity}") long refreshTokenValidity,
+            BlacklistRepository blacklistRepository) {
         this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.accessTokenValidity = accessTokenValidity;
         this.refreshTokenValidity = refreshTokenValidity;
+        this.blacklistRepository = blacklistRepository;
     }
 
     /***
@@ -112,6 +116,10 @@ public class JwtUtil {
      * @param token 사용자가 보유한 JWT 토큰
      */
     public void validateToken(String token){
+
+        if (blacklistRepository.findByToken(token).isPresent()){
+            throw new TokenException(TokenErrorCode.AT_BLACKLISTED);
+        }
         Jwts.parser()
                 .verifyWith(secretKey)
                 .clockSkewSeconds(60)
