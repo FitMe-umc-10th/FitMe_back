@@ -6,8 +6,9 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import umc.fitme.domain.notify.scheduler.DeadlineEmailNotificationScheduler;
 import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
+import umc.fitme.domain.post.repository.PostRepository;
+import umc.fitme.global.scheduler.BaseScheduler;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -30,8 +31,8 @@ public class DeadlineEmailNotificationSchedulerTest {
                 ZoneId.of("Asia/Seoul")
         );
 
-        DeadlineEmailNotificationScheduler scheduler =
-                new DeadlineEmailNotificationScheduler(service, fixedClock);
+        BaseScheduler scheduler =
+                new BaseScheduler(mock(PostRepository.class), service, fixedClock);
 
         scheduler.sendDeadlineReminderEmails();
 
@@ -44,7 +45,7 @@ public class DeadlineEmailNotificationSchedulerTest {
         try (AnnotationConfigApplicationContext context = createContext("local")) {
             assertThrows(
                     NoSuchBeanDefinitionException.class,
-                    () -> context.getBean(DeadlineEmailNotificationScheduler.class)
+                    () -> context.getBean(BaseScheduler.class)
             );
         }
     }
@@ -53,20 +54,25 @@ public class DeadlineEmailNotificationSchedulerTest {
     @DisplayName("ec2 프로필에서는 마감일 이메일 스케줄러 Bean을 등록한다")
     void deadlineEmailNotificationSchedulerBean_registeredOnEc2Profile() {
         try (AnnotationConfigApplicationContext context = createContext("ec2")) {
-            assertNotNull(context.getBean(DeadlineEmailNotificationScheduler.class));
+            assertNotNull(context.getBean(BaseScheduler.class));
         }
     }
 
     private AnnotationConfigApplicationContext createContext(String activeProfile) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
         context.getEnvironment().setActiveProfiles(activeProfile);
-        context.register(DeadlineEmailNotificationScheduler.class, SchedulerTestConfig.class);
+        context.register(BaseScheduler.class, SchedulerTestConfig.class);
         context.refresh();
         return context;
     }
 
     @Configuration
     static class SchedulerTestConfig {
+
+        @Bean
+        PostRepository postRepository() {
+            return mock(PostRepository.class);
+        }
 
         @Bean
         DeadlineEmailNotificationService deadlineEmailNotificationService() {

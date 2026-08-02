@@ -5,9 +5,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import umc.fitme.domain.notify.service.DeadlineEmailNotificationService;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.repository.PostRepository;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -16,6 +19,8 @@ import java.util.List;
 public class BaseScheduler {
 
     private final PostRepository postRepository;
+    private final DeadlineEmailNotificationService deadlineEmailNotificationService;
+    private final Clock clock;
 
     /***
      * 스케줄러 기능: 매일 0시 0분 0초에 조회수 기반으로 공고 순위를 계산하여 업데이트한다.
@@ -38,5 +43,11 @@ public class BaseScheduler {
             int rank = i+1;
             post.updateRank(rank);
         }
+    }
+
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+    public void sendDeadlineReminderEmails() {
+        LocalDate today = LocalDate.now(clock);
+        deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
     }
 }
