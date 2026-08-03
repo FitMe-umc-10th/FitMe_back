@@ -43,7 +43,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         log.info("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
 
-        // 카카오, 네이버 구분
+        // 카카오,네이버 구분
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2Response oAuth2Response;
 
@@ -53,14 +53,13 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
             if (attributes == null) {
                 throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
             }
-            Map<String, Object> profile = (Map<String, Object>) attributes.get("profile");
-            oAuth2Response = new KakaoResponse(providerId, attributes.get("email").toString(), profile.get("nickname").toString());
+            oAuth2Response = new KakaoResponse(providerId, attributes);
         } else if (registrationId.equals("naver")){
-            Map<String, Object> attributes = (Map<String, Object>) oAuth2User.getAttribute("response");
+            Map<String, Object> attributes = oAuth2User.getAttribute("response");
             if (attributes == null) {
                 throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
             }
-            oAuth2Response = new NaverResponse(attributes.get("id").toString(), attributes.get("email").toString(), attributes.get("name").toString());
+            oAuth2Response = new NaverResponse(attributes.get("id").toString(), attributes);
         } else {
             throw new SocialLoginException(SocialLoginErrorCode.PROVIDER_NOT_FOUND);
         }

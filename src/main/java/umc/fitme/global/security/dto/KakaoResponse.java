@@ -3,12 +3,13 @@ package umc.fitme.global.security.dto;
 import lombok.RequiredArgsConstructor;
 import umc.fitme.domain.user.enums.SocialType;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 public class KakaoResponse implements OAuth2Response{
 
     private final String providerId;
-    private final String email;
-    private final String name;
+    private final Map<String, Object> attributes;
 
     @Override
     public SocialType getProvider() {
@@ -22,11 +23,22 @@ public class KakaoResponse implements OAuth2Response{
 
     @Override
     public String getEmail() {
-        return email;
+        return (String) attributes.get("email");
     }
 
     @Override
     public String getName() {
-        return name;
+        Map<String, Object> profile = (Map<String, Object>) attributes.get("profile");
+        return (String) profile.get("nickname");
+    }
+
+    @Override
+    public String getBirthday() {
+        return (String) attributes.get("birthday");
+    }
+
+    @Override
+    public String getBirthyear() {
+        return (String) attributes.get("birthyear");
     }
 }
