@@ -109,6 +109,10 @@ public class Post extends BaseEntity {
         this.postRank = newRank;
     }
 
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
+
     public void activate() {
         this.active = true;
     }

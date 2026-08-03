@@ -105,3 +105,10 @@ scholarship:
 public-data:
   api-key: ${PUBLIC_DATA_API_KEY}
   url: ${PUBLIC_DATA_URL}
+
+openai:
+  # 값이 없어도(:뒤 기본값 없음) 앱이 죽지 않도록 빈 문자열 기본값을 둔다.
+  # 실제 요약 생성은 OpenAiSummaryClient에서 비어있으면 건너뛰도록 가드한다.
+  api-key: ${OPENAI_API_KEY:}
+  api-url: https://api.openai.com/v1/chat/completions
+  model: gpt-4o-mini

@@ -50,12 +50,14 @@ public class ScholarshipSyncWriter {
 
                 Scholarship existing = existingBySourceKey.get(sourceKey);
                 if (existing != null) {
+                    // summary는 원본 텍스트로 덮어쓰지 않고 기존 값(AI 요약 캐시 또는 null)을 그대로 유지한다.
+                    // 그래야 PostSummaryService가 채운 AI 요약이 매일 동기화 때마다 지워지지 않는다.
                     existing.syncFrom(
                             row.productName(),
                             row.organization(),
                             period.applyStartAt(),
                             period.applyEndAt(),
-                            row.applicantTarget(),
+                            existing.getSummary(),
                             DEFAULT_APPLICATION_METHOD,
                             DEFAULT_APPLICATION_URL,
                             row.supportAmount(),
@@ -135,7 +137,8 @@ public class ScholarshipSyncWriter {
                 .organizer(row.organization())
                 .applyStartAt(period.applyStartAt())
                 .applyEndAt(period.applyEndAt())
-                .summary(row.applicantTarget())
+                // summary는 원본 텍스트를 그대로 쓰지 않는다.
+                // AI 요약 백필 스케줄러(PostSummaryService)가 null인 공고를 찾아 채운다.
                 .applicationMethod(DEFAULT_APPLICATION_METHOD)
                 .applicationUrl(DEFAULT_APPLICATION_URL)
                 .imageUrl(DEFAULT_IMAGE_URL)
