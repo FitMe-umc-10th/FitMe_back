@@ -36,6 +36,8 @@ spring:
             scope:
               - profile_nickname
               - account_email
+              - birthday
+              - birthyear
 
         provider:
           naver:

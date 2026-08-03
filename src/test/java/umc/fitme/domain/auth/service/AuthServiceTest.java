@@ -124,7 +124,7 @@ class AuthServiceTest {
             assertThatThrownBy(() -> authService.isValidateCode(request))
                     .isInstanceOf(AuthException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
-                    .isEqualTo(AuthErrorCode.EMAIL_NOT_FOUND);
+                    .isEqualTo(AuthErrorCode.EMAIL_CODE_NOT_FOUND);
         }
 
         @Test

@@ -16,8 +16,10 @@ public enum AuthErrorCode implements BaseErrorCode {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH400_5", "비밀번호가 일치하지 않습니다."),
     NEED_TO_AGREE(HttpStatus.BAD_REQUEST, "AUTH400_6", "개인정보 보호약관 동의는 필수입니다."),
     VERIFICATION_EXPIRED(HttpStatus.BAD_REQUEST, "AUTH400_7", "해당 이메일 인증이 만료되었습니다. 이메일 인증 후 30분 내 회원가입을 완료해주세요."),
-    EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH404_1", "해당 메일로 보낸 인증번호가 존재하지 않습니다. 먼저 원하는 이메일로 인증번호를 보내주세요."),
+    EMAIL_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH404_1", "해당 메일로 보낸 인증번호가 존재하지 않습니다. 먼저 원하는 이메일로 인증번호를 보내주세요."),
     EMAIL_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH503_1", "이메일 발송에 실패하였습니다. 메일 서버 장애"),
+    DELETED_USER_EMAIL(HttpStatus.UNAUTHORIZED,"AUTH401_1", "탈퇴 처리된 계정입니다. 고객센터에 문의헤주세요."),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED,"AUTH401_2" ,"비밀번호가 일치하지 않습니다." ),
     ;
 
     private final HttpStatus status;

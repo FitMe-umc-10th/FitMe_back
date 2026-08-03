@@ -62,8 +62,15 @@ public class User extends BaseEntity {
         this.isOnboarded = true;
     }
 
+    // 계정 연동
     public void linkAccount(SocialType socialType, String socialUid) {
         this.socialType = socialType;
         this.socialUid = socialUid;
+    }
+
+    // 회원 탈퇴 및 이메일 더미데이터로 덮어버림
+    public void deleteUser(){
+        this.email = "deleted_" + System.currentTimeMillis() + "_" + email;
+        this.deletedAt = LocalDateTime.now();
     }
 }

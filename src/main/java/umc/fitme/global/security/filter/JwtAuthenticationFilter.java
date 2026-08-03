@@ -55,6 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Authentication authentication = jwtUtil.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
+                request.setAttribute("accessToken", token);
                 log.info("SecurityContext에 Authentication 객체 저장완료: {}", authentication.getPrincipal());
             }
         } catch (ExpiredJwtException e) {
