@@ -36,29 +36,17 @@ public class SecurityConfig {
     private final CustomEntryPoint customEntryPoint;
     private final CustomAccessDenied customAccessDenied;
 
-    private final String[] authenticatedUris = {
-            "/api/v1/user-applications",
-            "/api/v1/user-applications/**",
-            "/api/v1/onboarding",
-            "/api/v1/mypage",
-            "/api/v1/mypage/**",
-            "/api/v1/faqs",
-            "/api/v1/faqs/**",
-            "/api/v1/inquiries",
-            "/api/v1/inquiries/**",
-            "/api/v1/announcements",
-            "/api/v1/announcements/**",
-            "/api/v1/saved-posts",
-            "/api/v1/saved-posts/**"
-    };
-
     private final String[] allowUris = {
         "/",
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/error/**",
-//            "/api/**", // 임시
-        "/api/auth/**",
+            "/api/auth/signup",
+            "/api/auth/login",
+            "/api/auth/demo-token",
+            "/api/auth/email-verifications",
+            "/api/auth/email-verifications/confirm",
+            "/api/auth/link",
         "/test.html"
     };
 
@@ -78,7 +66,6 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(authenticatedUris).authenticated()
                         .requestMatchers(allowUris).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

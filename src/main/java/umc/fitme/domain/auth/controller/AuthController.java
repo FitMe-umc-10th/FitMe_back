@@ -136,17 +136,15 @@ public class AuthController {
     /***
      * 함수 기능: 로그아웃 기능. AT를 블랙리스트에 추가하고, RT는 삭제한다.
      * @param request
-     * @param refreshToken
      * @return
      */
     @Operation(summary = "로그아웃 API", description = "회원의 로그아웃을 진행한다.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
             HttpServletRequest request,
-            @Parameter(hidden = true)
-            @CookieValue(value = "refreshToken", required = false) String refreshToken
+            @AuthenticationPrincipal PrincipalDetails principal
     ){
-        authService.logout((String)request.getAttribute("accessToken"), refreshToken);
+        authService.logout(principal.getUser().getId(), (String)request.getAttribute("accessToken"));
         String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyCookie)
@@ -157,11 +155,9 @@ public class AuthController {
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             HttpServletRequest request,
-            @Parameter(hidden = true)
-            @CookieValue(value = "refreshToken", required = false) String refreshToken,
             @AuthenticationPrincipal PrincipalDetails principal
     ){
-        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"), refreshToken);
+        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"));
         String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyCookie)

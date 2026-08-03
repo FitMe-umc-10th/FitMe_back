@@ -289,16 +289,13 @@ public class AuthService {
 
     /***
      * 함수 기능: 로그아웃. AT를 블랙리스트로 등록하고, RT는 삭제한다.
+     * @param userId
      * @param accessToken
-     * @param refreshToken
      */
-    public void logout(String accessToken, String refreshToken) {
+    public void logout(Long userId, String accessToken) {
 
-        // AT 블랙리스트 등록
-        blacklistRepository.save(new Blacklist(accessToken));
-
-        // RT 삭제
-        deleteRefreshToken(refreshToken);
+        // AT 블랙리스트 추가 & RT 삭제 (있다면)
+        addATBlacklistAndDeleteRT(userId, accessToken);
     }
 
     /***
@@ -306,19 +303,13 @@ public class AuthService {
      *          deleted_at 컬럼을 추가하고, 이메일도 더미데이터로 변경한다.
      * @param userId
      * @param accessToken
-     * @param refreshToken
      */
-    public void deleteUser(Long userId, String accessToken, String refreshToken) {
+    public void deleteUser(Long userId, String accessToken) {
 
-        // AT 블랙리스트 등록
-        blacklistRepository.save(new Blacklist(accessToken));
-
-        // RT 삭제
-        deleteRefreshToken(refreshToken);
+        // AT 블랙리스트 추가 & RT 삭제 (있다면)
+        User user = addATBlacklistAndDeleteRT(userId, accessToken);
 
         // deleted_at 컬럼에 시간 추가 및 이메일 값을 더미 데이터로 덮어씌움
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
         user.deleteUser();
     }
 
@@ -342,10 +333,18 @@ public class AuthService {
         return String.valueOf(number);
     }
 
-    // RT 삭제
-    private void deleteRefreshToken(String refreshToken) {
-        RefreshToken findRT = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_NOT_FOUND));
-        refreshTokenRepository.delete(findRT);
+    private User addATBlacklistAndDeleteRT(Long userId, String accessToken) {
+        // 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+        // AT 블랙리스트 등록
+        blacklistRepository.save(new Blacklist(accessToken));
+
+        // RT 삭제
+        refreshTokenRepository.findByUser(user)
+                .ifPresent(refreshTokenRepository::delete);
+
+        return user;
     }
 }

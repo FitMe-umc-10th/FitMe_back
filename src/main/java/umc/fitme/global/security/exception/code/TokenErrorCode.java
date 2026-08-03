@@ -22,7 +22,8 @@ public enum TokenErrorCode implements BaseErrorCode {
     AT_BLACKLISTED(HttpStatus.UNAUTHORIZED,"TOKEN401_4","AT는 로그아웃으로 인해 블랙리스트에 등록되었습니다. 다시 로그인하여 새로운 AT를 발급받아주세요."),
     AT_DELETED(HttpStatus.NOT_FOUND,"TOKEN401_5","해당 AT는 계정 탈퇴로 인해 만료되었습니다." ),
     RT_NOT_FOUND(HttpStatus.NOT_FOUND,"TOKEN404_1" , "쿠키가 비어있습니다. 쿠키에 RT 값이 들어있는지 확인하세요."),
-    ;
+    USER_WITHDRAW(HttpStatus.UNAUTHORIZED,"TOKEN401_5", "탈퇴 처리된 사용자의 토큰입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND,"TOKEN404_2","해당 토큰에서 추출한 유저가 DB에 존재하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;
