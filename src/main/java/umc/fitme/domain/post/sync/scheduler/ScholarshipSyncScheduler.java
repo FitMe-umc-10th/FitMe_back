@@ -11,7 +11,7 @@ public class ScholarshipSyncScheduler {
 
     private final ScholarshipSyncService scholarshipSyncService;
 
-    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 4 1 * *", zone = "Asia/Seoul")
     public void syncScholarships() {
         scholarshipSyncService.sync();
     }
