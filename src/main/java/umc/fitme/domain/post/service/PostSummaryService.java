@@ -74,6 +74,7 @@ public class PostSummaryService {
         try {
             String summary = openAiSummaryClient.generateSummary(buildPrompt(post));
             post.updateSummary(summary);
+            log.info("AI 요약 생성 완료 - postId={}", post.getId());
             return true;
         } catch (Exception e) {
             log.warn("AI 요약 생성 실패 - postId={}, reason={}", post.getId(), e.getMessage());
