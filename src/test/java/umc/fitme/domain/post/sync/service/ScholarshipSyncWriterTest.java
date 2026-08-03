@@ -81,6 +81,7 @@ class ScholarshipSyncWriterTest {
                 .organizer("구 기관")
                 .applyStartAt(LocalDate.of(2025, 1, 1))
                 .applyEndAt(LocalDate.of(2025, 1, 31))
+                .summary("AI가 미리 캐싱해둔 요약")
                 .applicationMethod("옛날 방식")
                 .applicationUrl("https://old.example.com")
                 .imageUrl("https://old.example.com/img.png")
@@ -99,7 +100,8 @@ class ScholarshipSyncWriterTest {
 
         assertThat(existing.getTitle()).isEqualTo("국가장학금");
         assertThat(existing.getOrganizer()).isEqualTo("한국장학재단");
-        assertThat(existing.getSummary()).isEqualTo("대학생");
+        // summary는 CSV 원본 값으로 덮어써지지 않고, AI가 캐싱해둔 요약이 그대로 유지되어야 한다.
+        assertThat(existing.getSummary()).isEqualTo("AI가 미리 캐싱해둔 요약");
         assertThat(existing.getSupportAmount()).isEqualTo("최대 500만원");
         assertThat(existing.isActive()).isTrue();
 

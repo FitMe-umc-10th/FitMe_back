@@ -15,6 +15,7 @@ import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostQueryService;
 import umc.fitme.domain.post.service.PostService;
+import umc.fitme.domain.post.service.PostSummaryService;
 import umc.fitme.domain.post.service.PublicDataSyncService;
 import umc.fitme.domain.post.sync.service.ScholarshipSyncService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
@@ -38,6 +39,7 @@ public class PostController {
     private final UserApplicationService userApplicationService;
     private final PostService postService;
     private final ScholarshipSyncService scholarshipSyncService;
+    private final PostSummaryService postSummaryService;
 
 
     @GetMapping("/popular")
@@ -118,6 +120,23 @@ public class PostController {
     public ApiResponse<String> triggerScholarshipSync() {
         scholarshipSyncService.sync();
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, "장학금 스케줄러 동기화가 실행되었습니다. scholarship_sync_log에서 결과를 확인하세요.");
+    }
+
+    /**
+     * AI 공고 요약 생성을 수동으로 트리거하는 테스트용 API.
+     * postId가 주어지면 해당 공고 하나만 강제로 재생성하고,
+     * 없으면 summary가 비어있는 활성 공고를 배치로 찾아 생성한다.
+     */
+    @GetMapping("/summary-generate-test")
+    public ApiResponse<String> triggerSummaryGeneration(
+            @RequestParam(required = false) Long postId) {
+        if (postId != null) {
+            postSummaryService.generateSummaryForPost(postId);
+            return ApiResponse.onSuccess(GeneralSuccessCode.OK, "postId=" + postId + "의 AI 요약이 재생성되었습니다.");
+        }
+
+        int count = postSummaryService.generateMissingSummaries();
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, count + "건의 AI 요약이 생성되었습니다.");
     }
 
     /***
