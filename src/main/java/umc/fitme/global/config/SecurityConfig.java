@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,6 +21,7 @@ import umc.fitme.global.security.filter.JwtAuthenticationFilter;
 import umc.fitme.global.security.handler.OAuth2FailureHandler;
 import umc.fitme.global.security.handler.OAuth2SuccessHandler;
 import umc.fitme.global.security.service.CustomOAuth2UserService;
+import umc.fitme.global.security.service.CustomUserDetailsService;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ import umc.fitme.global.security.service.CustomOAuth2UserService;
 public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final OAuth2FailureHandler oAuth2FailureHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -54,7 +57,7 @@ public class SecurityConfig {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/error/**",
-            "/api/**", // 임시
+//            "/api/**", // 임시
         "/api/auth/**",
         "/test.html"
     };
@@ -94,5 +97,16 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(){
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
+
+        provider.setPasswordEncoder(passwordEncoder());
+
+        provider.setHideUserNotFoundExceptions(false);
+
+        return provider;
     }
 }

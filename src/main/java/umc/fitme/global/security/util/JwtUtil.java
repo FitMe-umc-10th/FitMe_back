@@ -117,9 +117,11 @@ public class JwtUtil {
      */
     public void validateToken(String token){
 
+        // 해당 AT가 로그아웃, 탈퇴 등으로 만료 되었다면, 예외 발생
         if (blacklistRepository.findByToken(token).isPresent()){
             throw new TokenException(TokenErrorCode.AT_BLACKLISTED);
         }
+
         Jwts.parser()
                 .verifyWith(secretKey)
                 .clockSkewSeconds(60)

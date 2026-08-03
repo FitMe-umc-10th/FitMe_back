@@ -6,8 +6,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,7 +91,7 @@ public class AuthService {
 
         // 이메일 확인
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
-                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
+                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
 
         // 인증 완료 코드 재사용 방지
         if (emailVerification.getVerifiedAt() != null){
@@ -127,7 +130,7 @@ public class AuthService {
 
         // 이메일 인증 여부 검증
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
-                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_NOT_FOUND));
+                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
         if (emailVerification.getVerifiedAt() == null){
             throw new AuthException(AuthErrorCode.NEED_TO_VERIFY);
         }
@@ -169,29 +172,36 @@ public class AuthService {
      */
     public LoginDto.LoginResultDto login(LoginDto.LoginReq dto) {
 
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.password());
+        try {
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.password());
 
-        Authentication authentication = authenticationManager.authenticate(authenticationToken);
-        PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
+            Authentication authentication = authenticationManager.authenticate(authenticationToken);
+            PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
 
-        Long userId = principal.getUser().getId();
-        String role = principal.getRole();
-        String email = principal.getUsername();
+            Long userId = principal.getUser().getId();
+            String role = principal.getRole();
+            String email = principal.getUsername();
 
-        String accessToken = jwtUtil.createAccessToken(userId, role, email);
-        String refreshToken = jwtUtil.createRefreshToken(userId);
+            String accessToken = jwtUtil.createAccessToken(userId, role, email);
+            String refreshToken = jwtUtil.createRefreshToken(userId);
 
-        // 생성된 RT를 DB에 저장/업데이트 합니다.
-        tokenService.saveOrUpdateRefreshToken(principal.getUser(), refreshToken);
+            // 생성된 RT를 DB에 저장/업데이트 합니다.
+            tokenService.saveOrUpdateRefreshToken(principal.getUser(), refreshToken);
 
-        return AuthConverter.toLoginRes(
-                userId,
-                email,
-                principal.getUser().getName(),
-                principal.getUser().getIsOnboarded(),
-                accessToken,
-                accessTokenValidity,
-                refreshToken);
+            return AuthConverter.toLoginRes(
+                    userId,
+                    email,
+                    principal.getUser().getName(),
+                    principal.getUser().getIsOnboarded(),
+                    accessToken,
+                    accessTokenValidity,
+                    refreshToken);
+
+        } catch (DisabledException e) {
+            throw new AuthException(AuthErrorCode.DELETED_USER_EMAIL);
+        } catch (BadCredentialsException e){
+            throw new AuthException(AuthErrorCode.INVALID_PASSWORD);
+        }
     }
 
     /***
@@ -220,6 +230,8 @@ public class AuthService {
         // 계정 연동 후 AT, RT 발급 후 반환
         String accessToken = jwtUtil.createAccessToken(user.getId(), "USER", user.getEmail());
         String refreshToken = jwtUtil.createRefreshToken(user.getId());
+
+        log.info("계정 연동 완료 후 AT, RT 발급완료");
 
         return AuthConverter.toLoginRes(
                 user.getId(),
@@ -275,18 +287,39 @@ public class AuthService {
                 .build();
     }
 
-    public Void logout(String accessToken, String refreshToken) {
+    /***
+     * 함수 기능: 로그아웃. AT를 블랙리스트로 등록하고, RT는 삭제한다.
+     * @param accessToken
+     * @param refreshToken
+     */
+    public void logout(String accessToken, String refreshToken) {
 
         // AT 블랙리스트 등록
-        String tokenValue = getTokenValue(accessToken);
-        blacklistRepository.save(new Blacklist(tokenValue));
+        blacklistRepository.save(new Blacklist(accessToken));
 
         // RT 삭제
-        RefreshToken findRT = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_NOT_FOUND));
-        refreshTokenRepository.delete(findRT);
+        deleteRefreshToken(refreshToken);
+    }
 
-        return null;
+    /***
+     * 함수 기능: 회원탈퇴. AT를 블랙리스트로 등록하고, RT는 삭제한다.
+     *          deleted_at 컬럼을 추가하고, 이메일도 더미데이터로 변경한다.
+     * @param userId
+     * @param accessToken
+     * @param refreshToken
+     */
+    public void deleteUser(Long userId, String accessToken, String refreshToken) {
+
+        // AT 블랙리스트 등록
+        blacklistRepository.save(new Blacklist(accessToken));
+
+        // RT 삭제
+        deleteRefreshToken(refreshToken);
+
+        // deleted_at 컬럼에 시간 추가 및 이메일 값을 더미 데이터로 덮어씌움
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+        user.deleteUser();
     }
 
     /***
@@ -303,19 +336,16 @@ public class AuthService {
                 .build();
     }
 
-    public void deleteUser(Long userId, String accessToken, String refreshToken) {
-
-        // RT 삭제
-        
-    }
-
     // 이메일 인증번호를 위한 6자리 난수 생성
     private String generateCode() {
         int number = secureRandom.nextInt(900000) + 100000;
         return String.valueOf(number);
     }
 
-    private String getTokenValue(String token) {
-        return token.substring(7);
+    // RT 삭제
+    private void deleteRefreshToken(String refreshToken) {
+        RefreshToken findRT = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_NOT_FOUND));
+        refreshTokenRepository.delete(findRT);
     }
 }

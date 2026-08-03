@@ -39,6 +39,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
 
+        log.info("OAuth2 로그인 실패 원인: {}", exception.getMessage());
         if (exception instanceof RequireAccountLinkException ex){
             String linkToken = jwtUtil.createLinkToken(ex.getUserId(), ex.getEmail(), ex.getProvider(), ex.getProviderId());
 
@@ -51,6 +52,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
             targetUrl = targetUrl + "`#linkToken'=" + linkToken;
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
+            log.info("linkToken 전송 완료");
         } else if (exception instanceof SocialLoginException ex){
             String targetUrl = UriComponentsBuilder.fromUriString(failureRedirectUrl)
                     .queryParam("error", ex.getErrorCode().getCode())

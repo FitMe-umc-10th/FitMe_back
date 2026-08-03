@@ -48,4 +48,9 @@ public class PrincipalDetails implements OAuth2User, UserDetails {
     public String getName() {
         return user.getEmail();
     }
+
+    @Override
+    public boolean isEnabled() {
+        return user.getDeletedAt() == null;
+    }
 }

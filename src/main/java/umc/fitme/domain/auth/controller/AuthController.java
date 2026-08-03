@@ -3,6 +3,7 @@ package umc.fitme.domain.auth.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -134,17 +135,18 @@ public class AuthController {
 
     /***
      * 함수 기능: 로그아웃 기능. AT를 블랙리스트에 추가하고, RT는 삭제한다.
-     * @param accessToken
+     * @param request
      * @param refreshToken
      * @return
      */
     @Operation(summary = "로그아웃 API", description = "회원의 로그아웃을 진행한다.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @RequestHeader("Authorization") String accessToken,
+            HttpServletRequest request,
+            @Parameter(hidden = true)
             @CookieValue(value = "refreshToken", required = false) String refreshToken
     ){
-        authService.logout(accessToken, refreshToken);
+        authService.logout((String)request.getAttribute("accessToken"), refreshToken);
         String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyCookie)
@@ -154,11 +156,12 @@ public class AuthController {
     @Operation(summary = "회원 탈퇴", description = "회원은 서비스에서 탈퇴를 진행한다.")
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> deleteUser(
-            @RequestHeader("Authorization") String accessToken,
+            HttpServletRequest request,
+            @Parameter(hidden = true)
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
             @AuthenticationPrincipal PrincipalDetails principal
     ){
-        authService.deleteUser(principal.getUser().getId(),accessToken, refreshToken);
+        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"), refreshToken);
         String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyCookie)

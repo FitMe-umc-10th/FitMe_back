@@ -73,6 +73,11 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         if (optionalUser.isPresent()){
             User user = optionalUser.get();
 
+            // 회원 탈퇴 여부 검사
+            if (user.getDeletedAt() != null){
+                throw new SocialLoginException(SocialLoginErrorCode.DELETED_USER_EMAIL);
+            }
+
             checkEmailOverlapAndThrow(user, oAuth2Response.getProvider(), oAuth2Response.getEmail(), oAuth2Response.getProviderId());
 
             log.info("기존 회원 소셜 로그인 성공 (이메일: {})", user.getEmail());
