@@ -16,6 +16,7 @@ import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostQueryService;
 import umc.fitme.domain.post.service.PostService;
 import umc.fitme.domain.post.service.PublicDataSyncService;
+import umc.fitme.domain.post.sync.service.ScholarshipSyncService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
@@ -36,6 +37,7 @@ public class PostController {
     private final PublicDataSyncService publicDataSyncService; // 💡 데이터 동기화를 위한 서비스 추가
     private final UserApplicationService userApplicationService;
     private final PostService postService;
+    private final ScholarshipSyncService scholarshipSyncService;
 
 
     @GetMapping("/popular")
@@ -110,6 +112,12 @@ public class PostController {
 
         publicDataSyncService.syncScholarshipData(page, perPage);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, "공공데이터 동기화가 성공적으로 실행되었습니다.");
+    }
+
+    @GetMapping("/scholarship-sync-test")
+    public ApiResponse<String> triggerScholarshipSync() {
+        scholarshipSyncService.sync();
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, "장학금 스케줄러 동기화가 실행되었습니다. scholarship_sync_log에서 결과를 확인하세요.");
     }
 
     /***
