@@ -36,13 +36,13 @@ public class QUser extends EntityPathBase<User> {
 
     public final BooleanPath isOnboarded = createBoolean("isOnboarded");
 
+    public final StringPath kakaoId = createString("kakaoId");
+
     public final StringPath name = createString("name");
 
+    public final StringPath naverId = createString("naverId");
+
     public final StringPath password = createString("password");
-
-    public final EnumPath<umc.fitme.domain.user.enums.SocialType> socialType = createEnum("socialType", umc.fitme.domain.user.enums.SocialType.class);
-
-    public final StringPath socialUid = createString("socialUid");
 
     public final BooleanPath termsAgreed = createBoolean("termsAgreed");
 

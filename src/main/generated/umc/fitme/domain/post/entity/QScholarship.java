@@ -21,7 +21,8 @@ public class QScholarship extends EntityPathBase<Scholarship> {
 
     public final QPost _super = new QPost(this);
 
-    public final BooleanPath active = createBoolean("active");
+    //inherited
+    public final BooleanPath active = _super.active;
 
     //inherited
     public final StringPath applicationMethod = _super.applicationMethod;
