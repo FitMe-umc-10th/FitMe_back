@@ -62,4 +62,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl 
     where p.postRank != -1
     """)
     void resetAllRanks();
+
+    // 마감일이 지났는데 아직 활성 상태인 공고를 타입 무관하게 조회한다.
+    @Query("SELECT p FROM Post p WHERE p.active = true AND p.applyEndAt < CURRENT_DATE")
+    List<Post> findAllActiveAndExpired();
 }

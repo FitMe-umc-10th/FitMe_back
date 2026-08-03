@@ -71,6 +71,10 @@ public class Post extends BaseEntity {
     @Builder.Default
     private int postRank = -1;
 
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -103,5 +107,13 @@ public class Post extends BaseEntity {
 
     public void updateRank(int newRank) {
         this.postRank = newRank;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 }

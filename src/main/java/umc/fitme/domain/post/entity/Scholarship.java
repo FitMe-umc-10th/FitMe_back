@@ -2,7 +2,6 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -44,11 +43,6 @@ public class Scholarship extends Post{
     @Column(name = "source_key", unique = true)
     private String sourceKey;
 
-    // CSV 동기화 시 이번 회차에 존재하지 않으면 false로 전환됨
-    @Column(name = "active", nullable = false)
-    @Builder.Default
-    private boolean active = true;
-
     @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
 
@@ -76,7 +70,7 @@ public class Scholarship extends Post{
     ) {
         updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl, now);
         this.supportAmount = supportAmount;
-        this.active = true;
+        this.activate();
         this.lastSyncedAt = now;
     }
 
@@ -84,7 +78,7 @@ public class Scholarship extends Post{
      * 함수 기능: 이번 동기화 대상 CSV에 더 이상 존재하지 않는 장학금을 비활성화 처리한다.
      */
     public void deactivate(LocalDateTime now) {
-        this.active = false;
+        this.deactivate();
         this.lastSyncedAt = now;
     }
 }
