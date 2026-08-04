@@ -3,7 +3,6 @@ package umc.fitme.global.security.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -96,7 +95,7 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         Boolean isEmailVerified = (Boolean) attributes.get("is_email_verified");
         Boolean isEmailValid = (Boolean) attributes.get("is_email_valid");
 
-        if (!isEmailValid || !isEmailVerified){
+        if (!Boolean.TRUE.equals(isEmailVerified) || !Boolean.TRUE.equals(isEmailValid)){
             throw new SocialLoginException(SocialLoginErrorCode.UNVERIFIED_EMAIL);
         }
     }

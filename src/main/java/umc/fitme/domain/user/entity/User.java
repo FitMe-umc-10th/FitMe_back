@@ -61,10 +61,10 @@ public class User extends BaseEntity {
     }
 
     // 계정 연동
-    public void linkAccount(SocialType socialType, String socialUid) {
+    public void linkAccount(SocialType socialType, String providerId) {
         switch (socialType){
-            case KAKAO -> this.kakaoId = socialUid;
-            case NAVER -> this.naverId = socialUid;
+            case KAKAO -> this.kakaoId = providerId;
+            case NAVER -> this.naverId = providerId;
         }
     }
 
