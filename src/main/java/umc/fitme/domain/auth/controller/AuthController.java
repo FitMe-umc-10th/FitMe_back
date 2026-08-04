@@ -40,8 +40,7 @@ public class AuthController {
     public ApiResponse<EmailVerificationDto.EmailVerificationResDto> emailVerify(
             @Valid @RequestBody EmailVerificationDto.EmailVerificationReqDto dto
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.REQUEST_OK;
-        return ApiResponse.onSuccess(successCode, authService.sendVerificationCode(dto));
+        return ApiResponse.onSuccess(AuthSuccessCode.REQUEST_OK, authService.sendVerificationCode(dto));
     }
 
     /***
@@ -54,8 +53,7 @@ public class AuthController {
     public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerifyConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.CONFIRM_OK;
-        return ApiResponse.onSuccess(successCode, authService.isValidateCode(confirm));
+        return ApiResponse.onSuccess(AuthSuccessCode.CONFIRM_OK, authService.isValidateCode(confirm));
     }
 
     /***
@@ -68,8 +66,7 @@ public class AuthController {
     public ApiResponse<SignUpDto.SignUpRes> signUp(
             @Valid @RequestBody SignUpDto.SignUpReq dto
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.SIGNUP_OK;
-        return ApiResponse.onSuccess(successCode, authService.signUp(dto));
+        return ApiResponse.onSuccess(AuthSuccessCode.SIGNUP_OK, authService.signUp(dto));
     }
 
     /**
@@ -82,14 +79,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginDto.LoginRes>> login(
             @Valid @RequestBody LoginDto.LoginReq dto
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.LOGIN_OK;
-
         LoginDto.LoginResultDto resultDto = authService.login(dto);
         String cookie = cookieUtil.createRefreshTokenCookie(resultDto.refreshToken(), dto.keepLogin());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(ApiResponse.onSuccess(successCode, resultDto.loginRes()));
+                .body(ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, resultDto.loginRes()));
     }
 
     /***
@@ -102,14 +97,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginDto.LoginRes>> linkAccount(
             @RequestHeader(name = "Link-Token") String linkTokenHeader
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.LINK_ACCOUNT_OK;
-
         LoginDto.LoginResultDto resultDto = authService.linkAccount(linkTokenHeader);
         String cookie = cookieUtil.createRefreshTokenCookie(resultDto.refreshToken(),true);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(ApiResponse.onSuccess(successCode, resultDto.loginRes()));
+                .body(ApiResponse.onSuccess(AuthSuccessCode.LINK_ACCOUNT_OK, resultDto.loginRes()));
     }
 
     /***
@@ -123,14 +116,12 @@ public class AuthController {
             @Parameter(hidden = true)
             @CookieValue(value = "refreshToken", required = false) String refreshToken
     ){
-        BaseSuccessCode successCode = AuthSuccessCode.REISSUE_OK;
-
         TokenInfoDto.TokenInfoRes response = authService.reissue(refreshToken);
         String cookie = cookieUtil.createRefreshTokenCookie(response.refreshToken(), true);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(ApiResponse.onSuccess(successCode, response.info()));
+                .body(ApiResponse.onSuccess(AuthSuccessCode.REISSUE_OK, response.info()));
     }
 
     /***
