@@ -10,8 +10,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.auth.dto.LinkTokenDto;
 import umc.fitme.domain.auth.repository.BlacklistRepository;
+import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
+import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.TokenException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
@@ -27,6 +30,7 @@ public class JwtUtil {
     private final SecretKey secretKey;
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
+    private final UserRepository userRepository;
     private final BlacklistRepository blacklistRepository;
 
     /***
@@ -39,10 +43,12 @@ public class JwtUtil {
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.access-token-validity}") long accessTokenValidity,
             @Value("${jwt.refresh-token-validity}") long refreshTokenValidity,
+            UserRepository userRepository,
             BlacklistRepository blacklistRepository) {
         this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.accessTokenValidity = accessTokenValidity;
         this.refreshTokenValidity = refreshTokenValidity;
+        this.userRepository = userRepository;
         this.blacklistRepository = blacklistRepository;
     }
 
@@ -117,9 +123,11 @@ public class JwtUtil {
      */
     public void validateToken(String token){
 
+        // 해당 AT가 로그아웃, 탈퇴 등으로 만료 되었다면, 예외 발생
         if (blacklistRepository.findByToken(token).isPresent()){
             throw new TokenException(TokenErrorCode.AT_BLACKLISTED);
         }
+
         Jwts.parser()
                 .verifyWith(secretKey)
                 .clockSkewSeconds(60)
@@ -162,7 +170,6 @@ public class JwtUtil {
 
         long userId = Long.parseLong(payload.getSubject());
         String role = payload.get("role", String.class);
-        String email = payload.get("email", String.class);
         String typ = payload.get("typ", String.class);
 
         // 토큰 타입이 access가 아닌 경우 예외 처리
@@ -170,10 +177,13 @@ public class JwtUtil {
             throw new TokenException(TokenErrorCode.AT_TYPE_INVALID);
         }
 
-        User user = User.builder()
-                .id(userId)
-                .email(email)
-                .build();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new TokenException(TokenErrorCode.USER_NOT_FOUND));
+
+        // 유저가 탈퇴한 유저인지 확인
+        if (user.getDeletedAt() != null){
+            throw new TokenException(TokenErrorCode.USER_WITHDRAW);
+        }
 
         PrincipalDetails principal = new PrincipalDetails(user, role);
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());

@@ -24,13 +24,11 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "social_uid")
-    private String socialUid;
+    @Column(name = "kakao_id")
+    private String kakaoId;
 
-    @Column(name = "social_type")
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private SocialType socialType = SocialType.NULL;
+    @Column(name = "naver_id")
+    private String naverId;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -62,8 +60,17 @@ public class User extends BaseEntity {
         this.isOnboarded = true;
     }
 
-    public void linkAccount(SocialType socialType, String socialUid) {
-        this.socialType = socialType;
-        this.socialUid = socialUid;
+    // 계정 연동
+    public void linkAccount(SocialType socialType, String providerId) {
+        switch (socialType){
+            case KAKAO -> this.kakaoId = providerId;
+            case NAVER -> this.naverId = providerId;
+        }
+    }
+
+    // 회원 탈퇴 및 이메일 더미데이터로 덮어버림
+    public void deleteUser(){
+        this.email = "deleted_" + System.currentTimeMillis() + "_" + email;
+        this.deletedAt = LocalDateTime.now();
     }
 }

@@ -104,6 +104,14 @@ public class PostConverter {
      * 상세 공고 응답에 사용자별 찜 여부와 장학금 전용 조건을 함께 조립한다.
      */
     public static PostResponseDTO.PostDetailDTO toPostDetailDTO(Post post, boolean isSaved) {
+        return toPostDetailDTO(post, isSaved, post.getSummary());
+    }
+
+    /**
+     * 캐싱된 일반 AI 요약을 유저 프로필과 결합한 개인화 요약(personalizedSummary)을
+     * summary 필드에 담아 상세 공고 응답을 조립한다.
+     */
+    public static PostResponseDTO.PostDetailDTO toPostDetailDTO(Post post, boolean isSaved, String personalizedSummary) {
 
 
         PostResponseDTO.ScholarshipDetailDTO scholarshipDetailDTO = null;
@@ -129,7 +137,7 @@ public class PostConverter {
                 .viewCount(post.getViewCount())
                 .savedCount(post.getSavedCount())
                 .saved(isSaved)
-                .summary(post.getSummary())
+                .summary(personalizedSummary)
                 .applyStartDate(post.getApplyStartAt() != null ? post.getApplyStartAt().toString() : null)
                 .applyEndDate(post.getApplyEndAt() != null ? post.getApplyEndAt().toString() : null)
                 .deadlineLabel(calculateDDay(post.getApplyEndAt()))
@@ -151,7 +159,8 @@ public class PostConverter {
                 .organizer(dto.getOrganizer())
                 .applyStartAt(parsedStartDate)
                 .applyEndAt(parsedDeadlineDate)
-                .summary(dto.getSummary())
+                // summary는 더 이상 원본 텍스트를 그대로 쓰지 않는다.
+                // AI 요약 백필 스케줄러(PostSummaryService)가 채울 수 있도록 null로 둔다.
                 .applicationMethod("홈페이지 지원")
                 .applicationUrl(dto.getApplicationUrl())
 

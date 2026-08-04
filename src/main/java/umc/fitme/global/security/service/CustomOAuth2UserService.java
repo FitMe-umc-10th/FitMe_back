@@ -3,7 +3,6 @@ package umc.fitme.global.security.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -22,6 +21,7 @@ import umc.fitme.global.security.exception.SocialLoginException;
 import umc.fitme.global.security.exception.code.SocialLoginErrorCode;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -43,24 +43,20 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         log.info("소셜 로그인 attribute 수신, registrationId={}", userRequest.getClientRegistration().getRegistrationId());
 
-        // 카카오, 네이버 구분
+        // 카카오,네이버 구분
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2Response oAuth2Response;
 
         if (registrationId.equals("kakao")){
             String providerId = String.valueOf((Long)oAuth2User.getAttribute("id"));
             Map<String, Object> attributes = oAuth2User.getAttribute("kakao_account");
-            if (attributes == null) {
-                throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
-            }
-            Map<String, Object> profile = (Map<String, Object>) attributes.get("profile");
-            oAuth2Response = new KakaoResponse(providerId, attributes.get("email").toString(), profile.get("nickname").toString());
+            checkInfoIsNull(attributes); // 소셜로부터 가져온 정보가 NULL인지 체크
+            checkEmailVerified(attributes); // 소셜로부터 가져온 이메일이 믿을만 한지 체크
+            oAuth2Response = new KakaoResponse(providerId, attributes);
         } else if (registrationId.equals("naver")){
-            Map<String, Object> attributes = (Map<String, Object>) oAuth2User.getAttribute("response");
-            if (attributes == null) {
-                throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
-            }
-            oAuth2Response = new NaverResponse(attributes.get("id").toString(), attributes.get("email").toString(), attributes.get("name").toString());
+            Map<String, Object> attributes = oAuth2User.getAttribute("response");
+            checkInfoIsNull(attributes);
+            oAuth2Response = new NaverResponse(attributes.get("id").toString(), attributes);
         } else {
             throw new SocialLoginException(SocialLoginErrorCode.PROVIDER_NOT_FOUND);
         }
@@ -73,6 +69,12 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         if (optionalUser.isPresent()){
             User user = optionalUser.get();
 
+            // 회원 탈퇴 여부 검사
+            if (user.getDeletedAt() != null){
+                throw new SocialLoginException(SocialLoginErrorCode.DELETED_USER_EMAIL);
+            }
+
+            // 계정 중복 확인
             checkEmailOverlapAndThrow(user, oAuth2Response.getProvider(), oAuth2Response.getEmail(), oAuth2Response.getProviderId());
 
             log.info("기존 회원 소셜 로그인 성공 (이메일: {})", user.getEmail());
@@ -88,10 +90,27 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         }
     }
 
-    //
+    // 카카오의 경우 인증된 이메일인지 체크
+    private void checkEmailVerified(Map<String, Object> attributes) {
+        Boolean isEmailVerified = (Boolean) attributes.get("is_email_verified");
+        Boolean isEmailValid = (Boolean) attributes.get("is_email_valid");
+
+        if (!Boolean.TRUE.equals(isEmailVerified) || !Boolean.TRUE.equals(isEmailValid)){
+            throw new SocialLoginException(SocialLoginErrorCode.UNVERIFIED_EMAIL);
+        }
+    }
+
+    // 소셜 정보가 비어있을 경우 예외 처리
+    private static void checkInfoIsNull(Map<String, Object> attributes) {
+        if (attributes == null) {
+            throw new SocialLoginException(SocialLoginErrorCode.USER_INFO_NOT_FOUND);
+        }
+    }
+
+    // 계정 중복 확인
     private void checkEmailOverlapAndThrow(User user, SocialType provider, String email, String providerId) {
 
-        boolean isAlreadyLinked = isIsAlreadyLinked(user, provider, providerId);
+        boolean isAlreadyLinked = isAlreadyLinked(user, provider, providerId);
 
         // 일반 가입자이면 -> CONFLICT
         if (!isAlreadyLinked){
@@ -107,17 +126,12 @@ public class CustomOAuth2UserService  extends DefaultOAuth2UserService {
         }
     }
 
-    private static boolean isIsAlreadyLinked(User user, SocialType provider, String providerId) {
+    private static boolean isAlreadyLinked(User user, SocialType provider, String providerId) {
         boolean isAlreadyLinked = false;
 
-        // 카카오 이메일로 로그인 시도했는데, 기존 DB에 카카오ID가 저장되어 있다면 -> PASS
-        if (provider == SocialType.KAKAO && user.getSocialType() == SocialType.KAKAO
-            && providerId.equals(user.getSocialUid())){
-            isAlreadyLinked = true;
-        }
-        // 네이버 이메일로 로그인 시도했는데, 기존 DB에 네이버ID가 저장되어 있다면 -> PASS
-        if (provider == SocialType.NAVER && user.getSocialType() == SocialType.NAVER
-            && providerId.equals(user.getSocialUid())){
+        // 해당 provider로 로그인 했는데 DB에 해당 providerId가 존재할 경우 연동 필요x
+        if ((provider == SocialType.KAKAO && Objects.equals(user.getKakaoId(), providerId)) ||
+                (provider == SocialType.NAVER && Objects.equals(user.getNaverId(), providerId))){
             isAlreadyLinked = true;
         }
         return isAlreadyLinked;

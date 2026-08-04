@@ -22,6 +22,9 @@ public class QContest extends EntityPathBase<Contest> {
     public final QPost _super = new QPost(this);
 
     //inherited
+    public final BooleanPath active = _super.active;
+
+    //inherited
     public final StringPath applicationMethod = _super.applicationMethod;
 
     //inherited

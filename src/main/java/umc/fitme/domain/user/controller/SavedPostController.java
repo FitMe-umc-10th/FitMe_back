@@ -1,5 +1,6 @@
 package umc.fitme.domain.user.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +14,7 @@ import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.global.security.entity.PrincipalDetails;
 
+@Tag(name = "공고 찜")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/saved-posts")
