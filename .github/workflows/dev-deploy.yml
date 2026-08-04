@@ -86,10 +86,10 @@ jobs:
             echo "PORT=$PORT" >> .env
             
             #2. 도커 이미지 다운로드
-            sudo docker-compose pull
+            sudo docker compose pull
             
             # 3. 기존 컨테이너 중지 및 docker-compose 기반 새 컨테이너 백그라운드 실행
-            sudo docker-compose up -d
+            sudo docker compose up -d
             
             # 4. 사용하지 않는 구버전 도커 이미지 정리 (EC2 용량 관리용)
             sudo docker image prune -f
