@@ -49,7 +49,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                     .encode(StandardCharsets.UTF_8)
                     .build().toUriString();
 
-            targetUrl = targetUrl + "`#linkToken'=" + linkToken;
+            targetUrl = targetUrl + "#linkToken=" + linkToken;
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
             log.info("linkToken 전송 완료");

@@ -58,6 +58,7 @@ public class Post extends BaseEntity {
     private String imageUrl;
 
     @Column(name = "view_count")
+    @Builder.Default
     private int viewCount = 0;
 
     public void incrementViewCount() {
@@ -65,6 +66,7 @@ public class Post extends BaseEntity {
     }
 
     @Column(name = "saved_count")
+    @Builder.Default
     private int savedCount = 0;
 
     @Column(name = "post_rank")

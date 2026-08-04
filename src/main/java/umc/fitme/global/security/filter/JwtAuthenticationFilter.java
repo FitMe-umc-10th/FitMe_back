@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import umc.fitme.global.apiPayload.ApiResponse;
+import umc.fitme.global.apiPayload.code.BaseErrorCode;
 import umc.fitme.global.security.exception.TokenException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
 import umc.fitme.global.security.util.JwtUtil;
@@ -61,12 +62,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             // AT가 만료된 경우
             log.warn("AT가 만료되었습니다. {}", e.getMessage());
-            TokenErrorCode tokenExpired = TokenErrorCode.AT_EXPIRED;
+            BaseErrorCode tokenExpired = TokenErrorCode.AT_EXPIRED;
             setErrorResponse(response, tokenExpired);
             return;
         } catch (JwtException | IllegalArgumentException e){
             log.error("유효하지 않은 토큰입니다. {}", e.getMessage());
-            TokenErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
+            BaseErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
             setErrorResponse(response, tokenInvalid);
             return;
         } catch (TokenException e){
@@ -88,7 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     // AT가 만료되었거나, 유효하지 않은 경우, 해당 함수의 에러형식에 맞게 반환
-    private void setErrorResponse(HttpServletResponse response, TokenErrorCode errorCode) throws IOException {
+    private void setErrorResponse(HttpServletResponse response, BaseErrorCode errorCode) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
         response.setContentType("application/json;charset=UTF-8");
