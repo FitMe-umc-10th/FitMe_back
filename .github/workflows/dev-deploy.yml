@@ -1,6 +1,10 @@
 # Workflow 이름
 name: Fit-me dev deploy
 
+# 워크플로우 권한 부여
+permissions:
+  contents: read
+
 # 어떤 이벤트가 발생하면 workflow 실행할 지 명시
 on:
   pull_request:
