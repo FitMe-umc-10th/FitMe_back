@@ -9,7 +9,7 @@ public class LoginDto {
 
     public record LoginReq(
 
-            @Schema(example = "fitme1234@email.com")
+            @Schema(example = "fitme1234@naver.com")
             @Email(message = "이메일 형식에 맞게 입력해주세요.")
             @NotBlank(message = "이메일은 필수 값입니다.")
             String email,
