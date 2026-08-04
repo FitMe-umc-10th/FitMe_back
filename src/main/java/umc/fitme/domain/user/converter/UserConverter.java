@@ -21,14 +21,19 @@ public class UserConverter {
 
         LocalDate birth = convertBirth(oAuth2Response.getProvider(), oAuth2Response.getBirthyear(), oAuth2Response.getBirthday());
 
-
-        return User.builder()
-                .email(oAuth2Response.getEmail())
-                .name(oAuth2Response.getName())
-                .socialType(oAuth2Response.getProvider())
-                .socialUid(oAuth2Response.getProviderId())
-                .birth(birth)
-                .build();
+        return oAuth2Response.getProvider() == SocialType.KAKAO?
+                    User.builder()
+                        .email(oAuth2Response.getEmail())
+                        .name(oAuth2Response.getName())
+                        .kakaoId(oAuth2Response.getProviderId())
+                        .birth(birth)
+                        .build() :
+                    User.builder()
+                        .email(oAuth2Response.getEmail())
+                        .name(oAuth2Response.getName())
+                        .naverId(oAuth2Response.getProviderId())
+                        .birth(birth)
+                        .build();
     }
 
     private static LocalDate convertBirth(SocialType provider, String birthyear, String birthday) {

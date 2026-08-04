@@ -123,7 +123,7 @@ public class AuthService {
      */
     public SignUpDto.SignUpRes signUp(SignUpDto.SignUpReq dto) {
 
-        // 이미 가입된 이메일로 회원가입을 시도 할 경우, "이미 가입된 이메일입니다" 반환
+        // 이미 가입된 이메일로 회원가입을 시도 할 경우, 예외 처리
         if (userRepository.existsByEmail(dto.email())){
             throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -231,6 +231,7 @@ public class AuthService {
         String accessToken = jwtUtil.createAccessToken(user.getId(), "USER", user.getEmail());
         String refreshToken = jwtUtil.createRefreshToken(user.getId());
 
+        tokenService.saveOrUpdateRefreshToken(user, refreshToken);
         log.info("계정 연동 완료 후 AT, RT 발급완료");
 
         return AuthConverter.toLoginRes(

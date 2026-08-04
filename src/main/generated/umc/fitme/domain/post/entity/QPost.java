@@ -21,6 +21,8 @@ public class QPost extends EntityPathBase<Post> {
 
     public final umc.fitme.global.entity.QBaseEntity _super = new umc.fitme.global.entity.QBaseEntity(this);
 
+    public final BooleanPath active = createBoolean("active");
+
     public final StringPath applicationMethod = createString("applicationMethod");
 
     public final StringPath applicationUrl = createString("applicationUrl");
