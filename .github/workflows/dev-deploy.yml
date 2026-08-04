@@ -56,7 +56,7 @@ jobs:
 
       # 8. docker-compose.yml 파일을 EC2로 복사
       - name: Copy docker-compose.yml to EC2
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
