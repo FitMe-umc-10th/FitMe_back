@@ -47,6 +47,7 @@ public class SecurityConfig {
             "/api/auth/email-verifications",
             "/api/auth/email-verifications/confirm",
             "/api/auth/link",
+            "/api/auth/reissue",
         "/test.html"
     };
 
