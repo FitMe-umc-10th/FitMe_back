@@ -82,11 +82,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // 프론트 URL로 리다이렉트 주소 조립
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("name", user.getName())
                 .queryParam("isOnboarded", isOnboarded)
                 .build()
                 .encode()
                 .toUriString();
-        targetUrl = targetUrl + "`#accessToken`=" + accessToken;
+        targetUrl = targetUrl + "#accessToken=" + accessToken;
         
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
