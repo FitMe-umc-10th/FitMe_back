@@ -131,7 +131,7 @@ public class PostQueryService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
 
-        if (expectedPostType != null && post.getPostType() != expectedPostType) {
+        if (expectedPostType == null || post.getPostType() != expectedPostType) {
             throw new ProjectException(GeneralErrorCode.NOT_FOUND);
         }
 
