@@ -43,7 +43,10 @@ import java.time.LocalDateTime;
 @Transactional
 public class AuthService {
 
-    private static final long CODE_TTL_SECONDS = 300L;
+    private static final int RATE_LIMIT_WINDOW_HOURS = 24; // 발송 제한 기준 시간 (24시간)
+    private static final int MAX_FAILURES = 10; // 인증번호 최대 검증 실패 가능 횟수
+    private static final int MAX_REQUESTS_PER_WINDOW = 10; // 기준 시간 내 최대 발송 가능 횟수
+    private static final long CODE_TTL_SECONDS = 300L; // 인증번호 유효 시간
     private final SecureRandom secureRandom = new SecureRandom(); // 6자리 난수 생성
 
     @Value("${jwt.access-token-validity}")
@@ -72,6 +75,13 @@ public class AuthService {
            throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        // Rate Limit (24시간 동안 최대 10회 제한)
+        LocalDateTime windowStart = LocalDateTime.now().minusHours(RATE_LIMIT_WINDOW_HOURS);
+        long requestCount = emailVerificationRepository.countByEmailAndCreatedAtAfter(email, windowStart);
+        if (requestCount > MAX_REQUESTS_PER_WINDOW){
+            throw new AuthException(AuthErrorCode.RATE_LIMIT_EXCEEDED);
+        }
+
         String code = generateCode(); // 6자리 인증 코드 생성
 
         EmailVerification emailVerification = EmailVerification.create(email, code, CODE_TTL_SECONDS);
@@ -87,6 +97,7 @@ public class AuthService {
      * @param dto 이메일, 인증번호(6자리)
      * @return 이메일, isVerified t/f dto
      */
+    @Transactional(noRollbackFor = AuthException.class)
     public EmailVerificationConfirmDto.EmailVerificationConfirmResDto isValidateCode(EmailVerificationConfirmDto.EmailVerificationConfirmReqDto dto){
 
         // 이메일 확인
@@ -103,8 +114,19 @@ public class AuthService {
             throw new AuthException(AuthErrorCode.CODE_NOT_VALIDATE);
         }
 
+        // 최대 실패 횟수 초과 시 에러
+        if (emailVerification.getFailureCount() >= MAX_FAILURES){
+            throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
+        }
+
         // 인증번호가 잘못되었을 시 에러
         if (!emailVerification.matches(dto.verificationCode())){
+            emailVerification.incrementFailureCount();
+
+            if (emailVerification.getFailureCount() >= MAX_FAILURES){
+                throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
+            }
+
             throw new AuthException(AuthErrorCode.CODE_NOT_MATCH);
         }
 

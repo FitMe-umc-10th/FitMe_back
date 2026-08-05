@@ -2,10 +2,15 @@ package umc.fitme.domain.user.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
+import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.domain.user.dto.*;
 import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
@@ -14,6 +19,7 @@ import umc.fitme.domain.user.service.ProfileImageService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
 import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.util.CookieUtil;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +30,8 @@ public class MyPageController {
     private final MyPageProfileService myPageProfileService;
     private final NotificationSettingService notificationSettingService;
     private final ProfileImageService profileImageService;
+    private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     @Tag(name = "마이페이지 관련 API")
     @Operation(summary = "마이페이지 대시보드 조회",
@@ -89,5 +97,19 @@ public class MyPageController {
             @Valid @RequestBody NotificationSettingRequestDto.UpdateNotificationSettingRequest request) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK,
                 notificationSettingService.updateMyNotificationSetting(principal.getUser().getId(), request));
+    }
+
+    @Tag(name = "마이페이지 관련 API")
+    @Operation(summary = "회원 탈퇴", description = "회원은 서비스에서 탈퇴를 진행한다.")
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            HttpServletRequest request,
+            @AuthenticationPrincipal PrincipalDetails principal
+    ){
+        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"));
+        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, emptyCookie)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.DELETE_OK, null));
     }
 }

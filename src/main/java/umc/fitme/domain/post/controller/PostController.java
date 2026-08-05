@@ -31,7 +31,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/post")
+@RequestMapping("/api/v1/posts")
 @Tag(name = "공고 API", description = "인기 공고 조회/공고 상세 화면/공고 검색/검색 대시보드 조회")
 public class PostController {
     private final PostQueryService postQueryService;
@@ -150,8 +150,7 @@ public class PostController {
             @AuthenticationPrincipal PrincipalDetails principal,
             @Valid @ParameterObject @ModelAttribute PostSearchDto.PostSearchReq dto
     ){
-        BaseSuccessCode successCode = PostSuccessCode.SEARCH_POST_OK;
-        return ApiResponse.onSuccess(successCode, postService.searchPost(dto, principal.getUser().getId()));
+        return ApiResponse.onSuccess(PostSuccessCode.SEARCH_POST_OK, postService.searchPost(dto, principal.getUser().getId()));
     }
 
     /***
@@ -163,8 +162,7 @@ public class PostController {
     public ApiResponse<SearchViewDto.SearchViewRes> getSearchMain(
             @AuthenticationPrincipal PrincipalDetails principal
     ){
-        BaseSuccessCode successCode = PostSuccessCode.SEARCH_MAIN_OK;
-        return ApiResponse.onSuccess(successCode, postService.getSearchMainPage(principal.getUser().getId()));
+        return ApiResponse.onSuccess(PostSuccessCode.SEARCH_MAIN_OK, postService.getSearchMainPage(principal.getUser().getId()));
     }
 
     @DeleteMapping("/search/recent/{searchId}")
@@ -174,7 +172,6 @@ public class PostController {
             @PathVariable Long searchId
     ){
         postService.deleteRecentKeyword(principal.getUser().getId(), searchId);
-        BaseSuccessCode successCode = PostSuccessCode.DELETE_RECENT_KEYWORD_OK;
-        return ApiResponse.onSuccess(successCode, null);
+        return ApiResponse.onSuccess(PostSuccessCode.DELETE_RECENT_KEYWORD_OK, null);
     }
 }

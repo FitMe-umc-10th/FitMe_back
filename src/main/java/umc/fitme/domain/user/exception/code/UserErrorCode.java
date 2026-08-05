@@ -12,7 +12,7 @@ public enum UserErrorCode implements BaseErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404_1", "사용자를 찾을 수 없습니다."),
     USER_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_DETAIL404_1", "해당 회원의 프로필을 찾을 수 없습니다."),
     USER_RECENT_SEARCH_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_RECENT_SEARCH404_1", "해당 회원의 최근 검색어를 찾을 수 없습니다."),
-    EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER409_1", "이미 다른 소셜로그인으로 가입된 이메일입니다. 해당 소셜로 로그인 해주세요."),
+    EMAIL_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "USER400_2", "이미 가입된 이메일입니다. 가입한 로그인 방식으로 로그인 해주세요."),
     PROFILE_UPDATE_CONFLICT(HttpStatus.CONFLICT, "USER409_2", "다른 요청이 프로필을 먼저 수정했습니다. 다시 시도해 주세요."),
 
     PROFILE_UPDATE_EMPTY(HttpStatus.BAD_REQUEST, "USER400_1", "수정할 항목이 없습니다."),
