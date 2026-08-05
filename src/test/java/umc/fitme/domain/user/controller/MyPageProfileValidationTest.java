@@ -1,29 +1,27 @@
 package umc.fitme.domain.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import umc.fitme.domain.user.dto.MyPageProfileRequestDto;
+import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.service.MyPageProfileService;
 import umc.fitme.domain.user.service.MyPageService;
-import umc.fitme.global.config.SecurityConfig;
+import umc.fitme.domain.user.service.NotificationSettingService;
+import umc.fitme.domain.user.service.ProfileImageService;
 import umc.fitme.global.security.entity.PrincipalDetails;
-import umc.fitme.global.security.exception.CustomAccessDenied;
-import umc.fitme.global.security.exception.CustomEntryPoint;
-import umc.fitme.global.security.handler.OAuth2FailureHandler;
-import umc.fitme.global.security.handler.OAuth2SuccessHandler;
-import umc.fitme.global.security.service.CustomOAuth2UserService;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.math.BigDecimal;
@@ -32,13 +30,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MyPageController.class)
-@Import({SecurityConfig.class, CustomEntryPoint.class, CustomAccessDenied.class})
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("프로필 수정 요청 검증 실패 시 400 과 명세 문구가 응답에 실린다")
 class MyPageProfileValidationTest {
 
@@ -55,25 +52,31 @@ class MyPageProfileValidationTest {
     private MyPageService myPageService;
 
     @MockitoBean
+    private NotificationSettingService notificationSettingService;
+
+    @MockitoBean
+    private ProfileImageService profileImageService;
+
+    @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @MockitoBean
     private JwtUtil jwtUtil;
 
-    @MockitoBean
-    private CustomOAuth2UserService customOAuth2UserService;
+    private static final Long USER_ID = 1L;
 
-    @MockitoBean
-    private OAuth2SuccessHandler oAuth2SuccessHandler;
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
-    @MockitoBean
-    private OAuth2FailureHandler oAuth2FailureHandler;
-
-    private RequestPostProcessor loginUser() {
-        PrincipalDetails principal = org.mockito.Mockito.mock(PrincipalDetails.class);
-        BDDMockito.given(principal.getUser().getId()).willReturn(1L);
-        return authentication(new UsernamePasswordAuthenticationToken(
-                principal, null, AuthorityUtils.createAuthorityList("ROLE_USER")));
+    private MockHttpServletRequestBuilder withAuth(MockHttpServletRequestBuilder builder) {
+        User user = User.builder().id(USER_ID).build();
+        PrincipalDetails principal = new PrincipalDetails(user, "USER");
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return builder;
     }
 
     @Test
@@ -83,8 +86,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("4.60"), null, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/users/me/profile")
-                        .with(loginUser())
+        mockMvc.perform(withAuth(patch("/api/v1/users/me/profile"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -102,8 +104,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("3.456"), null, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/users/me/profile")
-                        .with(loginUser())
+        mockMvc.perform(withAuth(patch("/api/v1/users/me/profile"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -117,8 +118,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         null, 11, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/users/me/profile")
-                        .with(loginUser())
+        mockMvc.perform(withAuth(patch("/api/v1/users/me/profile"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -134,8 +134,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("-1.00"), 0, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/users/me/profile")
-                        .with(loginUser())
+        mockMvc.perform(withAuth(patch("/api/v1/users/me/profile"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
