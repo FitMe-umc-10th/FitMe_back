@@ -83,7 +83,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("4.60"), null, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/profile")
+        mockMvc.perform(patch("/api/v1/users/me/profile")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -102,7 +102,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("3.456"), null, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/profile")
+        mockMvc.perform(patch("/api/v1/users/me/profile")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -117,7 +117,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         null, 11, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/profile")
+        mockMvc.perform(patch("/api/v1/users/me/profile")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -134,7 +134,7 @@ class MyPageProfileValidationTest {
                 new MyPageProfileRequestDto.UpdateProfileRequest(
                         new BigDecimal("-1.00"), 0, null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/profile")
+        mockMvc.perform(patch("/api/v1/users/me/profile")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

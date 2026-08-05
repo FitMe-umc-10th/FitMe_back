@@ -88,7 +88,7 @@ class NotificationSettingValidationTest {
         NotificationSettingRequestDto.UpdateNotificationSettingRequest request =
                 new NotificationSettingRequestDto.UpdateNotificationSettingRequest("", null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/notification-settings")
+        mockMvc.perform(patch("/api/v1/users/me/notification-settings")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -106,7 +106,7 @@ class NotificationSettingValidationTest {
         NotificationSettingRequestDto.UpdateNotificationSettingRequest request =
                 new NotificationSettingRequestDto.UpdateNotificationSettingRequest("abc", null, null, null);
 
-        mockMvc.perform(patch("/api/v1/mypage/notification-settings")
+        mockMvc.perform(patch("/api/v1/users/me/notification-settings")
                         .with(loginUser())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

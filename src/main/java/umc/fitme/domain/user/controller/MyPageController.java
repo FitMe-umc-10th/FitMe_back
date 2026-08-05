@@ -17,7 +17,7 @@ import umc.fitme.global.security.entity.PrincipalDetails;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/mypage")
+@RequestMapping("/api/v1/users/me")
 public class MyPageController {
 
     private final MyPageService myPageService;
