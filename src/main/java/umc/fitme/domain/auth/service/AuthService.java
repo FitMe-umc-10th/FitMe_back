@@ -97,6 +97,7 @@ public class AuthService {
      * @param dto 이메일, 인증번호(6자리)
      * @return 이메일, isVerified t/f dto
      */
+    @Transactional(noRollbackFor = AuthException.class)
     public EmailVerificationConfirmDto.EmailVerificationConfirmResDto isValidateCode(EmailVerificationConfirmDto.EmailVerificationConfirmReqDto dto){
 
         // 이메일 확인
@@ -114,7 +115,7 @@ public class AuthService {
         }
 
         // 최대 실패 횟수 초과 시 에러
-        if (emailVerification.getFailureCount() > MAX_FAILURES){
+        if (emailVerification.getFailureCount() >= MAX_FAILURES){
             throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
         }
 
@@ -122,7 +123,7 @@ public class AuthService {
         if (!emailVerification.matches(dto.verificationCode())){
             emailVerification.incrementFailureCount();
 
-            if (emailVerification.getFailureCount() > MAX_FAILURES){
+            if (emailVerification.getFailureCount() >= MAX_FAILURES){
                 throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
             }
 
