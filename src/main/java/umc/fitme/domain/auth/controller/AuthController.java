@@ -49,7 +49,7 @@ public class AuthController {
      * @return 공통응답형식
      */
     @Operation(summary = "이메일 인증 확인 API", description = "이메일 인증 번호를 검증하는 API")
-    @PostMapping("/email-verifications/confirm")
+    @PatchMapping("/email-verifications")
     public ApiResponse<EmailVerificationConfirmDto.EmailVerificationConfirmResDto> emailVerifyConfirm(
             @Valid @RequestBody EmailVerificationConfirmDto.EmailVerificationConfirmReqDto confirm
     ){
@@ -140,19 +140,6 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, emptyCookie)
                 .body(ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null));
-    }
-
-    @Operation(summary = "회원 탈퇴", description = "회원은 서비스에서 탈퇴를 진행한다.")
-    @DeleteMapping
-    public ResponseEntity<ApiResponse<Void>> deleteUser(
-            HttpServletRequest request,
-            @AuthenticationPrincipal PrincipalDetails principal
-    ){
-        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"));
-        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, emptyCookie)
-                .body(ApiResponse.onSuccess(AuthSuccessCode.DELETE_OK, null));
     }
 
     /***
