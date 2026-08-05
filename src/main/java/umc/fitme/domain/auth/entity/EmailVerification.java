@@ -23,6 +23,9 @@ public class EmailVerification {
     @Column(name = "verification_code", nullable = false)
     private String verificationCode;
 
+    @Column(name = "failure_count", nullable = false)
+    private int failureCount = 0;
+
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
@@ -53,35 +56,29 @@ public class EmailVerification {
                 .build();
     }
 
-    /***
-     * 함수 기능: 인증 코드 만료 여부
-     * @return t/f
-     */
+    // 인증 코드 만료 여부
     public boolean isExpired() {
 
         return !LocalDateTime.now().isBefore(expiresAt); // 딱 시간이 같을때도 false 반환
     }
 
-    /***
-     * 함수 기능: 인증 코드 진위 여부
-     * @param inputCode 전달받은 인증코드
-     * @return t/f
-     */
+    // 인증 코드 진위 여부
     public boolean matches(String inputCode){
         return this.verificationCode.equals(inputCode);
     }
 
-    /***
-     * 함수 기능: 이메일 인증 완료된 시각
-     */
+    // 이메일 인증 완료된 시각
     public void verify(){
         this.verifiedAt = LocalDateTime.now();
     }
 
-    /***
-     * 함수 기능: 인증 번호 사용 처리
-     */
+    // 인증 번호 사용 처리
     public void consume() {
         this.isUsed = true;
+    }
+
+    // 실패 횟수 증가
+    public void incrementFailureCount(){
+        this.failureCount++;
     }
 }

@@ -25,6 +25,8 @@ public class QEmailVerification extends EntityPathBase<EmailVerification> {
 
     public final DateTimePath<java.time.LocalDateTime> expiresAt = createDateTime("expiresAt", java.time.LocalDateTime.class);
 
+    public final NumberPath<Integer> failureCount = createNumber("failureCount", Integer.class);
+
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
     public final BooleanPath isUsed = createBoolean("isUsed");
