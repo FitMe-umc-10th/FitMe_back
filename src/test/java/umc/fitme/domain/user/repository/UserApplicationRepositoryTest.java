@@ -9,6 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
+import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserApplication;
@@ -294,6 +295,7 @@ class UserApplicationRepositoryTest extends RepositoryTestSupport {
         ReflectionTestUtils.setField(contest, "target", "대학생");
         ReflectionTestUtils.setField(contest, "participantLimit", "제한없음");
         ReflectionTestUtils.setField(contest, "rewardTotal", "1000만원");
+        ReflectionTestUtils.setField(contest, "contestCategory", ContestCategory.IT);
         return em.persist(contest);
     }
 

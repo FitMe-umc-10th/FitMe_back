@@ -18,9 +18,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import umc.fitme.domain.user.dto.FaqResponseDto;
 import umc.fitme.domain.user.dto.InquiryRequestDto;
 import umc.fitme.domain.user.dto.InquiryResponseDto;
+import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.service.FaqService;
 import umc.fitme.domain.user.service.InquiryService;
-import umc.fitme.global.security.entity.CustomUserDetails;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.time.LocalDateTime;
@@ -67,8 +68,8 @@ class CustomerServiceControllerTest {
 
     // addFilters = false라 필터 체인이 돌지 않으므로 SecurityContextHolder에 직접 인증 정보를 채운다.
     private MockHttpServletRequestBuilder withAuth(MockHttpServletRequestBuilder builder) {
-        CustomUserDetails principal =
-                new CustomUserDetails(USER_ID, "ROLE_USER", "테스터", "user@example.com", null);
+        User user = User.builder().id(USER_ID).build();
+        PrincipalDetails principal = new PrincipalDetails(user, "USER");
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
