@@ -7,17 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.ScholarshipRepository;
-import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
+import umc.fitme.domain.post.sync.dto.ScholarshipSourceRow;
 import umc.fitme.domain.post.sync.util.ScholarshipApplyPeriodParser;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -36,7 +31,7 @@ public class ScholarshipSyncWriter {
     }
 
     @Transactional
-    public SyncResult applyRows(List<ScholarshipCsvRow> rows) {
+    public SyncResult applyRows(List<ScholarshipSourceRow> rows) {
         int insertedCount = 0;
         int updatedCount = 0;
         int skippedCount = 0;
@@ -45,7 +40,7 @@ public class ScholarshipSyncWriter {
 
         Map<String, Scholarship> existingBySourceKey = loadExistingBySourceKey(rows);
 
-        for (ScholarshipCsvRow row : rows) {
+        for (ScholarshipSourceRow row : rows) {
             try {
                 String sourceKey = buildSourceKey(row);
                 ScholarshipApplyPeriodParser.ApplyPeriod period =
@@ -55,12 +50,14 @@ public class ScholarshipSyncWriter {
 
                 Scholarship existing = existingBySourceKey.get(sourceKey);
                 if (existing != null) {
+                    // summary는 원본 텍스트로 덮어쓰지 않고 기존 값(AI 요약 캐시 또는 null)을 그대로 유지한다.
+                    // 그래야 PostSummaryService가 채운 AI 요약이 매일 동기화 때마다 지워지지 않는다.
                     existing.syncFrom(
                             row.productName(),
                             row.organization(),
                             period.applyStartAt(),
                             period.applyEndAt(),
-                            row.applicantTarget(),
+                            existing.getSummary(),
                             DEFAULT_APPLICATION_METHOD,
                             DEFAULT_APPLICATION_URL,
                             row.supportAmount(),
@@ -82,7 +79,7 @@ public class ScholarshipSyncWriter {
         return new SyncResult(insertedCount, updatedCount, inactivatedCount, skippedCount);
     }
 
-    private Map<String, Scholarship> loadExistingBySourceKey(List<ScholarshipCsvRow> rows) {
+    private Map<String, Scholarship> loadExistingBySourceKey(List<ScholarshipSourceRow> rows) {
         List<String> sourceKeys = rows.stream()
                 .map(this::buildSourceKey)
                 .distinct()
@@ -118,7 +115,7 @@ public class ScholarshipSyncWriter {
         return chunks;
     }
 
-    private String buildSourceKey(ScholarshipCsvRow row) {
+    private String buildSourceKey(ScholarshipSourceRow row) {
         return String.join(
                 "|",
                 row.organization(),
@@ -129,7 +126,7 @@ public class ScholarshipSyncWriter {
     }
 
     private Scholarship toNewScholarship(
-            ScholarshipCsvRow row,
+            ScholarshipSourceRow row,
             String sourceKey,
             ScholarshipApplyPeriodParser.ApplyPeriod period,
             LocalDateTime now
@@ -140,7 +137,8 @@ public class ScholarshipSyncWriter {
                 .organizer(row.organization())
                 .applyStartAt(period.applyStartAt())
                 .applyEndAt(period.applyEndAt())
-                .summary(row.applicantTarget())
+                // summary는 원본 텍스트를 그대로 쓰지 않는다.
+                // AI 요약 백필 스케줄러(PostSummaryService)가 null인 공고를 찾아 채운다.
                 .applicationMethod(DEFAULT_APPLICATION_METHOD)
                 .applicationUrl(DEFAULT_APPLICATION_URL)
                 .imageUrl(DEFAULT_IMAGE_URL)

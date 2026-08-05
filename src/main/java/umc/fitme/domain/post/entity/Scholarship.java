@@ -1,10 +1,8 @@
 package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.util.ScholarshipAmountParser;
@@ -41,10 +39,6 @@ public class Scholarship extends Post{
     @Column(name = "source_key", unique = true)
     private String sourceKey;
 
-    @Column(name = "active", nullable = false, columnDefinition = "TINYINT(1) NOT NULL DEFAULT 1")
-    @Builder.Default
-    private boolean active = true;
-
     @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
 
@@ -67,12 +61,12 @@ public class Scholarship extends Post{
     ) {
         updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl, now);
         this.supportAmount = supportAmount;
-        this.active = true;
+        this.activate();
         this.lastSyncedAt = now;
     }
 
     public void deactivate(LocalDateTime now) {
-        this.active = false;
+        this.deactivate();
         this.lastSyncedAt = now;
     }
 }

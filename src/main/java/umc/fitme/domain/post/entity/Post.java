@@ -2,11 +2,13 @@ package umc.fitme.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.global.entity.BaseEntity;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -56,6 +58,7 @@ public class Post extends BaseEntity {
     private String imageUrl;
 
     @Column(name = "view_count")
+    @Builder.Default
     private int viewCount = 0;
 
     public void incrementViewCount() {
@@ -63,7 +66,16 @@ public class Post extends BaseEntity {
     }
 
     @Column(name = "saved_count")
+    @Builder.Default
     private int savedCount = 0;
+
+    @Column(name = "post_rank")
+    @Builder.Default
+    private int postRank = -1;
+
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -93,5 +105,21 @@ public class Post extends BaseEntity {
         this.applicationMethod = applicationMethod;
         this.applicationUrl = applicationUrl;
         this.updatedAt = now;
+    }
+
+    public void updateRank(int newRank) {
+        this.postRank = newRank;
+    }
+
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 }

@@ -2,6 +2,7 @@ package umc.fitme.domain.post.repository;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import umc.fitme.domain.post.entity.Post;
@@ -9,7 +10,7 @@ import umc.fitme.domain.post.enums.PostType;
 
 import java.util.List;
 
-public interface PostRepository extends JpaRepository<Post, Long> {
+public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl {
 
 
     @Query("SELECT p FROM Post p WHERE (:cursor IS NULL OR p.id < :cursor) ORDER BY p.id DESC")
@@ -57,3 +58,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             PageRequest pageRequest
     );
 }      
+    @Query("SELECT p FROM Post p ORDER BY RAND()")
+    List<Post> findRandomPosts(PageRequest pageRequest);
+
+    @Query("""
+    select p
+    from Post p
+    order by p.viewCount desc, p.id desc
+    limit 8
+    """)
+    List<Post> findTop8ByViewCount();
+
+    @Modifying
+    @Query("""
+    update Post p
+    set p.postRank = -1
+    where p.postRank != -1
+    """)
+    void resetAllRanks();
+
+    // 마감일이 지났는데 아직 활성 상태인 공고를 타입 무관하게 조회한다.
+    @Query("SELECT p FROM Post p WHERE p.active = true AND p.applyEndAt < CURRENT_DATE")
+    List<Post> findAllActiveAndExpired();
+
+    // AI 요약이 아직 캐싱되지 않은 활성 공고를 타입 무관하게 조회한다 (백필 대상).
+    List<Post> findByActiveTrueAndSummaryIsNull(PageRequest pageRequest);
+}

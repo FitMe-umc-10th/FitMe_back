@@ -1,0 +1,31 @@
+package umc.fitme.global.security.exception.code;
+
+import io.netty.handler.codec.http2.Http2UnknownFrame;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import umc.fitme.global.apiPayload.code.BaseErrorCode;
+
+@Getter
+@RequiredArgsConstructor
+public enum TokenErrorCode implements BaseErrorCode {
+
+    AT_TYPE_INVALID(HttpStatus.BAD_REQUEST, "TOKEN400_1", "토큰 타입을 확인해주세요. 타입은 access만 가능합니다."),
+    RT_TYPE_INVALID(HttpStatus.BAD_REQUEST, "TOKEN400_2", "토큰 타입을 확인해주세요. 타입은 refresh만 가능합니다."),
+    LT_TYPE_INVALID(HttpStatus.BAD_REQUEST, "TOKEN400_3", "토큰 타입을 확인해주세요. 타입은 link만 가능합니다."),
+    AT_INVALID(HttpStatus.BAD_REQUEST,"TOKEN400_4" ,"유효하지 않은 AT 토큰입니다. 다시 로그인해주세요."),
+    RT_INVALID(HttpStatus.BAD_REQUEST,"TOKEN400_5" ,"유효하지 않은 RT 토큰입니다. 쿠키에 담긴 RT를 확인해주세요." ),
+    LT_INVALID(HttpStatus.BAD_REQUEST, "TOKEN400_6", "유효하지 않은 LT 토큰입니다. 계정 연동을 다시 진행해주세요."),
+    AT_EXPIRED(HttpStatus.UNAUTHORIZED,"TOKEN401_1","AT가 만료되었습니다. 재발급을 요청하세요."),
+    RT_EXPIRED(HttpStatus.UNAUTHORIZED, "TOKEN401_2","RT가 만료되었습니다. 재로그인을 해주세요."),
+    LT_EXPIRED(HttpStatus.UNAUTHORIZED, "TOKEN401_3","LT가 만료되었습니다. 계정 연동 요청을 다시 시도해주세요." ),
+    AT_BLACKLISTED(HttpStatus.UNAUTHORIZED,"TOKEN401_4","AT는 로그아웃으로 인해 블랙리스트에 등록되었습니다. 다시 로그인하여 새로운 AT를 발급받아주세요."),
+    AT_DELETED(HttpStatus.NOT_FOUND,"TOKEN401_5","해당 AT는 계정 탈퇴로 인해 만료되었습니다." ),
+    RT_NOT_FOUND(HttpStatus.NOT_FOUND,"TOKEN404_1" , "쿠키가 비어있습니다. 쿠키에 RT 값이 들어있는지 확인하세요."),
+    USER_WITHDRAW(HttpStatus.UNAUTHORIZED,"TOKEN401_5", "탈퇴 처리된 사용자의 토큰입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND,"TOKEN404_2","해당 토큰에서 추출한 유저가 DB에 존재하지 않습니다.");
+
+    private final HttpStatus status;
+    private final String code;
+    private final String message;
+}

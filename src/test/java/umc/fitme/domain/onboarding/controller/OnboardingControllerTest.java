@@ -28,7 +28,7 @@ import umc.fitme.global.security.util.JwtUtil;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OnboardingController.class)
 @Import({SecurityConfig.class, CustomEntryPoint.class, CustomAccessDenied.class})

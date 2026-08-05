@@ -3,17 +3,18 @@ package umc.fitme.global.apiPayload.handler;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
 import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseErrorCode;
 import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,14 @@ public class GeneralExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e){
         BaseErrorCode errorCode = resolveTypeMismatchErrorCode(e);
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiResponse.onFailure(errorCode, null));
+    }
+
+    // @RequestParam 필수 파라미터 누락 예외 처리 (예: tab 미전달)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e){
+        BaseErrorCode errorCode = GeneralErrorCode.BAD_REQUEST;
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }

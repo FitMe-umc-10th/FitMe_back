@@ -9,10 +9,10 @@ import umc.fitme.domain.interest.repository.PostInterestRepository;
 import umc.fitme.domain.interest.repository.UserInterestRepository;
 import umc.fitme.domain.post.converter.PostConverter;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
-import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.entity.ViewHistory;
+import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
@@ -23,7 +23,6 @@ import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
 import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,6 +59,7 @@ public class PostQueryService {
     private final UserInterestRepository userInterestRepository;
     private final PostInterestRepository postInterestRepository;
     private final UserSaveRepository userSaveRepository;
+    private final PostSummaryService postSummaryService;
 
 
     /**
@@ -182,7 +183,7 @@ public class PostQueryService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
 
-        if (expectedPostType != null && post.getPostType() != expectedPostType) {
+        if (expectedPostType == null || post.getPostType() != expectedPostType) {
             throw new ProjectException(GeneralErrorCode.NOT_FOUND);
         }
 
@@ -195,7 +196,13 @@ public class PostQueryService {
         // 찜 여부는 목록과 동일하게 한 번의 조회로 확인한다.
         Set<Long> savedPostIds = userSaveRepository.findSavedPostIdsByUserId(userId);
         boolean isSaved = savedPostIds != null && savedPostIds.contains(postId);
-        return PostConverter.toPostDetailDTO(post, isSaved);
+
+        // 캐싱된 일반 AI 요약 + 유저 프로필(이름/관심분야)을 템플릿으로 결합한다 (AI 재호출 없음).
+        String userName = userRepository.findById(userId).map(User::getName).orElse(null);
+        Set<String> interestFields = new HashSet<>(userInterestRepository.findInterestNamesByUserId(userId));
+        String personalizedSummary = postSummaryService.buildPersonalizedSummary(post, userName, interestFields);
+
+        return PostConverter.toPostDetailDTO(post, isSaved, personalizedSummary);
     }
 
 

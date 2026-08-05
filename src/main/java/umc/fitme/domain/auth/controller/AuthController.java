@@ -1,34 +1,34 @@
 package umc.fitme.domain.auth.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
-import umc.fitme.domain.auth.dto.EmailVerificationDto;
-import umc.fitme.domain.auth.dto.LoginDto;
-import umc.fitme.domain.auth.dto.SignUpDto;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import umc.fitme.domain.auth.dto.*;
 import umc.fitme.domain.auth.exception.code.AuthSuccessCode;
 import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
+import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
+import umc.fitme.global.security.entity.PrincipalDetails;
+import umc.fitme.global.security.util.CookieUtil;
 
 @RequestMapping("/api/auth")
-@Tag(name = "이메일 인증 / 이메일 기반 회원가입 / 로그인(소셜x) 관련 API")
+@Tag(name = "인증 API")
 @RestController
 @Slf4j
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     /***
      * 함수 기능: 전달받은 이메일로 6자리 난수를 생성하고, 해당 이메일로 인증번호를 발송한다.
@@ -79,11 +79,99 @@ public class AuthController {
      */
     @Operation(summary = "이메일 로그인 API", description = "이메일 로그인 API")
     @PostMapping("/login")
-    public ApiResponse<LoginDto.LoginRes> login(
+    public ResponseEntity<ApiResponse<LoginDto.LoginRes>> login(
             @Valid @RequestBody LoginDto.LoginReq dto
     ){
         BaseSuccessCode successCode = AuthSuccessCode.LOGIN_OK;
 
-        return ApiResponse.onSuccess(successCode, authService.login(dto));
+        LoginDto.LoginResultDto resultDto = authService.login(dto);
+        String cookie = cookieUtil.createRefreshTokenCookie(resultDto.refreshToken(), dto.keepLogin());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(ApiResponse.onSuccess(successCode, resultDto.loginRes()));
     }
+
+    /***
+     * 함수 기능: 계정연동을 진행한다.
+     * @param linkTokenHeader Bearer: {linkToken}
+     * @return 로그인 성공 응답
+     */
+    @Operation(summary = "계정 연동 API", description = "충돌이 발생한 이메일과 기존 이메일을 연동한다.")
+    @PatchMapping("/link")
+    public ResponseEntity<ApiResponse<LoginDto.LoginRes>> linkAccount(
+            @RequestHeader(name = "Link-Token") String linkTokenHeader
+    ){
+        BaseSuccessCode successCode = AuthSuccessCode.LINK_ACCOUNT_OK;
+
+        LoginDto.LoginResultDto resultDto = authService.linkAccount(linkTokenHeader);
+        String cookie = cookieUtil.createRefreshTokenCookie(resultDto.refreshToken(),true);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(ApiResponse.onSuccess(successCode, resultDto.loginRes()));
+    }
+
+    /***
+     * 함수 기능: RT를 활용해 AT,RT를 재발급한다.
+     * @param refreshToken
+     * @return
+     */
+    @Operation(summary = "AT 토큰 재발급 API", description = "쿠키에 담긴 RT를 기반으로 AT, RT를 재발급하여 반환한다.")
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<TokenInfoDto.ATInfo>> reissue(
+            @Parameter(hidden = true)
+            @CookieValue(value = "refreshToken", required = false) String refreshToken
+    ){
+        BaseSuccessCode successCode = AuthSuccessCode.REISSUE_OK;
+
+        TokenInfoDto.TokenInfoRes response = authService.reissue(refreshToken);
+        String cookie = cookieUtil.createRefreshTokenCookie(response.refreshToken(), true);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(ApiResponse.onSuccess(successCode, response.info()));
+    }
+
+    /***
+     * 함수 기능: 로그아웃 기능. AT를 블랙리스트에 추가하고, RT는 삭제한다.
+     * @param request
+     * @return
+     */
+    @Operation(summary = "로그아웃 API", description = "회원의 로그아웃을 진행한다.")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            HttpServletRequest request,
+            @AuthenticationPrincipal PrincipalDetails principal
+    ){
+        authService.logout(principal.getUser().getId(), (String)request.getAttribute("accessToken"));
+        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, emptyCookie)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null));
+    }
+
+    @Operation(summary = "회원 탈퇴", description = "회원은 서비스에서 탈퇴를 진행한다.")
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            HttpServletRequest request,
+            @AuthenticationPrincipal PrincipalDetails principal
+    ){
+        authService.deleteUser(principal.getUser().getId(), (String) request.getAttribute("accessToken"));
+        String emptyCookie = cookieUtil.deletedRefreshTokenCookie();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, emptyCookie)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.DELETE_OK, null));
+    }
+
+    /***
+     * 함수 기능: 데모데이 전 임시 토큰 발급 기능
+     */
+    @Operation(summary = "임시 AT, RT 토큰 발급 API", description = "데모데이 전까지만 유지. 토큰을 발급받는다.")
+    @GetMapping("/demo-token")
+    public ApiResponse<TokenInfoDto.ATInfo> getToken(){
+        BaseSuccessCode successCode = GeneralSuccessCode.OK;
+        return ApiResponse.onSuccess(successCode, authService.getDemoToken());
+    }
+
 }

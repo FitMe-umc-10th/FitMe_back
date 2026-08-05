@@ -13,9 +13,9 @@ import umc.fitme.domain.auth.dto.EmailVerificationDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
+import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
-import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
@@ -26,11 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -127,7 +124,7 @@ class AuthServiceTest {
             assertThatThrownBy(() -> authService.isValidateCode(request))
                     .isInstanceOf(AuthException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
-                    .isEqualTo(AuthErrorCode.EMAIL_NOT_FOUND);
+                    .isEqualTo(AuthErrorCode.EMAIL_CODE_NOT_FOUND);
         }
 
         @Test

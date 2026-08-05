@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api-server:
+    image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}:latest
+    container_name: ${PROJECT_NAME}
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env
+    restart: always
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-northeast-2
+        awslogs-group: /ec2/${PROJECT_NAME}/app-logs
+        awslogs-stream: api-server
+        awslogs-create-group: "true"

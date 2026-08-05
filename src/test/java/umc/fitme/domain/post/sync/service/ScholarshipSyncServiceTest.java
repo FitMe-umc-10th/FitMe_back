@@ -7,14 +7,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import umc.fitme.domain.post.sync.client.ScholarshipCsvClient;
-import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
+import umc.fitme.domain.post.sync.client.ScholarshipApiClient;
+import umc.fitme.domain.post.sync.dto.ScholarshipSourceRow;
 import umc.fitme.domain.post.sync.entity.ScholarshipSyncLog;
 import umc.fitme.domain.post.sync.enums.ScholarshipSyncStatus;
-import umc.fitme.domain.post.sync.parser.ScholarshipCsvParser;
+import umc.fitme.domain.post.sync.parser.ScholarshipRowParser;
 import umc.fitme.domain.post.sync.repository.ScholarshipSyncLogRepository;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -26,9 +27,9 @@ import static org.mockito.Mockito.verify;
 class ScholarshipSyncServiceTest {
 
     @Mock
-    private ScholarshipCsvClient scholarshipCsvClient;
+    private ScholarshipApiClient scholarshipApiClient;
     @Mock
-    private ScholarshipCsvParser scholarshipCsvParser;
+    private ScholarshipRowParser scholarshipRowParser;
     @Mock
     private ScholarshipSyncWriter scholarshipSyncWriter;
     @Mock
@@ -37,7 +38,9 @@ class ScholarshipSyncServiceTest {
     @InjectMocks
     private ScholarshipSyncService scholarshipSyncService;
 
-    private static final ScholarshipCsvRow SAMPLE_ROW = new ScholarshipCsvRow(
+    private static final List<Map<String, Object>> SAMPLE_RAW_ROWS = List.of(Map.of("운영기관명", "한국장학재단"));
+
+    private static final ScholarshipSourceRow SAMPLE_ROW = new ScholarshipSourceRow(
             "한국장학재단", "국가장학금", "장학금", "유형",
             "대상", "2026-03-01 ~ 2026-03-31", "500만원", "100"
     );
@@ -45,9 +48,9 @@ class ScholarshipSyncServiceTest {
     @Test
     @DisplayName("정상 동기화 시 성공 로그를 저장한다")
     void sync_success() {
-        given(scholarshipCsvClient.isConfigured()).willReturn(true);
-        given(scholarshipCsvClient.download()).willReturn("csv-content");
-        given(scholarshipCsvParser.parse("csv-content")).willReturn(List.of(SAMPLE_ROW));
+        given(scholarshipApiClient.isConfigured()).willReturn(true);
+        given(scholarshipApiClient.fetchAll()).willReturn(SAMPLE_RAW_ROWS);
+        given(scholarshipRowParser.parse(SAMPLE_RAW_ROWS)).willReturn(List.of(SAMPLE_ROW));
         given(scholarshipSyncWriter.applyRows(List.of(SAMPLE_ROW)))
                 .willReturn(new ScholarshipSyncWriter.SyncResult(1, 2, 3, 0));
 
@@ -65,11 +68,11 @@ class ScholarshipSyncServiceTest {
     }
 
     @Test
-    @DisplayName("CSV에 유효한 행이 없으면 writer를 호출하지 않고 실패 로그를 저장한다")
+    @DisplayName("응답에 유효한 행이 없으면 writer를 호출하지 않고 실패 로그를 저장한다")
     void sync_emptyRows_skipsWriter() {
-        given(scholarshipCsvClient.isConfigured()).willReturn(true);
-        given(scholarshipCsvClient.download()).willReturn("csv-content");
-        given(scholarshipCsvParser.parse("csv-content")).willReturn(List.of());
+        given(scholarshipApiClient.isConfigured()).willReturn(true);
+        given(scholarshipApiClient.fetchAll()).willReturn(SAMPLE_RAW_ROWS);
+        given(scholarshipRowParser.parse(SAMPLE_RAW_ROWS)).willReturn(List.of());
 
         scholarshipSyncService.sync();
 
@@ -81,10 +84,10 @@ class ScholarshipSyncServiceTest {
     }
 
     @Test
-    @DisplayName("CSV 다운로드 중 예외가 발생하면 실패 로그를 저장한다")
-    void sync_downloadFails_savesFailedLog() {
-        given(scholarshipCsvClient.isConfigured()).willReturn(true);
-        given(scholarshipCsvClient.download()).willThrow(new IllegalStateException("다운로드 실패"));
+    @DisplayName("Open API 조회 중 예외가 발생하면 실패 로그를 저장한다")
+    void sync_fetchFails_savesFailedLog() {
+        given(scholarshipApiClient.isConfigured()).willReturn(true);
+        given(scholarshipApiClient.fetchAll()).willThrow(new IllegalStateException("조회 실패"));
 
         scholarshipSyncService.sync();
 
@@ -93,19 +96,19 @@ class ScholarshipSyncServiceTest {
 
         ScholarshipSyncLog savedLog = captor.getValue();
         assertThat(savedLog.getStatus()).isEqualTo(ScholarshipSyncStatus.FAILED);
-        assertThat(savedLog.getErrorMessage()).contains("다운로드 실패");
+        assertThat(savedLog.getErrorMessage()).contains("조회 실패");
 
         verify(scholarshipSyncWriter, never()).applyRows(anyList());
     }
 
     @Test
-    @DisplayName("csv-url/service-key가 설정되지 않았으면 다운로드를 시도하지 않고 실패 로그만 저장한다")
-    void sync_notConfigured_skipsDownload() {
-        given(scholarshipCsvClient.isConfigured()).willReturn(false);
+    @DisplayName("service-key가 설정되지 않았으면 조회를 시도하지 않고 실패 로그만 저장한다")
+    void sync_notConfigured_skipsFetch() {
+        given(scholarshipApiClient.isConfigured()).willReturn(false);
 
         scholarshipSyncService.sync();
 
-        verify(scholarshipCsvClient, never()).download();
+        verify(scholarshipApiClient, never()).fetchAll();
         verify(scholarshipSyncWriter, never()).applyRows(anyList());
 
         ArgumentCaptor<ScholarshipSyncLog> captor = ArgumentCaptor.forClass(ScholarshipSyncLog.class);

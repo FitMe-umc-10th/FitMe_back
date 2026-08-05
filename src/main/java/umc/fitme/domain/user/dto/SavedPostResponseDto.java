@@ -1,12 +1,9 @@
 package umc.fitme.domain.user.dto;
 
 import lombok.Builder;
-import umc.fitme.domain.post.entity.Post;
-import umc.fitme.domain.user.entity.mapping.UserSave;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 public class SavedPostResponseDto {

@@ -12,6 +12,11 @@ import java.util.List;
 @Repository
 public interface PostInterestRepository extends JpaRepository<PostInterest, Long> {
 
-    @Query("select pi.post.id, pi.interest.interestName from PostInterest pi where pi.post.id in :postIds")
+    @Query("""
+        select pi.post.id, i.interestName
+        from PostInterest pi
+        join pi.interest i
+        where pi.post.id in :postIds
+    """)
     List<Object[]> findPostInterestNamesByPostIds(@Param("postIds") Collection<Long> postIds);
 }

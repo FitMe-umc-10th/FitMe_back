@@ -17,7 +17,8 @@ spring:
 
 app:
   oauth2:
-    redirect-uri: http://localhost:8080/test.html
+    redirect-uri: http://localhost:5173/test.html
+    failure-redirection-uri: http://localhost:5173/login
 
 logging:
   level:

@@ -10,22 +10,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.ScholarshipRepository;
-import umc.fitme.domain.post.sync.dto.ScholarshipCsvRow;
+import umc.fitme.domain.post.sync.dto.ScholarshipSourceRow;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ScholarshipSyncWriterTest {
@@ -46,7 +40,7 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("존재하지 않는 sourceKey면 신규 저장하고 insertedCount가 증가한다")
     void applyRows_insertsNew() {
-        ScholarshipCsvRow row = new ScholarshipCsvRow(
+        ScholarshipSourceRow row = new ScholarshipSourceRow(
                 "한국장학재단", "신규장학금", "장학금", "성적우수형",
                 "대학생", "2026-05-01 ~ 2026-05-31", "최대 300만원", "200"
         );
@@ -75,7 +69,7 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("기존 sourceKey가 있으면 갱신 처리하고 updatedCount가 증가한다")
     void applyRows_updatesExisting() {
-        ScholarshipCsvRow row = new ScholarshipCsvRow(
+        ScholarshipSourceRow row = new ScholarshipSourceRow(
                 "한국장학재단", "국가장학금", "장학금", "소득연계형",
                 "대학생", "2026-03-01 ~ 2026-03-31", "최대 500만원", "1000"
         );
@@ -87,6 +81,7 @@ class ScholarshipSyncWriterTest {
                 .organizer("구 기관")
                 .applyStartAt(LocalDate.of(2025, 1, 1))
                 .applyEndAt(LocalDate.of(2025, 1, 31))
+                .summary("AI가 미리 캐싱해둔 요약")
                 .applicationMethod("옛날 방식")
                 .applicationUrl("https://old.example.com")
                 .imageUrl("https://old.example.com/img.png")
@@ -105,7 +100,8 @@ class ScholarshipSyncWriterTest {
 
         assertThat(existing.getTitle()).isEqualTo("국가장학금");
         assertThat(existing.getOrganizer()).isEqualTo("한국장학재단");
-        assertThat(existing.getSummary()).isEqualTo("대학생");
+        // summary는 CSV 원본 값으로 덮어써지지 않고, AI가 캐싱해둔 요약이 그대로 유지되어야 한다.
+        assertThat(existing.getSummary()).isEqualTo("AI가 미리 캐싱해둔 요약");
         assertThat(existing.getSupportAmount()).isEqualTo("최대 500만원");
         assertThat(existing.isActive()).isTrue();
 
@@ -115,11 +111,11 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("신청기간 파싱에 실패한 행은 건너뛰고 나머지는 정상 처리한다")
     void applyRows_skipsInvalidRow() {
-        ScholarshipCsvRow invalidRow = new ScholarshipCsvRow(
+        ScholarshipSourceRow invalidRow = new ScholarshipSourceRow(
                 "기관", "잘못된상품", "장학금", "유형",
                 "대상", "형식이상함", "1000만원", "10"
         );
-        ScholarshipCsvRow validRow = new ScholarshipCsvRow(
+        ScholarshipSourceRow validRow = new ScholarshipSourceRow(
                 "한국장학재단", "정상장학금", "장학금", "유형",
                 "대상", "2026-06-01 ~ 2026-06-30", "500만원", "50"
         );
@@ -138,7 +134,7 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("이번 CSV에 없는 기존 active 장학금은 비활성화 처리된다")
     void applyRows_deactivatesMissingScholarships() {
-        ScholarshipCsvRow row = new ScholarshipCsvRow(
+        ScholarshipSourceRow row = new ScholarshipSourceRow(
                 "한국장학재단", "국가장학금", "장학금", "유형",
                 "대상", "2026-03-01 ~ 2026-03-31", "500만원", "100"
         );
@@ -169,11 +165,11 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("모든 행이 파싱에 실패하면 기존 active 장학금을 비활성화하지 않는다")
     void applyRows_allRowsInvalid_doesNotDeactivateAnything() {
-        ScholarshipCsvRow invalidRow1 = new ScholarshipCsvRow(
+        ScholarshipSourceRow invalidRow1 = new ScholarshipSourceRow(
                 "기관A", "이상한상품A", "장학금", "유형",
                 "대상", "형식이상함A", "1000만원", "10"
         );
-        ScholarshipCsvRow invalidRow2 = new ScholarshipCsvRow(
+        ScholarshipSourceRow invalidRow2 = new ScholarshipSourceRow(
                 "기관B", "이상한상품B", "장학금", "유형",
                 "대상", "형식이상함B", "2000만원", "20"
         );

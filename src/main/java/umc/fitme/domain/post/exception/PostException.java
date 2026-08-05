@@ -1,7 +1,10 @@
 package umc.fitme.domain.post.exception;
 
-public class PostException extends RuntimeException {
-    public PostException(String message) {
-        super(message);
+import umc.fitme.global.apiPayload.code.BaseErrorCode;
+import umc.fitme.global.apiPayload.exception.ProjectException;
+
+public class PostException extends ProjectException {
+    public PostException(BaseErrorCode errorCode) {
+        super(errorCode);
     }
 }
