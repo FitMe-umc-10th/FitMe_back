@@ -3,7 +3,9 @@ package umc.fitme.support;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import umc.fitme.global.config.QueryDslConfig;
 
 /**
  * @DataJpaTest 기반 리포지토리 테스트 공통 베이스.
@@ -14,5 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ActiveProfiles("test")
+@Import(QueryDslConfig.class)
 public abstract class RepositoryTestSupport {
 }

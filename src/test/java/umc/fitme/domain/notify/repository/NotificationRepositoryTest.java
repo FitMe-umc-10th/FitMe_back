@@ -11,6 +11,7 @@ import umc.fitme.domain.notify.enums.NotificationType;
 import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
+import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.support.RepositoryTestSupport;
@@ -59,6 +60,7 @@ class NotificationRepositoryTest extends RepositoryTestSupport {
     private Post persistContest(String title) {
         Contest post = Contest.builder()
                 .postType(PostType.CONTEST)
+                .contestCategory(ContestCategory.ETC)
                 .title(title)
                 .organizer("테스트 기관")
                 .applyStartAt(LocalDate.of(2026, 7, 1))

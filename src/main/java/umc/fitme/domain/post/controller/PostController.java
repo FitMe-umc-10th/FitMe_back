@@ -16,14 +16,15 @@ import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostQueryService;
 import umc.fitme.domain.post.service.PostService;
 import umc.fitme.domain.post.service.PostSummaryService;
-import umc.fitme.domain.post.service.PublicDataSyncService;
 import umc.fitme.domain.post.sync.service.ScholarshipSyncService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseSuccessCode;
+import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.code.GeneralSuccessCode;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 import umc.fitme.global.security.entity.PrincipalDetails;
 
 import java.util.List;
@@ -31,11 +32,10 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/post")
+@RequestMapping("/api/v1/posts")
 @Tag(name = "공고 API", description = "인기 공고 조회/공고 상세 화면/공고 검색/검색 대시보드 조회")
 public class PostController {
     private final PostQueryService postQueryService;
-    private final PublicDataSyncService publicDataSyncService; // 💡 데이터 동기화를 위한 서비스 추가
     private final UserApplicationService userApplicationService;
     private final PostService postService;
     private final ScholarshipSyncService scholarshipSyncService;
@@ -44,38 +44,38 @@ public class PostController {
 
     @GetMapping("/popular")
     public ApiResponse<PostResponseDTO.PopularPostListDTO> getPopularPosts(
-            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값.
-            // 비로그인도 인기 공고를 볼 수 있어야 하므로 선택 값으로 둔다. (없으면 찜 여부는 모두 false)
-            @RequestParam(name = "userId", required = false) Long userId,
+            // 비로그인도 인기 공고를 볼 수 있어야 하므로 인증 정보가 없어도 조회를 허용한다.
+            // 인증 정보가 없으면 찜 여부는 모두 false로 내려간다.
+            @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(name = "cursor", required = false) Long cursor,
             @RequestParam(name = "size", defaultValue = "8") Integer size) { //size 파라미터 추가 (기본값 8)
-        PostResponseDTO.PopularPostListDTO response = postQueryService.getPopularPosts(userId, cursor, size);
+        PostResponseDTO.PopularPostListDTO response =
+                postQueryService.getPopularPosts(resolveUserIdOrNull(principal), cursor, size);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
 
     @GetMapping("/recent-views")
     public ApiResponse<PostResponseDTO.PostPreviewListDTO> getRecentPosts(
-            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
-            @RequestParam Long userId,
+            @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(name = "page", defaultValue = "0") Integer page,
             @RequestParam(name = "size", defaultValue = "10") Integer size) { //size 파라미터 추가 (기본값 10)
-        PostResponseDTO.PostPreviewListDTO response = postQueryService.getRecentPosts(userId, page, size);
+        PostResponseDTO.PostPreviewListDTO response =
+                postQueryService.getRecentPosts(resolveUserId(principal), page, size);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
 
     @GetMapping("/closing-soon")
     public ApiResponse<List<PostResponseDTO.PostPreviewDTO>> getClosingSoonPosts(
-            // 로그인 기능 연결 후에는 인증 정보에서 사용자 ID를 가져오도록 교체한다.
-            @RequestParam Long userId,
+            @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(name = "postType", required = false) PostType postType,
             // 생략해도 홈 화면 정책의 기본 정렬(FIT)을 적용한다.
             @RequestParam(name = "sort", defaultValue = "FIT") ClosingSoonSort sort,
             @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         List<PostResponseDTO.PostPreviewDTO> response =
-                postQueryService.getClosingSoonPosts(userId, postType, sort, size);
+                postQueryService.getClosingSoonPosts(resolveUserId(principal), postType, sort, size);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
@@ -86,9 +86,9 @@ public class PostController {
     @GetMapping("/scholarship/{postId}")
     public ApiResponse<PostResponseDTO.PostDetailDTO> getScholarshipPostDetail(
             @PathVariable Long postId,
-            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
-            @RequestParam Long userId) {
-        PostResponseDTO.PostDetailDTO response = postQueryService.getScholarshipPostDetail(userId, postId);
+            @AuthenticationPrincipal PrincipalDetails principal) {
+        PostResponseDTO.PostDetailDTO response =
+                postQueryService.getScholarshipPostDetail(resolveUserId(principal), postId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
@@ -99,9 +99,9 @@ public class PostController {
     @GetMapping("/contests/{postId}")
     public ApiResponse<PostResponseDTO.PostDetailDTO> getContestPostDetail(
             @PathVariable Long postId,
-            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
-            @RequestParam Long userId) {
-        PostResponseDTO.PostDetailDTO response = postQueryService.getContestPostDetail(userId, postId);
+            @AuthenticationPrincipal PrincipalDetails principal) {
+        PostResponseDTO.PostDetailDTO response =
+                postQueryService.getContestPostDetail(resolveUserId(principal), postId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
@@ -113,23 +113,34 @@ public class PostController {
     @PatchMapping("/{postId}/application")
     public ApiResponse<UserApplicationResponseDto.CreateResponse> startApplication(
             @PathVariable Long postId,
-            // 로그인 연결 전 Swagger 테스트용. 이후 인증 사용자 ID로 교체한다.
-            @RequestParam Long userId) {
+            @AuthenticationPrincipal PrincipalDetails principal) {
         UserApplicationResponseDto.CreateResponse response =
                 userApplicationService.create(
-                        userId,
+                        resolveUserId(principal),
                         new UserApplicationRequestDto.CreateRequest(postId)
                 );
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
-    @GetMapping("/sync-test")
-    public ApiResponse<String> triggerSync(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int perPage) {
+    /**
+     * 인증 정보에서 사용자 ID를 꺼낸다.
+     * 인증이 필요한 경로에서만 사용하며, 인증 정보가 없으면 401을 던진다.
+     */
+    private Long resolveUserId(PrincipalDetails principal) {
+        if (principal == null || principal.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+        return principal.getUser().getId();
+    }
 
-        publicDataSyncService.syncScholarshipData(page, perPage);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, "공공데이터 동기화가 성공적으로 실행되었습니다.");
+    /**
+     * 비로그인 접근을 허용하는 경로에서 사용한다.
+     * 인증 정보가 없으면 null을 돌려주고, 서비스는 개인화 정보 없이 응답을 만든다.
+     */
+    private Long resolveUserIdOrNull(PrincipalDetails principal) {
+        return (principal == null || principal.getUser() == null)
+                ? null
+                : principal.getUser().getId();
     }
 
     @GetMapping("/scholarship-sync-test")

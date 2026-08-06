@@ -57,7 +57,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl 
             @Param("postType") PostType postType,
             PageRequest pageRequest
     );
-}      
+
     @Query("SELECT p FROM Post p ORDER BY RAND()")
     List<Post> findRandomPosts(PageRequest pageRequest);
 
