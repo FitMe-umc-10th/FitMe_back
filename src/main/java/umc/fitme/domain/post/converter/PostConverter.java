@@ -36,7 +36,7 @@ public class PostConverter {
         return "https://default-image-url.com/scholarship.png";
     }
 
-    public static PostResponseDTO.PopularPostDTO toPopularPostDTO(Post post) {
+    public static PostResponseDTO.PopularPostDTO toPopularPostDTO(Post post, boolean isSaved) {
         return PostResponseDTO.PopularPostDTO.builder()
                 .postId(post.getId())
                 .type(post.getPostType().name())
@@ -44,13 +44,21 @@ public class PostConverter {
                 .deadlineLabel(calculateDDay(post.getApplyEndAt()))
                 .thumbnailUrl(extractThumbnailUrl(post))
                 .organizer(post.getOrganizer())
-                .saved(false)
+                .saved(isSaved)
                 .build();
     }
 
-    public static PostResponseDTO.PopularPostListDTO toPopularPostListDTO(List<Post> postList, boolean hasNext, Long nextCursor) {
+    public static PostResponseDTO.PopularPostListDTO toPopularPostListDTO(
+            List<Post> postList,
+            boolean hasNext,
+            Long nextCursor,
+            Collection<Long> savedPostIds
+    ) {
         List<PostResponseDTO.PopularPostDTO> postDTOs = postList.stream()
-                .map(PostConverter::toPopularPostDTO)
+                .map(post -> {
+                    boolean isSaved = savedPostIds != null && savedPostIds.contains(post.getId());
+                    return toPopularPostDTO(post, isSaved);
+                })
                 .collect(Collectors.toList());
 
         return PostResponseDTO.PopularPostListDTO.builder()
@@ -115,6 +123,7 @@ public class PostConverter {
 
 
         PostResponseDTO.ScholarshipDetailDTO scholarshipDetailDTO = null;
+        PostResponseDTO.ContestDetailDTO contestDetailDTO = null;
 
 
         if (post instanceof Scholarship scholarship) {
@@ -124,6 +133,13 @@ public class PostConverter {
                     .incomeRequirement(scholarship.getIncomeRequirement())
                     .regionRequirement(scholarship.getRegionRequirement())
                     .universityRequirement(scholarship.getUniversityRequirement())
+                    .build();
+        } else if (post instanceof Contest contest) {
+            contestDetailDTO = PostResponseDTO.ContestDetailDTO.builder()
+                    .posterImageUrl(contest.getPosterImageUrl())
+                    .target(contest.getTarget())
+                    .participantLimit(contest.getParticipantLimit())
+                    .rewardTotal(contest.getRewardTotal())
                     .build();
         }
 
@@ -144,6 +160,7 @@ public class PostConverter {
                 .applicationMethod(post.getApplicationMethod())
                 .applicationUrl(post.getApplicationUrl())
                 .scholarshipDetail(scholarshipDetailDTO)
+                .contestDetail(contestDetailDTO)
                 .build();
     }
 

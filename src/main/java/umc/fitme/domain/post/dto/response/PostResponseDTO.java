@@ -82,7 +82,9 @@ public class PostResponseDTO {
         private String applicationUrl;
 
 
+        // 공고 종류에 해당하는 쪽만 채워지고 나머지는 null로 나간다.
         private ScholarshipDetailDTO scholarshipDetail;
+        private ContestDetailDTO contestDetail;
     }
 
     @Getter
@@ -95,5 +97,16 @@ public class PostResponseDTO {
         private String incomeRequirement;
         private String regionRequirement;
         private String universityRequirement;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ContestDetailDTO {
+        private String posterImageUrl;
+        private String target;
+        private String participantLimit;
+        private String rewardTotal;
     }
 }
