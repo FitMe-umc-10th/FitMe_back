@@ -38,3 +38,6 @@ out/
 
 # env 파일
 .env
+application.yaml
+application-ec2.yaml
+application-local.yaml

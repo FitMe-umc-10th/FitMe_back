@@ -30,6 +30,7 @@ public class Scholarship extends Post{
     @Column(name = "university_requirement")
     private String universityRequirement;
 
+    // 표시용 원본 문자열 금액
     @Column(name = "support_amount")
     private String supportAmount;
 
