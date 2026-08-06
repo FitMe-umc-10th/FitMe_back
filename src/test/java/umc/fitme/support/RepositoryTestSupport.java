@@ -16,6 +16,6 @@ import umc.fitme.global.config.QueryDslConfig;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ActiveProfiles("test")
-@Import(QueryDslConfig.class)                                         // 추가
+@Import(QueryDslConfig.class)
 public abstract class RepositoryTestSupport {
 }

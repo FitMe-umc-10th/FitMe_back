@@ -8,7 +8,8 @@ import org.springframework.stereotype.Service;
 public class RecommendationRefreshService {
 
     public void refresh(Long userId) {
-        // TODO: 추천 알고리즘 재계산 연동 (모듈 구현 후 교체)
-        log.info("[Recommendation] TODO: recompute recommendations for userId={}", userId);
+        // 홈 추천(FIT)은 홈 탭 조회 시점에 사용자 프로필을 실시간으로 읽어 계산하므로,
+        // 프로필 저장이 커밋되면 다음 홈 조회에서 자동 반영된다 → 별도 재계산/재동기화 불필요.
+        log.debug("[Recommendation] profile updated for userId={} (recomputed live on home fetch)", userId);
     }
 }
