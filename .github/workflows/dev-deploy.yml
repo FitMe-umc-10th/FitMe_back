@@ -76,7 +76,6 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEY }}
-          debug: true
           envs: ENV_FILE, DOCKERHUB_USERNAME, PROJECT_NAME, PORT
           script: |
             # 1. 환경변수를 .env 파일로 저장
