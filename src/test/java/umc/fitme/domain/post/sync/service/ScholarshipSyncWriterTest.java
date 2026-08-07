@@ -69,11 +69,12 @@ class ScholarshipSyncWriterTest {
     @Test
     @DisplayName("기존 sourceKey가 있으면 갱신 처리하고 updatedCount가 증가한다")
     void applyRows_updatesExisting() {
+        // FIXED_CLOCK(2026-07-26) 이후에 마감하는, 아직 유효한 신청기간으로 갱신되는 케이스.
         ScholarshipSourceRow row = new ScholarshipSourceRow(
                 "한국장학재단", "국가장학금", "장학금", "소득연계형",
-                "대학생", "2026-03-01 ~ 2026-03-31", "최대 500만원", "1000"
+                "대학생", "2026-08-01 ~ 2026-08-31", "최대 500만원", "1000"
         );
-        String sourceKey = "한국장학재단|국가장학금|장학금|2026-03-01 ~ 2026-03-31";
+        String sourceKey = "한국장학재단|국가장학금|장학금|2026-08-01 ~ 2026-08-31";
 
         Scholarship existing = Scholarship.builder()
                 .postType(PostType.SCHOLARSHIP)
@@ -106,6 +107,40 @@ class ScholarshipSyncWriterTest {
         assertThat(existing.isActive()).isTrue();
 
         verify(scholarshipRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CSV에 여전히 존재해도 새 신청기간의 마감일이 지났으면 비활성화된다")
+    void applyRows_updatesExisting_withExpiredApplyEndAt_deactivates() {
+        // 마감된 장학금이어도 공공데이터 CSV에는 계속 남아있는 경우가 있는데,
+        // 이 경우 매일 동기화가 돌 때마다 PostExpirationScheduler가 비활성화한 걸 되살리면 안 된다.
+        ScholarshipSourceRow row = new ScholarshipSourceRow(
+                "한국장학재단", "국가장학금", "장학금", "소득연계형",
+                "대학생", "2026-03-01 ~ 2026-03-31", "최대 500만원", "1000"
+        );
+        String sourceKey = "한국장학재단|국가장학금|장학금|2026-03-01 ~ 2026-03-31";
+
+        Scholarship existing = Scholarship.builder()
+                .postType(PostType.SCHOLARSHIP)
+                .title("구 제목")
+                .organizer("구 기관")
+                .applyStartAt(LocalDate.of(2026, 3, 1))
+                .applyEndAt(LocalDate.of(2026, 3, 31))
+                .applicationMethod("옛날 방식")
+                .applicationUrl("https://old.example.com")
+                .imageUrl("https://old.example.com/img.png")
+                .createdAt(LocalDateTime.now())
+                .sourceKey(sourceKey)
+                .active(true)
+                .build();
+
+        given(scholarshipRepository.findAllBySourceKeyIn(anyCollection())).willReturn(List.of(existing));
+        given(scholarshipRepository.findAllByActiveTrue()).willReturn(List.of());
+
+        ScholarshipSyncWriter.SyncResult result = scholarshipSyncWriter.applyRows(List.of(row));
+
+        assertThat(result.updatedCount()).isEqualTo(1);
+        assertThat(existing.isActive()).isFalse();
     }
 
     @Test
