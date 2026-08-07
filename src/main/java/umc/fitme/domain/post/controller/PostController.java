@@ -78,14 +78,16 @@ public class PostController {
 
     /**
      * 장학금 공고 상세 화면 진입 API.
-     * 상세 조회와 함께 조회 수 및 최근 조회 이력을 갱신한다.
+     * 상세 조회와 함께 조회 수 및 최근 조회 이력을 갱신하고, AI 요약 박스(캐싱된 일반 요약 + 로그인한 사용자의
+     * 이름/관심분야를 결합한 개인화 텍스트)를 summary 필드에 담아 반환한다.
      */
     @GetMapping("/scholarship/{postId}")
+    @Operation(summary = "장학금 공고 상세 조회 API", description = "장학금 공고 상세 정보를 조회한다. summary 필드에 로그인한 사용자용 AI 요약 박스 텍스트가 포함된다.")
     public ApiResponse<PostResponseDTO.PostDetailDTO> getScholarshipPostDetail(
             @PathVariable Long postId,
-            // 로그인 기능 연결 전 Swagger 테스트를 위한 임시 사용자 식별값
-            @RequestParam Long userId) {
-        PostResponseDTO.PostDetailDTO response = postQueryService.getScholarshipPostDetail(userId, postId);
+            @AuthenticationPrincipal PrincipalDetails principal) {
+        PostResponseDTO.PostDetailDTO response =
+                postQueryService.getScholarshipPostDetail(principal.getUser().getId(), postId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 

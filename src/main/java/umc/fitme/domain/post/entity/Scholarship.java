@@ -70,7 +70,13 @@ public class Scholarship extends Post{
     ) {
         updateCore(title, organizer, applyStartAt, applyEndAt, summary, applicationMethod, applicationUrl, now);
         this.supportAmount = supportAmount;
-        this.activate();
+        // CSV에 여전히 남아있어도 마감일이 지난 장학금은 다시 활성화하지 않는다.
+        // (PostExpirationScheduler가 비활성화한 걸 다음 동기화가 무조건 되살리던 버그)
+        if (applyEndAt != null && applyEndAt.isBefore(now.toLocalDate())) {
+            this.deactivate();
+        } else {
+            this.activate();
+        }
         this.lastSyncedAt = now;
     }
 
