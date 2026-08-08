@@ -24,6 +24,7 @@ public class EmailVerification {
     private String verificationCode;
 
     @Column(name = "failure_count", nullable = false)
+    @Builder.Default
     private int failureCount = 0;
 
     @Column(name = "expires_at", nullable = false)

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import umc.fitme.global.apiPayload.ApiResponse;
@@ -28,6 +29,33 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    /***
+     * 함수 기능: excludePath 내 API 경로는 JwtAuthentication 필터를 거치지 않는다.
+     * @param request current HTTP request
+     * @return
+     * @throws ServletException
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+
+        String[] excludePath = {
+                "/api/auth/signup",
+                "/api/auth/login",
+                "/api/auth/demo-token",
+                "/api/auth/email-verifications",
+                "/api/auth/link",
+                "/api/auth/reissue"
+        };
+
+        for (String pattern : excludePath){
+            if (pathMatcher.match(pattern, request.getRequestURI())){
+                return true; // JwtAuthenticationFilter 건너뜀
+            }
+        }
+        return false;
+    }
 
     /***
      * 1. Request Header에서 token 추출
