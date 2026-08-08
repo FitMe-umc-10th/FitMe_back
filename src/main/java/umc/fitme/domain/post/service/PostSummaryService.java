@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import umc.fitme.domain.post.client.OpenAiSummaryClient;
 import umc.fitme.domain.post.entity.Contest;
@@ -36,8 +35,11 @@ public class PostSummaryService {
      * summary가 아직 캐싱되지 않은 활성 공고를 배치로 찾아 AI 요약을 생성해 저장한다.
      * 타입(Scholarship/Contest)에 무관하게 동작하므로, 등록 경로와 상관없이
      * 주기적으로 호출하면 모든 공고에 요약이 채워진다.
+     *
+     * OpenAI 호출은 트랜잭션 밖에서 수행한다. 여러 건을 순차 호출하는 동안 DB 커넥션을
+     * 계속 붙잡고 있으면, 커넥션 풀 고갈이나 스케줄러 스레드 점유로 다른 스케줄된 작업이
+     * 지연/누락될 수 있기 때문이다.
      */
-    @Transactional
     public int generateMissingSummaries() {
         if (!openAiSummaryClient.isConfigured()) {
             log.warn("OpenAI API 키가 설정되지 않아 AI 요약 생성을 건너뜁니다.");
@@ -47,7 +49,7 @@ public class PostSummaryService {
         List<Post> targets = postRepository.findByActiveTrueAndSummaryIsNull(PageRequest.of(0, BATCH_SIZE));
         int successCount = 0;
         for (Post post : targets) {
-            if (generateAndSave(post)) {
+            if (generateAndSave(post.getId(), buildPrompt(post))) {
                 successCount++;
             }
         }
@@ -57,7 +59,6 @@ public class PostSummaryService {
     /**
      * 특정 공고 하나의 AI 요약을 강제로 재생성한다 (테스트/수동 트리거용).
      */
-    @Transactional
     public void generateSummaryForPost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
@@ -67,19 +68,32 @@ public class PostSummaryService {
             return;
         }
 
-        generateAndSave(post);
+        generateAndSave(postId, buildPrompt(post));
     }
 
-    private boolean generateAndSave(Post post) {
+    private boolean generateAndSave(Long postId, String prompt) {
         try {
-            String summary = openAiSummaryClient.generateSummary(buildPrompt(post));
-            post.updateSummary(summary);
-            log.info("AI 요약 생성 완료 - postId={}", post.getId());
+            String summary = openAiSummaryClient.generateSummary(prompt);
+            saveSummary(postId, summary);
+            log.info("AI 요약 생성 완료 - postId={}", postId);
             return true;
         } catch (Exception e) {
-            log.warn("AI 요약 생성 실패 - postId={}, reason={}", post.getId(), e.getMessage());
+            log.warn("AI 요약 생성 실패 - postId={}, reason={}", postId, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * OpenAI 응답을 받은 뒤 DB 쓰기만 짧게 수행한다.
+     * postRepository.save(...) 자체가 자체 트랜잭션으로 처리되므로 별도로 @Transactional을
+     * 두르지 않는다. (같은 클래스 내에서 @Transactional 메서드를 this로 호출하면 프록시를
+     * 우회해 트랜잭션이 적용되지 않는 self-invocation 문제를 피하기 위함이기도 하다.)
+     */
+    private void saveSummary(Long postId, String summary) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+        post.updateSummary(summary);
+        postRepository.save(post);
     }
 
     /**
