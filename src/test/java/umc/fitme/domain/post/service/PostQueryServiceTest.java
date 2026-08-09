@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import umc.fitme.domain.interest.repository.PostInterestRepository;
@@ -15,6 +16,7 @@ import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
+import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
 import umc.fitme.domain.user.repository.UserDetailRepository;
@@ -54,21 +56,30 @@ class PostQueryServiceTest {
     @Mock
     private PostSummaryService postSummaryService;
 
+    /**
+     * 대학 구분 판정은 실제 university.csv를 읽어야 의미가 있으므로 mock이 아닌 진짜 객체를 넣는다.
+     * mock이면 항상 null을 돌려줘 '판정 불가 → 통과' 경로만 타고 매칭 로직이 검증되지 않는다.
+     */
+    @Spy
+    private UniversityTypeResolver universityTypeResolver = new UniversityTypeResolver();
+
     @InjectMocks
     private PostQueryService postQueryService;
 
     @Test
-    void matchingCountTakesPriorityThenDeadline() {
+    void 마감일이_같으면_조건_일치_수가_많은_공고가_앞에_온다() {
+        // 마감일이 1순위이고, 같은 날짜끼리는 조건 일치 수로 순서를 정한다.
+        LocalDate sameDeadline = LocalDate.now().plusDays(5);
         Scholarship highlyMatched = scholarship(
                 1L,
-                LocalDate.now().plusDays(5),
+                sameDeadline,
                 "3.0 이상",
                 "1~4구간",
                 "서울"
         );
         Scholarship unrestricted = scholarship(
                 2L,
-                LocalDate.now().plusDays(1),
+                sameDeadline,
                 "제한 없음",
                 "제한 없음",
                 "전국"
@@ -83,7 +94,7 @@ class PostQueryServiceTest {
                 3.5,
                 3,
                 "서울",
-                "한국대학교",
+                "가천대학교",
                 Set.of("IT/소프트웨어")
         );
 
@@ -168,28 +179,116 @@ class PostQueryServiceTest {
     }
 
     @Test
-    void excludesScholarshipWhenUniversityRequirementDoesNotMatch() {
-        Scholarship differentUniversityOnly = scholarship(
+    void 사용자_대학_구분과_다른_공고는_제외한다() {
+        // 4년제 재학생에게 '해외대학'만 대상인 공고는 내려가면 안 된다.
+        Scholarship overseasOnly = scholarship(
                 1L,
                 LocalDate.now().plusDays(2),
                 "3.0 이상",
                 "1~4구간",
                 "서울",
-                "다른대학교"
+                "해외대학"
         );
 
         when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
-                .thenReturn(List.of(differentUniversityOnly));
+                .thenReturn(List.of(overseasOnly));
         when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
                 .thenReturn(List.of());
         when(postRepository.findPopularPostsBySavedCount(isNull(), any(PageRequest.class)))
                 .thenReturn(List.of());
 
         UserFitProfile profile = new UserFitProfile(
-                3.5, 3, "서울", "한국대학교", Set.of("IT/소프트웨어")
+                3.5, 3, "서울", "가천대학교", Set.of("IT/소프트웨어")
         );
 
         assertThat(postQueryService.getClosingSoonPosts(profile, null, 10)).isEmpty();
+    }
+
+    @Test
+    void 사용자_대학_구분이_포함된_공고는_통과시킨다() {
+        // 실제 적재 데이터에 있는 형태. 가천대학교는 4년제라 통과해야 한다.
+        Scholarship fourYearAndCollege = scholarship(
+                1L,
+                LocalDate.now().plusDays(2),
+                "3.0 이상",
+                "1~4구간",
+                "서울",
+                "4년제(5~6년제포함)전문대(2~3년제)"
+        );
+
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(fourYearAndCollege));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(
+                3.5, 3, "서울", "가천대학교", Set.of("IT/소프트웨어")
+        );
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10))
+                .singleElement()
+                .extracting(PostResponseDTO.PostPreviewDTO::getPostId)
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void 문장으로_적힌_대학_조건은_판정하지_않고_통과시킨다() {
+        // '도내 대학 해외교환 장학생'처럼 구분 키워드가 없는 조건은 기계적으로 판정할 수 없다.
+        // 못 알아본 것 때문에 지원 가능한 공고를 가리지 않는다.
+        Scholarship sentenceRequirement = scholarship(
+                1L,
+                LocalDate.now().plusDays(2),
+                "3.0 이상",
+                "1~4구간",
+                "서울",
+                "도내 대학 해외교환 장학생"
+        );
+
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(sentenceRequirement));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(
+                3.5, 3, "서울", "가천대학교", Set.of("IT/소프트웨어")
+        );
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10)).hasSize(1);
+    }
+
+    @Test
+    void 마감_임박_공고는_마감일이_가까운_순서로_내려간다() {
+        // 조건 일치 수가 적어도 마감이 급하면 앞에 와야 한다.
+        // 2L은 대학 조건이 있어 일치 수가 더 크지만 마감일이 늦다.
+        Scholarship urgent = scholarship(
+                1L,
+                LocalDate.now().plusDays(1),
+                "제한 없음",
+                "제한 없음",
+                "제한 없음",
+                "제한 없음"
+        );
+        Scholarship laterButBetterMatch = scholarship(
+                2L,
+                LocalDate.now().plusDays(9),
+                "3.0 이상",
+                "1~4구간",
+                "서울",
+                "4년제(5~6년제포함)"
+        );
+
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(laterButBetterMatch, urgent));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(
+                3.5, 3, "서울", "가천대학교", Set.of("IT/소프트웨어")
+        );
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10))
+                .extracting(PostResponseDTO.PostPreviewDTO::getPostId)
+                .containsExactly(1L, 2L);
     }
 
     @Test

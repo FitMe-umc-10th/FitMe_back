@@ -16,6 +16,7 @@ import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
+import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
 import umc.fitme.domain.user.repository.UserDetailRepository;
@@ -60,6 +61,7 @@ public class PostQueryService {
     private final PostInterestRepository postInterestRepository;
     private final UserSaveRepository userSaveRepository;
     private final PostSummaryService postSummaryService;
+    private final UniversityTypeResolver universityTypeResolver;
 
 
     /**
@@ -272,13 +274,14 @@ public class PostQueryService {
         // 공고별 관심 분야를 한 번의 쿼리로 조회해 N+1 문제를 방지한다.
         Map<Long, Set<String>> postInterests = loadPostInterests(candidates);
 
-        // 사용자 조건에 맞는 공고만 남기고, 일치 조건 수와 마감일 순으로 정렬한다.
+        // 사용자 조건에 맞는 공고만 남긴다. 자격 판정은 scorePost가 하고,
+        // 남은 공고는 마감이 급한 순서로 보여 준다. 일치 조건 수는 같은 날짜끼리 순서를 정할 때만 쓴다.
         List<ScoredPost> matchedPosts = candidates.stream()
                 .map(post -> scorePost(post, postInterests.getOrDefault(post.getId(), Set.of()), profile))
                 .filter(ScoredPost::eligible)
                 .sorted(Comparator
-                        .comparingInt(ScoredPost::matchCount).reversed()
-                        .thenComparing(scored -> scored.post().getApplyEndAt())
+                        .comparing((ScoredPost scored) -> scored.post().getApplyEndAt())
+                        .thenComparing(Comparator.comparingInt(ScoredPost::matchCount).reversed())
                         .thenComparing(scored -> scored.post().getId()))
                 .limit(normalizedSize)
                 .toList();
@@ -449,33 +452,49 @@ public class PostQueryService {
         return ConditionMatch.restricted(matches);
     }
 
+    /**
+     * 지역 조건은 판정하지 않고 모두 통과시킨다.
+     * <p>
+     * 공고의 지역 조건은 문장으로 적혀 있고(예: "○ 공고일 기준 본인 또는 부모가 주민등록초본 상
+     * 강원특별자치도에 1년 이상 계속해서 주소지를 두고 있는 자") 사용자 지역은 "서울" 같은 시·도
+     * 한 단어여서, 문자열 비교로는 맞출 수 없다. 그대로 두면 실제로는 지원할 수 있는 공고까지
+     * 걸러져서 목록에서 사라진다. 대학 조건과 같은 원칙으로, 판정하지 못하는 조건은 가리지 않는다.
+     * <p>
+     * 사용자 지역 입력이 표준화되면(온보딩 협의 필요) 그때 실제 판정을 넣는다.
+     */
     private ConditionMatch matchRegion(String requirement, String userRegion) {
-        if (isUnrestricted(requirement)) {
-            return ConditionMatch.unrestricted();
-        }
-        if (!hasText(userRegion)) {
-            return ConditionMatch.restricted(false);
-        }
-
-        String normalizedRequirement = normalize(requirement);
-        String normalizedUserRegion = normalize(userRegion);
-        boolean matches = normalizedRequirement.contains(normalizedUserRegion)
-                || normalizedUserRegion.contains(normalizedRequirement);
-        return ConditionMatch.restricted(matches);
+        return ConditionMatch.unrestricted();
     }
 
+    /**
+     * 공고의 대학 조건과 사용자의 소속 대학을 맞춰 본다.
+     * <p>
+     * 공고에는 대학 구분이(예: {@code 4년제(5~6년제포함)전문대(2~3년제)}),
+     * 사용자에게는 대학 이름이(예: {@code 가천대학교}) 있으므로
+     * 이름을 구분으로 바꾼 뒤 비교한다.
+     * <p>
+     * 판정할 수 없는 경우는 모두 통과시킨다. 우리가 알아보지 못한 것 때문에
+     * 사용자가 지원할 수 있는 공고를 가리는 편보다, 못 거른 공고가 섞이는 편이 낫다.
+     */
     private ConditionMatch matchUniversity(String requirement, String userUniversity) {
         if (isUnrestricted(requirement)) {
             return ConditionMatch.unrestricted();
         }
+        // '도내 대학 해외교환 장학생'처럼 문장으로 적힌 조건은 구분으로 판정할 수 없다.
+        if (!universityTypeResolver.containsTypeKeyword(requirement)) {
+            return ConditionMatch.unrestricted();
+        }
         if (!hasText(userUniversity)) {
-            return ConditionMatch.restricted(false);
+            return ConditionMatch.unrestricted();
         }
 
-        String normalizedRequirement = normalize(requirement);
-        String normalizedUserUniversity = normalize(userUniversity);
-        // 공고 대학 제한 문자열에 사용자의 소속 대학명이 포함될 때만 통과한다.
-        return ConditionMatch.restricted(normalizedRequirement.contains(normalizedUserUniversity));
+        String userType = universityTypeResolver.resolveType(userUniversity);
+        if (userType == null) {
+            // 대학 목록에 없는 학교는 구분을 알 수 없으므로 거르지 않는다.
+            return ConditionMatch.unrestricted();
+        }
+
+        return ConditionMatch.restricted(normalize(requirement).contains(normalize(userType)));
     }
 
     private ConditionMatch matchInterest(
