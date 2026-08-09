@@ -45,6 +45,7 @@ public class PostConverter {
                 .thumbnailUrl(extractThumbnailUrl(post))
                 .organizer(post.getOrganizer())
                 .saved(isSaved)
+                .active(post.isActive())
                 .build();
     }
 
@@ -79,6 +80,7 @@ public class PostConverter {
                 .thumbnailUrl(extractThumbnailUrl(post))
                 .organizer(post.getOrganizer())
                 .saved(isSaved)
+                .active(post.isActive())
                 .build();
     }
 
@@ -153,6 +155,7 @@ public class PostConverter {
                 .viewCount(post.getViewCount())
                 .savedCount(post.getSavedCount())
                 .saved(isSaved)
+                .active(post.isActive())
                 .summary(personalizedSummary)
                 .applyStartDate(post.getApplyStartAt() != null ? post.getApplyStartAt().toString() : null)
                 .applyEndDate(post.getApplyEndAt() != null ? post.getApplyEndAt().toString() : null)
@@ -259,6 +262,7 @@ public class PostConverter {
                 .type(post.getPostType())
                 .title(post.getTitle())
                 .fluctuation(fluctuationType)
+                .active(post.isActive())
                 .build();
     }
 
