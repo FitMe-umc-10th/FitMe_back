@@ -73,6 +73,13 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  task:
+    scheduling:
+      # 기본값(1)이면 앱의 모든 @Scheduled 작업이 스레드 1개를 공유해서,
+      # 하나가 오래 걸리거나 멈추면 나머지 스케줄러가 전부 밀리거나 실행되지 않는다.
+      pool:
+        size: 5
+
 cloud:
   aws:
     s3:

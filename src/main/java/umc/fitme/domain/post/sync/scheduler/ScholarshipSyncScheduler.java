@@ -13,7 +13,10 @@ public class ScholarshipSyncScheduler {
 
     private final ScholarshipSyncService scholarshipSyncService;
 
-    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
+    /***
+     * 스케줄러 기능: 매월 1일 새벽 4시에 장학금 공공데이터를 동기화한다.
+     */
+    @Scheduled(cron = "0 0 4 1 * *", zone = "Asia/Seoul")
     public void syncScholarships() {
         scholarshipSyncService.sync();
     }

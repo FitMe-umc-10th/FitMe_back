@@ -33,6 +33,7 @@ public class SearchViewDto {
             Long postId,
             PostType type,
             String title,
-            FluctuationType fluctuation
+            FluctuationType fluctuation,
+            Boolean active
     ){}
 }
