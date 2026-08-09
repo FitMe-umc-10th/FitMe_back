@@ -22,6 +22,7 @@ public class PostResponseDTO {
         private String thumbnailUrl;
         private String organizer;
         private Boolean saved;
+        private Boolean active;
     }
 
     @Getter
@@ -58,6 +59,7 @@ public class PostResponseDTO {
         private String thumbnailUrl;
         private String organizer;
         private Boolean saved;
+        private Boolean active;
     }
 
 
@@ -74,6 +76,7 @@ public class PostResponseDTO {
         private Integer viewCount;
         private Integer savedCount;
         private Boolean saved;
+        private Boolean active;
         private String summary;
         private String applyStartDate;
         private String applyEndDate;

@@ -64,6 +64,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl 
     @Query("""
     select p
     from Post p
+    where p.active = true
+      and p.applyEndAt >= CURRENT_DATE
     order by p.viewCount desc, p.id desc
     limit 8
     """)
