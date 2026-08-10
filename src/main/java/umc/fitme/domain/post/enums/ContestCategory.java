@@ -6,5 +6,5 @@ public enum ContestCategory {
     DESIGN,
     IT,
     VIDEO,
-    ETC
+    LANGAUGE
 }
