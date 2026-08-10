@@ -79,6 +79,31 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostQueryDsl 
     """)
     void resetAllRanks();
 
+
+    // 찜 수는 여러 유저가 공유하는 하나의 post 행을 갱신하므로, 엔티티에서 읽고 더하는
+    // 방식(read-modify-write)이면 서로 다른 유저의 동시 찜에서 증가분이 유실된다.
+    // DB가 직접 계산하도록 맡겨 갱신 손실을 없앤다.
+    // flushAutomatically: 앞선 UserSave 변경을 먼저 반영한 뒤 실행되도록 보장한다.
+    // 주의: 벌크 연산이라 영속성 컨텍스트를 우회하므로, 같은 트랜잭션에 이미 로딩된
+    // Post 인스턴스의 savedCount는 이 호출 이후 실제 값과 어긋난다.
+    @Modifying(flushAutomatically = true)
+    @Query("""
+    update Post p
+    set p.savedCount = p.savedCount + 1
+    where p.id = :postId
+    """)
+    int increaseSavedCount(@Param("postId") Long postId);
+
+    // savedCount > 0 조건으로 음수 방어를 DB에서 원자적으로 수행한다.
+    @Modifying(flushAutomatically = true)
+    @Query("""
+    update Post p
+    set p.savedCount = p.savedCount - 1
+    where p.id = :postId
+      and p.savedCount > 0
+    """)
+    int decreaseSavedCount(@Param("postId") Long postId);
+
     // 마감일이 지났는데 아직 활성 상태인 공고를 타입 무관하게 조회한다.
     @Query("SELECT p FROM Post p WHERE p.active = true AND p.applyEndAt < CURRENT_DATE")
     List<Post> findAllActiveAndExpired();

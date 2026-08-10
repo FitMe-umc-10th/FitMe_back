@@ -1,6 +1,7 @@
 package umc.fitme.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -78,6 +79,12 @@ public class SavedPostService {
         );
     }
 
+    /**
+     * 함수 기능: 공고를 찜한다.
+     * @param userId 유저 ID
+     * @param postId 공고 ID
+     * @return SavePostResponse Dto
+     */
     @Transactional
     public SavedPostResponseDto.SavePostResponse savePost(Long userId, Long postId) {
         User user = userRepository.findById(userId)
@@ -86,9 +93,11 @@ public class SavedPostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
+        // 기존 행이 있으면 잠근 채 읽으므로, 경합한 요청은 앞선 요청이 커밋한 isSaved=true를 보고
+        // resave()에서 409로 걸러진다. 여기까지 온 요청만 찜 수를 올릴 자격이 있다.
         UserSave saved = userSaveRepository.findByUserAndPost(user, post)
-                .map(this::resave)
-                .orElseGet(() -> createSave(user, post));
+                .map(this::resave) // 이미 찜한 이력이 있다면
+                .orElseGet(() -> createSave(user, post)); // 새로 찜한 경우 -> 새로 생성
 
         try {
             saved = userSaveRepository.saveAndFlush(saved);
@@ -97,13 +106,23 @@ public class SavedPostService {
             // 둘 다 "미저장"으로 판단해 INSERT를 시도할 수 있다. (user_id, post_id) 유니크 제약이
             // 이를 막아주고, 진 쪽은 여기서 ALREADY_SAVED_POST(409)로 변환되어 500을 피한다.
             throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
+        } catch (ConcurrencyFailureException e) {
+            // 행이 없을 때의 락킹 읽기는 유니크 인덱스에 갭 락을 잡는다. 두 트랜잭션이 같은 갭을
+            // 잡은 뒤 서로의 INSERT를 기다리면 데드락(또는 락 대기 timeout)이 된다.
+            // 이 경로에서의 경합 상대는 같은 (user, post)를 저장하려는 요청뿐이므로,
+            // 유니크 제약 위반과 동일하게 409로 변환한다. 진 트랜잭션은 통째로 롤백되어
+            // 찜 수가 중복 반영될 여지는 없다.
+            throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
         }
+
+        // 상태 전이에 성공한 요청만 도달하므로, 전이 1회당 카운트 1회가 보장된다.
+        postRepository.increaseSavedCount(postId);
 
         return SavedPostConverter.toSavePostResponse(saved);
     }
 
+    // 저장 이력을 새로 생성한다. (찜 수 증가는 호출부에서 원자적 UPDATE로 처리한다)
     private UserSave createSave(User user, Post post) {
-        post.increaseSaveCount();
         return UserSave.builder()
                         .user(user)
                         .post(post)
@@ -111,12 +130,13 @@ public class SavedPostService {
                         .build();
     }
 
+    // 해당 공고 저장 이력이 존재한다면 isSaved = false -> true로 바꾼다.
     private UserSave resave(UserSave userSave) {
+        // isSaved가 true라면 예외를 반환한다.
         if (Boolean.TRUE.equals(userSave.getIsSaved())){
             throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
         }
         userSave.resave();
-        userSave.getPost().increaseSaveCount();
         return userSave;
     }
 
@@ -245,11 +265,15 @@ public class SavedPostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
+        // 잠근 채 읽으므로 동시에 들어온 취소 요청 중 하나만 isSaved=true를 보고 통과한다.
+        // 나머지는 조회 자체가 비어 SAVED_POST_NOT_FOUND가 되어 카운트를 중복 차감하지 않는다.
         UserSave userSave = userSaveRepository.findByIdAndUserAndIsSavedTrue(savedId, user)
                 .orElseThrow(() -> new ProjectException(SavedPostErrorCode.SAVED_POST_NOT_FOUND));
 
         userSave.cancelSave();
-        userSave.getPost().decreaseSaveCount();
+
+        // 프록시에서 식별자만 꺼내므로 Post를 초기화하지 않는다.
+        postRepository.decreaseSavedCount(userSave.getPost().getId());
 
         return SavedPostConverter.toDeleteSavedPostResponse(userSave);
     }
