@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.exception.code.PostErrorCode;
@@ -28,7 +29,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -350,6 +354,8 @@ class SavedPostServiceTest {
         assertEquals(100L, response.savedId());
         assertEquals(10L, response.postId());
         assertTrue(response.saved());
+        // 찜 수는 엔티티가 아니라 원자적 UPDATE로 한 번만 올린다.
+        verify(postRepository).increaseSavedCount(10L);
     }
 
     @Test
@@ -389,6 +395,47 @@ class SavedPostServiceTest {
         );
 
         assertEquals(SavedPostErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
+        // 전이에 실패했으므로 찜 수도 올라가면 안 된다.
+        verify(postRepository, never()).increaseSavedCount(anyLong());
+    }
+
+    @Test
+    @DisplayName("찜 취소 이력이 있는 공고를 다시 찜하면 상태 전이 1회당 찜 수도 1회만 오른다")
+    void savePost_resave_increasesSavedCountOnce() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        UserSave canceled = UserSave.builder()
+                .id(100L)
+                .user(user)
+                .post(post)
+                .isSaved(false)
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.of(canceled));
+        when(userSaveRepository.saveAndFlush(any(UserSave.class))).thenReturn(canceled);
+
+        SavedPostResponseDto.SavePostResponse response = savedPostService.savePost(1L, 10L);
+
+        assertTrue(response.saved());
+        assertTrue(canceled.getIsSaved());
+        verify(postRepository).increaseSavedCount(10L);
     }
 
     @Test
@@ -424,6 +471,43 @@ class SavedPostServiceTest {
         );
 
         assertEquals(SavedPostErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
+        verify(postRepository, never()).increaseSavedCount(anyLong());
+    }
+
+    @Test
+    @DisplayName("갭 락 경합으로 데드락이 나면 ALREADY_SAVED_POST(409)로 변환된다")
+    void savePost_deadlockOnInsert_convertedToConflict() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        Post post = Post.builder()
+                .id(10L)
+                .postType(PostType.CONTEST)
+                .title("공모전")
+                .organizer("주최기관")
+                .applyStartAt(LocalDate.of(2026, 7, 1))
+                .applyEndAt(LocalDate.of(2026, 7, 31))
+                .applicationMethod("온라인")
+                .applicationUrl("https://example.com")
+                .imageUrl("https://example.com/thumb.jpg")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userSaveRepository.findByUserAndPost(user, post)).thenReturn(Optional.empty());
+        // 행이 없을 때의 락킹 읽기는 갭 락을 잡으므로, 동시 INSERT가 데드락으로 끝날 수 있다.
+        when(userSaveRepository.saveAndFlush(any(UserSave.class)))
+                .thenThrow(new PessimisticLockingFailureException("deadlock"));
+
+        ProjectException exception = assertThrows(
+                ProjectException.class,
+                () -> savedPostService.savePost(1L, 10L)
+        );
+
+        assertEquals(SavedPostErrorCode.ALREADY_SAVED_POST, exception.getErrorCode());
+        verify(postRepository, never()).increaseSavedCount(anyLong());
     }
 
     @Test
@@ -481,6 +565,7 @@ class SavedPostServiceTest {
         assertEquals(10L, response.postId());
         assertFalse(response.saved());
         assertFalse(userSave.getIsSaved());
+        verify(postRepository).decreaseSavedCount(10L);
     }
 
     @Test
