@@ -16,6 +16,7 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
+import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
@@ -86,14 +87,8 @@ public class SavedPostService {
                 .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
         UserSave saved = userSaveRepository.findByUserAndPost(user, post)
-                               .map(existing -> {
-                                   if (Boolean.TRUE.equals(existing.getIsSaved())) {
-                                       throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
-                                   }
-                                   existing.resave();
-                                   return existing;
-                               })
-                               .orElseGet(() -> UserSave.builder().user(user).post(post).isSaved(true).build());
+                .map(this::resave)
+                .orElseGet(() -> createSave(user, post));
 
         try {
             saved = userSaveRepository.saveAndFlush(saved);
@@ -105,6 +100,24 @@ public class SavedPostService {
         }
 
         return SavedPostConverter.toSavePostResponse(saved);
+    }
+
+    private UserSave createSave(User user, Post post) {
+        post.increaseSaveCount();
+        return UserSave.builder()
+                        .user(user)
+                        .post(post)
+                        .isSaved(true)
+                        .build();
+    }
+
+    private UserSave resave(UserSave userSave) {
+        if (Boolean.TRUE.equals(userSave.getIsSaved())){
+            throw new ProjectException(SavedPostErrorCode.ALREADY_SAVED_POST);
+        }
+        userSave.resave();
+        userSave.getPost().increaseSaveCount();
+        return userSave;
     }
 
     private void validateSize(Integer size) {
@@ -230,12 +243,13 @@ public class SavedPostService {
     @Transactional
     public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long userId, Long savedId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         UserSave userSave = userSaveRepository.findByIdAndUserAndIsSavedTrue(savedId, user)
                 .orElseThrow(() -> new ProjectException(SavedPostErrorCode.SAVED_POST_NOT_FOUND));
 
         userSave.cancelSave();
+        userSave.getPost().decreaseSaveCount();
 
         return SavedPostConverter.toDeleteSavedPostResponse(userSave);
     }

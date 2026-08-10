@@ -87,6 +87,14 @@ public class Post extends BaseEntity {
         this.viewCount += 1;
     }
 
+    public void increaseSaveCount() {
+        this.savedCount += 1;
+    }
+
+    public void decreaseSaveCount(){
+        this.savedCount -= 1;
+    }
+
     protected void updateCore(
             String title,
             String organizer,
