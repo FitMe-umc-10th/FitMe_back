@@ -19,6 +19,8 @@ import umc.fitme.domain.post.repository.ViewHistoryRepository;
 import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
+import umc.fitme.domain.user.exception.UserException;
+import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
@@ -120,8 +122,12 @@ public class PostQueryService {
                 .map(ViewHistory::getPost)
                 .toList();
 
+        // 회원 이름 조회
+        String name = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND)).getName();
+
         Set<Long> savedPostIds = userSaveRepository.findSavedPostIdsByUserId(userId);
-        return PostConverter.toPostPreviewListDTO(posts, viewHistories.hasNext(), null, savedPostIds);
+        return PostConverter.toPostPreviewListDTO(name, posts, viewHistories.hasNext(), null, savedPostIds);
     }
 
     /**

@@ -43,6 +43,7 @@ public class PostController {
 
 
     @GetMapping("/popular")
+    @Operation(summary = "홈 실시간 인기 공고 API", description = "실시간 인기 공고 목록을 나열한다.")
     public ApiResponse<PostResponseDTO.PopularPostListDTO> getPopularPosts(
             // 비로그인도 인기 공고를 볼 수 있어야 하므로 인증 정보가 없어도 조회를 허용한다.
             // 인증 정보가 없으면 찜 여부는 모두 false로 내려간다.
@@ -56,6 +57,7 @@ public class PostController {
 
 
     @GetMapping("/recent-views")
+    @Operation(summary = "홈 최근 조회 목록 API", description = "회원이 최근 조회한 공고 목록을 나열한다.")
     public ApiResponse<PostResponseDTO.PostPreviewListDTO> getRecentPosts(
             @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(name = "page", defaultValue = "0") Integer page,
@@ -67,6 +69,7 @@ public class PostController {
 
 
     @GetMapping("/closing-soon")
+    @Operation(summary = "홈 마감 임박 공고 조회 API", description = "마감이 임박한 공고 목록을 나열한다.")
     public ApiResponse<List<PostResponseDTO.PostPreviewDTO>> getClosingSoonPosts(
             @AuthenticationPrincipal PrincipalDetails principal,
             @RequestParam(name = "postType", required = false) PostType postType,
@@ -84,6 +87,7 @@ public class PostController {
      * 상세 조회와 함께 조회 수 및 최근 조회 이력을 갱신한다.
      */
     @GetMapping("/scholarship/{postId}")
+    @Operation(summary = "장학금 공고 상세 정보 API", description = "공고(장학금) 상세 정보를 조회한다.")
     public ApiResponse<PostResponseDTO.PostDetailDTO> getScholarshipPostDetail(
             @PathVariable Long postId,
             @AuthenticationPrincipal PrincipalDetails principal) {
@@ -97,6 +101,7 @@ public class PostController {
      * 상세 조회와 함께 조회 수 및 최근 조회 이력을 갱신한다.
      */
     @GetMapping("/contests/{postId}")
+    @Operation(summary = "공모전 공고 상세 정보 API", description = "공고(공모전) 상세 정보를 조회한다.")
     public ApiResponse<PostResponseDTO.PostDetailDTO> getContestPostDetail(
             @PathVariable Long postId,
             @AuthenticationPrincipal PrincipalDetails principal) {
@@ -111,6 +116,7 @@ public class PostController {
      * 외부 URL 이동은 응답의 applicationUrl을 받은 프론트엔드가 수행한다.
      */
     @PatchMapping("/{postId}/application")
+    @Operation(summary = "지원 상태 업데이트 API", description = "지원 이력을 생성한다.")
     public ApiResponse<UserApplicationResponseDto.CreateResponse> startApplication(
             @PathVariable Long postId,
             @AuthenticationPrincipal PrincipalDetails principal) {

@@ -86,6 +86,7 @@ public class PostConverter {
 
 
     public static PostResponseDTO.PostPreviewListDTO toPostPreviewListDTO(
+            String name,
             List<Post> postList,
             boolean hasNext,
             Long nextCursor,
@@ -99,6 +100,7 @@ public class PostConverter {
                 .collect(Collectors.toList());
 
         return PostResponseDTO.PostPreviewListDTO.builder()
+                .name(name)
                 .hasNext(hasNext)
                 .nextCursor(nextCursor)
                 .posts(postDTOs)
