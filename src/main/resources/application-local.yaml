@@ -23,3 +23,5 @@ app:
 logging:
   level:
     org.springframework.security: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %clr(%-5level) [%thread] [%X{traceId:-}] [%X{userId:-anonymous}] %logger{36} - %msg%n"

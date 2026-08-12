@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseErrorCode;
+import umc.fitme.global.security.entity.PrincipalDetails;
 import umc.fitme.global.security.exception.TokenException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
 import umc.fitme.global.security.util.JwtUtil;
@@ -84,8 +86,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Authentication authentication = jwtUtil.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
+                PrincipalDetails principal = (PrincipalDetails) authentication.getPrincipal();
+                MDC.put("userId", String.valueOf(principal.getUser().getId()));
+
+                // 회원탈퇴, 로그아웃 시 해당 AT를 블랙리스트에 추가하기 위해서
                 request.setAttribute("accessToken", token);
-                log.info("SecurityContext에 Authentication 객체 저장완료: {}", authentication.getPrincipal());
             }
         } catch (ExpiredJwtException e) {
             // AT가 만료된 경우
@@ -94,15 +99,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             setErrorResponse(response, tokenExpired);
             return;
         } catch (JwtException | IllegalArgumentException e){
-            log.error("유효하지 않은 토큰입니다. {}", e.getMessage());
+            log.warn("유효하지 않은 토큰입니다. {}", e.getMessage());
             BaseErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
             setErrorResponse(response, tokenInvalid);
             return;
         } catch (TokenException e){
-            log.error("에러 코드: {}, 에러 메시지: {}", e.getErrorCode(), e.getMessage());
+            log.warn("에러 코드: {}, 에러 메시지: {}", e.getErrorCode(), e.getMessage());
             setErrorResponse(response, e.getErrorCode());
             return;
         }
+
 
         filterChain.doFilter(request, response);
     }
