@@ -19,6 +19,14 @@ app:
     failure-redirection-uri: https://fit-me-front-smoky.vercel.app/login
 
 logging:
+  structured:
+    format:
+      console: ecs
+
   level:
     org.springframework.security: info
+
+server:
+  forward-headers-strategy: framework
+
 
