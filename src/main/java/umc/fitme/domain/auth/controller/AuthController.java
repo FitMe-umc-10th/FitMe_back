@@ -1,5 +1,6 @@
 package umc.fitme.domain.auth.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -145,6 +146,7 @@ public class AuthController {
     /***
      * 함수 기능: 데모데이 전 임시 토큰 발급 기능
      */
+    @Hidden
     @Operation(summary = "임시 AT, RT 토큰 발급 API", description = "데모데이 전까지만 유지. 토큰을 발급받는다.")
     @GetMapping("/demo-token")
     public ApiResponse<TokenInfoDto.ATInfo> getToken(){
