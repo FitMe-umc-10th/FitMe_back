@@ -42,6 +42,7 @@ public class PostResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PostPreviewListDTO {
+        private String name;
         private Boolean hasNext;
         private Long nextCursor;
         private List<PostPreviewDTO> posts;
