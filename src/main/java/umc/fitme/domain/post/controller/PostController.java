@@ -17,6 +17,7 @@ import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostQueryService;
 import umc.fitme.domain.post.service.PostService;
 import umc.fitme.domain.post.service.PostSummaryService;
+import umc.fitme.domain.post.sync.service.ScholarshipAmountBackfillService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
@@ -39,6 +40,8 @@ public class PostController {
     private final UserApplicationService userApplicationService;
     private final PostService postService;
     private final PostSummaryService postSummaryService;
+    // TODO: 일회성 백필 종료 후 triggerScholarshipAmountBackfill 과 함께 제거할 것
+    private final ScholarshipAmountBackfillService scholarshipAmountBackfillService;
 
 
     @GetMapping("/popular")
@@ -164,6 +167,19 @@ public class PostController {
 
         int count = postSummaryService.generateMissingSummaries();
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, count + "건의 AI 요약이 생성되었습니다.");
+    }
+
+    // =========================================================================
+    // TODO: 일회성 백필용 임시 엔드포인트. 반영 후 제거
+    //       (ScholarshipAmountParser 버그로 잘못 저장된 support_amount_value 교정)
+    //       인증/권한 체크가 없으므로 백필 실행이 끝나면 이 메서드와
+    //       scholarshipAmountBackfillService 필드를 함께 삭제한다.
+    // =========================================================================
+    @GetMapping("/scholarship-amount-backfill")
+    public ApiResponse<String> triggerScholarshipAmountBackfill() {
+        int count = scholarshipAmountBackfillService.backfillAll();
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK,
+                count + "건의 장학금 support_amount_value를 재계산했습니다.");
     }
 
     /***

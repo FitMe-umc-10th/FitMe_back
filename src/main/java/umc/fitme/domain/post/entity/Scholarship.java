@@ -49,6 +49,13 @@ public class Scholarship extends Post{
         this.supportAmountValue = ScholarshipAmountParser.parse(supportAmount);
     }
 
+    /**
+     * 원본 문자열(supportAmount)로 supportAmountValue를 다시 계산한다.
+     */
+    public void refreshSupportAmountValue() {
+        this.supportAmountValue = ScholarshipAmountParser.parse(this.supportAmount);
+    }
+
     public void syncFrom(
             String title,
             String organizer,
