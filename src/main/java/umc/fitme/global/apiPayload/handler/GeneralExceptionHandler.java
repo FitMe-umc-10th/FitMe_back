@@ -1,5 +1,6 @@
 package umc.fitme.global.apiPayload.handler;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,12 +21,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GeneralExceptionHandler {
 
     // 프로젝트에서 발생한 예외 처리
     @ExceptionHandler(ProjectException.class)
     public ResponseEntity<ApiResponse<Void>> handleProjectException(ProjectException e){
         BaseErrorCode errorCode = e.getErrorCode();
+        log.warn("비즈니스 로직 예외: code={}, msg={}", errorCode, e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }
@@ -41,6 +44,7 @@ public class GeneralExceptionHandler {
         });
 
         BaseErrorCode errorCode = GeneralErrorCode.BAD_REQUEST;
+        log.warn("@Valid 어노테이션 검증 실패 예외: code={}, msg={}", errorCode, e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, errors));
     }
@@ -49,6 +53,7 @@ public class GeneralExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e){
         BaseErrorCode errorCode = resolveTypeMismatchErrorCode(e);
+        log.warn("요청 파라미터 ENUM 바인딩 실패 예외: code={}, msg={}", errorCode, e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }
@@ -57,6 +62,7 @@ public class GeneralExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e){
         BaseErrorCode errorCode = GeneralErrorCode.BAD_REQUEST;
+        log.warn("요청 파라미터 필수 필드 누락 예외: code={}, msg={}", errorCode, e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }
@@ -78,15 +84,17 @@ public class GeneralExceptionHandler {
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailureException(OptimisticLockingFailureException e){
         BaseErrorCode errorCode = UserErrorCode.PROFILE_UPDATE_CONFLICT;
+        log.warn("낙관적 락 충돌 예외: code={}, msg={}", errorCode, e.getMessage());
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode, null));
     }
 
     // 그 외 정의되지 않은 모든 예외 처리
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<String>> handleException(Exception e){
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception e){
+        log.error("정의되지 않은 예외 발생", e);
         BaseErrorCode errorCode = GeneralErrorCode.INTERNAL_SERVER_ERROR;
         return ResponseEntity.status(errorCode.getStatus())
-                .body(ApiResponse.onFailure(errorCode, e.getMessage()));
+                .body(ApiResponse.onFailure(errorCode, null));
     }
 }
