@@ -1,5 +1,6 @@
 package umc.fitme.domain.post.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,7 +17,6 @@ import umc.fitme.domain.post.exception.code.PostSuccessCode;
 import umc.fitme.domain.post.service.PostQueryService;
 import umc.fitme.domain.post.service.PostService;
 import umc.fitme.domain.post.service.PostSummaryService;
-import umc.fitme.domain.post.sync.service.ScholarshipSyncService;
 import umc.fitme.domain.user.dto.UserApplicationRequestDto;
 import umc.fitme.domain.user.dto.UserApplicationResponseDto;
 import umc.fitme.domain.user.service.UserApplicationService;
@@ -38,7 +38,6 @@ public class PostController {
     private final PostQueryService postQueryService;
     private final UserApplicationService userApplicationService;
     private final PostService postService;
-    private final ScholarshipSyncService scholarshipSyncService;
     private final PostSummaryService postSummaryService;
 
 
@@ -149,17 +148,12 @@ public class PostController {
                 : principal.getUser().getId();
     }
 
-    @GetMapping("/scholarship-sync-test")
-    public ApiResponse<String> triggerScholarshipSync() {
-        scholarshipSyncService.sync();
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, "장학금 스케줄러 동기화가 실행되었습니다. scholarship_sync_log에서 결과를 확인하세요.");
-    }
-
     /**
      * AI 공고 요약 생성을 수동으로 트리거하는 테스트용 API.
      * postId가 주어지면 해당 공고 하나만 강제로 재생성하고,
      * 없으면 summary가 비어있는 활성 공고를 배치로 찾아 생성한다.
      */
+    @Hidden
     @GetMapping("/summary-generate-test")
     public ApiResponse<String> triggerSummaryGeneration(
             @RequestParam(required = false) Long postId) {
