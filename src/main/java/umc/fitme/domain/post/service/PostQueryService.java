@@ -10,12 +10,15 @@ import umc.fitme.domain.interest.repository.UserInterestRepository;
 import umc.fitme.domain.post.converter.PostConverter;
 import umc.fitme.domain.post.dto.response.PostResponseDTO;
 import umc.fitme.domain.post.entity.Post;
+import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.entity.ViewHistory;
 import umc.fitme.domain.post.enums.ClosingSoonSort;
+import umc.fitme.domain.post.enums.ContestCategory;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
+import umc.fitme.domain.post.util.ContestCategoryResolver;
 import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
@@ -64,6 +67,7 @@ public class PostQueryService {
     private final UserSaveRepository userSaveRepository;
     private final PostSummaryService postSummaryService;
     private final UniversityTypeResolver universityTypeResolver;
+    private final ContestCategoryResolver contestCategoryResolver;
 
 
     /**
@@ -406,6 +410,18 @@ public class PostQueryService {
             matchCount += universityMatch.matchScore();
         }
 
+        // 공모전은 사용자가 고른 관심 분야와 카테고리가 맞는지 확인한다.
+        if (post instanceof Contest contest) {
+            ConditionMatch categoryMatch = matchContestCategory(
+                    contest.getContestCategory(),
+                    profile.interestFields()
+            );
+            if (!categoryMatch.matches()) {
+                return ScoredPost.ineligible(post);
+            }
+            matchCount += categoryMatch.matchScore();
+        }
+
         // 사용자와 공고의 관심 분야가 하나라도 겹치는지 확인한다.
         ConditionMatch interestMatch = matchInterest(postInterests, profile.interestFields());
         if (!interestMatch.matches()) {
@@ -501,6 +517,40 @@ public class PostQueryService {
         }
 
         return ConditionMatch.restricted(normalize(requirement).contains(normalize(userType)));
+    }
+
+    /**
+     * 공모전 카테고리와 사용자가 고른 관심 분야를 맞춰 본다.
+     * <p>
+     * 사용자가 여러 분야를 골랐다면 그중 하나만 맞아도 통과한다.
+     * '기타'를 고른 사용자에게는 모든 카테고리를 보여 주고,
+     * 카테고리가 '기타'인 공고는 사용자가 무엇을 골랐든 보여 준다.
+     * 분류가 애매해서 기타로 넣은 공고까지 가리면 사용자가 존재조차 알 수 없기 때문이다.
+     */
+    private ConditionMatch matchContestCategory(
+            ContestCategory postCategory,
+            Set<String> userInterests
+    ) {
+        // 카테고리가 없는 공고는 판정할 수 없다.
+        if (postCategory == null) {
+            return ConditionMatch.unrestricted();
+        }
+        // 기타 공고는 항상 노출한다.
+        if (postCategory == ContestCategory.ETC) {
+            return ConditionMatch.unrestricted();
+        }
+
+        Set<ContestCategory> userCategories = contestCategoryResolver.resolveAll(userInterests);
+        // 관심 분야를 고르지 않았거나, 고른 것을 하나도 알아보지 못하면 거르지 않는다.
+        if (userCategories.isEmpty()) {
+            return ConditionMatch.unrestricted();
+        }
+        // 기타를 고른 사용자에게는 전 카테고리를 보여 준다.
+        if (userCategories.contains(ContestCategory.ETC)) {
+            return ConditionMatch.unrestricted();
+        }
+
+        return ConditionMatch.restricted(userCategories.contains(postCategory));
     }
 
     private ConditionMatch matchInterest(
