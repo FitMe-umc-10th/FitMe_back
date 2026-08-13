@@ -10,11 +10,8 @@ import umc.fitme.domain.post.dto.SearchViewDto;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.enums.FluctuationType;
 import umc.fitme.domain.post.enums.SearchSortType;
-import umc.fitme.domain.post.exception.PostException;
-import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.user.entity.SearchRecent;
-import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.SearchRecentRepository;
 import umc.fitme.domain.user.repository.UserRepository;
@@ -25,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 @Service
 @RequiredArgsConstructor
@@ -141,7 +139,7 @@ public class PostService {
     public void deleteRecentKeyword(Long userId, Long searchId) {
 
         SearchRecent searchRecent = searchRecentRepository.findByIdAndUserId(searchId, userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_RECENT_SEARCH_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_RECENT_SEARCH_NOT_FOUND));
 
         searchRecentRepository.delete(searchRecent);
     }

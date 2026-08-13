@@ -19,23 +19,22 @@ import umc.fitme.domain.auth.dto.*;
 import umc.fitme.domain.auth.entity.Blacklist;
 import umc.fitme.domain.auth.entity.EmailVerification;
 import umc.fitme.domain.auth.entity.RefreshToken;
-import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.auth.repository.BlacklistRepository;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
 import umc.fitme.domain.auth.repository.RefreshTokenRepository;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
-import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
-import umc.fitme.global.security.exception.TokenException;
+import umc.fitme.global.security.exception.SocialAccountLoginException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 @Service
 @Slf4j
@@ -72,14 +71,14 @@ public class AuthService {
 
         // 이미 가입된 이메일로 인증을 할 경우, "이미 가입된 이메일입니다" 반환
         if (userRepository.existsByEmail(email)){
-           throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
+           throw new ProjectException(UserErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         // Rate Limit (24시간 동안 최대 10회 제한)
         LocalDateTime windowStart = LocalDateTime.now().minusHours(RATE_LIMIT_WINDOW_HOURS);
         long requestCount = emailVerificationRepository.countByEmailAndCreatedAtAfter(email, windowStart);
         if (requestCount > MAX_REQUESTS_PER_WINDOW){
-            throw new AuthException(AuthErrorCode.RATE_LIMIT_EXCEEDED);
+            throw new ProjectException(AuthErrorCode.RATE_LIMIT_EXCEEDED);
         }
 
         String code = generateCode(); // 6자리 인증 코드 생성
@@ -97,26 +96,26 @@ public class AuthService {
      * @param dto 이메일, 인증번호(6자리)
      * @return 이메일, isVerified t/f dto
      */
-    @Transactional(noRollbackFor = AuthException.class)
+    @Transactional(noRollbackFor = ProjectException.class)
     public EmailVerificationConfirmDto.EmailVerificationConfirmResDto isValidateCode(EmailVerificationConfirmDto.EmailVerificationConfirmReqDto dto){
 
         // 이메일 확인
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
-                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
 
         // 인증 완료 코드 재사용 방지
         if (emailVerification.getVerifiedAt() != null){
-            throw new AuthException(AuthErrorCode.CODE_ALREADY_USED);
+            throw new ProjectException(AuthErrorCode.CODE_ALREADY_USED);
         }
 
         // 인증번호 만료 시 에러
         if (emailVerification.isExpired()){
-            throw new AuthException(AuthErrorCode.CODE_NOT_VALIDATE);
+            throw new ProjectException(AuthErrorCode.CODE_NOT_VALIDATE);
         }
 
         // 최대 실패 횟수 초과 시 에러
         if (emailVerification.getFailureCount() >= MAX_FAILURES){
-            throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
+            throw new ProjectException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
         }
 
         // 인증번호가 잘못되었을 시 에러
@@ -124,10 +123,10 @@ public class AuthService {
             emailVerification.incrementFailureCount();
 
             if (emailVerification.getFailureCount() >= MAX_FAILURES){
-                throw new AuthException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
+                throw new ProjectException(AuthErrorCode.MAX_FAILURE_EXCEEDED);
             }
 
-            throw new AuthException(AuthErrorCode.CODE_NOT_MATCH);
+            throw new ProjectException(AuthErrorCode.CODE_NOT_MATCH);
         }
 
         emailVerification.verify();
@@ -147,24 +146,24 @@ public class AuthService {
 
         // 이미 가입된 이메일로 회원가입을 시도 할 경우, 예외 처리
         if (userRepository.existsByEmail(dto.email())){
-            throw new UserException(UserErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new ProjectException(UserErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         // 이메일 인증 여부 검증
         EmailVerification emailVerification = emailVerificationRepository.findTopByEmailOrderByIdDesc(dto.email())
-                .orElseThrow(() -> new AuthException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(AuthErrorCode.EMAIL_CODE_NOT_FOUND));
         if (emailVerification.getVerifiedAt() == null){
-            throw new AuthException(AuthErrorCode.NEED_TO_VERIFY);
+            throw new ProjectException(AuthErrorCode.NEED_TO_VERIFY);
         }
 
         // 일회용 인증코드가 이미 사용되었다면 "이미 사용된 코드입니다" 반환
         if (emailVerification.isUsed()){
-            throw new AuthException(AuthErrorCode.CODE_ALREADY_USED);
+            throw new ProjectException(AuthErrorCode.CODE_ALREADY_USED);
         }
 
         // 만료 시간 검증 (인증 완료된지 30분 후에 회원가입을 진행하면 "이메일 인증 시간이 초과" 반환
         if (emailVerification.getVerifiedAt().plusMinutes(30).isBefore(LocalDateTime.now())){
-            throw new AuthException(AuthErrorCode.VERIFICATION_EXPIRED);
+            throw new ProjectException(AuthErrorCode.VERIFICATION_EXPIRED);
         }
 
         // 해당 인증 번호 사용처리
@@ -219,10 +218,17 @@ public class AuthService {
                     accessTokenValidity,
                     refreshToken);
 
+        } catch (SocialAccountLoginException e) {
+            // UsernameNotFoundException의 하위 타입이므로 반드시 먼저 잡아야 한다.
+            throw new ProjectException(AuthErrorCode.SOCIAL_ACCOUNT_ONLY);
+        } catch (UsernameNotFoundException e) {
+            // SecurityConfig에서 hideUserNotFoundExceptions=false로 두었기 때문에
+            // BadCredentialsException으로 변환되지 않고 그대로 올라온다.
+            throw new ProjectException(AuthErrorCode.EMAIL_NOT_FOUND);
         } catch (DisabledException e) {
-            throw new AuthException(AuthErrorCode.DELETED_USER_EMAIL);
+            throw new ProjectException(AuthErrorCode.DELETED_USER_EMAIL);
         } catch (BadCredentialsException e){
-            throw new AuthException(AuthErrorCode.INVALID_PASSWORD);
+            throw new ProjectException(AuthErrorCode.INVALID_PASSWORD);
         }
     }
 
@@ -244,7 +250,7 @@ public class AuthService {
 
         // LT안의 UserId가 DB에 존재하지 않으면 예외 리턴
         User user = userRepository.findById(linkTokenInfo.getUserId())
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         // 계정 연동 진행
         user.linkAccount(SocialType.valueOf(linkTokenInfo.getSocialType()), linkTokenInfo.getProviderId());
@@ -275,27 +281,27 @@ public class AuthService {
 
         // RT가 null이면 에러 리턴
         if (refreshToken == null){
-            throw new TokenException(TokenErrorCode.RT_NOT_FOUND);
+            throw new ProjectException(TokenErrorCode.RT_NOT_FOUND);
         }
         try { // RT가 유효하지 않다면 예외 리턴
             jwtUtil.validateToken(refreshToken);
         } catch (ExpiredJwtException e){
-            throw new TokenException(TokenErrorCode.RT_EXPIRED);
+            throw new ProjectException(TokenErrorCode.RT_EXPIRED);
         } catch (JwtException e){
-            throw new TokenException(TokenErrorCode.RT_INVALID);
+            throw new ProjectException(TokenErrorCode.RT_INVALID);
         }
 
         // 유저 정보 추출
         Long userId = jwtUtil.getUserIdFromRT(refreshToken);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         // DB에 저장된 RT와 일치하는지 검증 (RTR 보안 방어)
         RefreshToken dbToken = refreshTokenRepository.findByUser(user)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.RT_INVALID));
+                .orElseThrow(() -> new ProjectException(TokenErrorCode.RT_INVALID));
         if (!dbToken.getToken().equals(refreshToken)){ // [해킹 의심 상황] RT 삭제
             tokenService.deleteCompromisedToken(dbToken);
-            throw new TokenException(TokenErrorCode.RT_INVALID);
+            throw new ProjectException(TokenErrorCode.RT_INVALID);
         }
 
         String newAccessToken = jwtUtil.createAccessToken(userId, "USER", user.getEmail());
@@ -359,7 +365,7 @@ public class AuthService {
     private User addATBlacklistAndDeleteRT(Long userId, String accessToken) {
         // 회원 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         // AT 블랙리스트 등록
         blacklistRepository.save(new Blacklist(accessToken));

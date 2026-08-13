@@ -149,7 +149,7 @@ class SavedPostControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.isSuccess").value(false))
-                .andExpect(jsonPath("$.code").value("USER4005"));
+                .andExpect(jsonPath("$.code").value("SAVED_POST400_1"));
     }
 
     @Test
@@ -160,7 +160,7 @@ class SavedPostControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.isSuccess").value(false))
-                .andExpect(jsonPath("$.code").value("SAVED_POST4002"));
+                .andExpect(jsonPath("$.code").value("SAVED_POST400_2"));
     }
 
     @Test

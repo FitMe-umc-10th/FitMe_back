@@ -13,7 +13,6 @@ import umc.fitme.domain.interest.repository.InterestRepository;
 import umc.fitme.domain.interest.repository.UserInterestRepository;
 import umc.fitme.domain.onboarding.dto.OnboardingRequestDto;
 import umc.fitme.domain.onboarding.dto.OnboardingResponseDto;
-import umc.fitme.domain.onboarding.exception.OnboardingException;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
 import umc.fitme.domain.user.repository.UserDetailRepository;
@@ -112,7 +111,7 @@ class OnboardingServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> onboardingService.complete(userId, request))
-                .isInstanceOf(OnboardingException.class);
+                .isInstanceOf(ProjectException.class);
 
         verify(userDetailRepository, never()).save(any());
         verify(userInterestRepository, never()).saveAll(any());
@@ -158,7 +157,7 @@ class OnboardingServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> onboardingService.complete(userId, request))
-                .isInstanceOf(OnboardingException.class);
+                .isInstanceOf(ProjectException.class);
     }
 
     @Test
@@ -182,7 +181,7 @@ class OnboardingServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> onboardingService.complete(userId, request))
-                .isInstanceOf(OnboardingException.class);
+                .isInstanceOf(ProjectException.class);
     }
 
     @Test
@@ -206,6 +205,6 @@ class OnboardingServiceTest {
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> onboardingService.complete(userId, request))
-                .isInstanceOf(OnboardingException.class);
+                .isInstanceOf(ProjectException.class);
     }
 }

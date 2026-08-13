@@ -9,8 +9,8 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
-import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 @Slf4j
 @Component
@@ -34,7 +34,7 @@ public class EmailSender {
             mailSender.send(message);
             log.info("인증 메일 발송 성공");
         } catch (MessagingException | MailException e) {
-            throw new AuthException(AuthErrorCode.EMAIL_SEND_FAILED);
+            throw new ProjectException(AuthErrorCode.EMAIL_SEND_FAILED);
         }
     }
 

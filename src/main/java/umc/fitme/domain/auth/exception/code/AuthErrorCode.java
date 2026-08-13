@@ -22,6 +22,8 @@ public enum AuthErrorCode implements BaseErrorCode {
     EMAIL_SEND_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH503_1", "이메일 발송에 실패하였습니다. 메일 서버 장애"),
     DELETED_USER_EMAIL(HttpStatus.UNAUTHORIZED,"AUTH401_1", "탈퇴 처리된 계정입니다. 고객센터에 문의헤주세요."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED,"AUTH401_2" ,"비밀번호가 일치하지 않습니다." ),
+    EMAIL_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH401_3", "가입되지 않은 이메일입니다."),
+    SOCIAL_ACCOUNT_ONLY(HttpStatus.UNAUTHORIZED, "AUTH401_4", "소셜 로그인으로 가입된 계정입니다. 소셜 로그인을 이용해주세요."),
     ;
 
     private final HttpStatus status;

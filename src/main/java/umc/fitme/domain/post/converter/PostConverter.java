@@ -1,5 +1,6 @@
 package umc.fitme.domain.post.converter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import umc.fitme.domain.post.dto.PostSearchDto;
 import umc.fitme.domain.post.dto.SearchViewDto;
@@ -14,12 +15,17 @@ import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.user.entity.SearchRecent;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class PostConverter {
+
+    // 마감일을 알 수 없는 공고에 쓰는 대체값
+    private static final LocalDate DATE_UNKNOWN = LocalDate.of(2099, 12, 31);
 
     private static Integer calculateDDay(LocalDate applyEndAt) {
         if (applyEndAt == null) {
@@ -198,14 +204,17 @@ public class PostConverter {
     }
 
 
+    // 외부 API가 날짜를 주지 않거나 형식을 바꾼 경우, 공고가 유실되지 않도록 '사실상 무기한'으로 대체한다.
+    // 다만 조용히 넘어가면 형식 변경을 아무도 눈치채지 못하므로 파싱 실패는 반드시 로그로 남긴다.
     private static LocalDate parseDate(String dateString) {
         if (dateString == null || dateString.isBlank()) {
-            return LocalDate.of(2099, 12, 31);
+            return DATE_UNKNOWN;
         }
         try {
             return LocalDate.parse(dateString);
-        } catch (Exception e) {
-            return LocalDate.of(2099, 12, 31);
+        } catch (DateTimeParseException e) {
+            log.warn("공고 날짜 파싱 실패로 기본값({})을 사용합니다. value={}", DATE_UNKNOWN, dateString);
+            return DATE_UNKNOWN;
         }
     }
 

@@ -17,7 +17,6 @@ import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.mapping.UserSave;
 import umc.fitme.domain.user.enums.SavedPostCategory;
 import umc.fitme.domain.user.enums.SavedPostSort;
-import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.SavedPostErrorCode;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
@@ -263,7 +262,7 @@ public class SavedPostService {
     @Transactional
     public SavedPostResponseDto.DeleteSavedPostResponse deleteSavedPost(Long userId, Long savedId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         // 잠근 채 읽으므로 동시에 들어온 취소 요청 중 하나만 isSaved=true를 보고 통과한다.
         // 나머지는 조회 자체가 비어 SAVED_POST_NOT_FOUND가 되어 카운트를 중복 차감하지 않는다.
