@@ -16,6 +16,8 @@ import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.enums.PostType;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
+import umc.fitme.domain.post.enums.ContestCategory;
+import umc.fitme.domain.post.util.ContestCategoryResolver;
 import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
@@ -62,6 +64,10 @@ class PostQueryServiceTest {
      */
     @Spy
     private UniversityTypeResolver universityTypeResolver = new UniversityTypeResolver();
+
+    /** 관심 분야 문자열 매핑을 실제로 검증해야 하므로 mock이 아닌 진짜 객체를 넣는다. */
+    @Spy
+    private ContestCategoryResolver contestCategoryResolver = new ContestCategoryResolver();
 
     @InjectMocks
     private PostQueryService postQueryService;
@@ -425,6 +431,106 @@ class PostQueryServiceTest {
         return result.getPopularPosts().stream()
                 .filter(post -> type.name().equals(post.getType()))
                 .count();
+    }
+
+    @Test
+    void 공모전은_사용자가_고른_분야만_내려간다() {
+        // 사용자는 디자인만 골랐다. IT 공모전은 빠져야 한다.
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(contest(1L, ContestCategory.DESIGN), contest(2L, ContestCategory.IT)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("디자인"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10))
+                .extracting(PostResponseDTO.PostPreviewDTO::getPostId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    void 여러_분야를_고르면_그중_하나만_맞아도_내려간다() {
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(
+                        contest(1L, ContestCategory.DESIGN),
+                        contest(2L, ContestCategory.IT),
+                        contest(3L, ContestCategory.MARKETING)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile =
+                new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("디자인", "IT/개발"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10))
+                .extracting(PostResponseDTO.PostPreviewDTO::getPostId)
+                .containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
+    void 기타를_고른_사용자에게는_모든_카테고리가_내려간다() {
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(contest(1L, ContestCategory.DESIGN), contest(2L, ContestCategory.IT)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("기타"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10)).hasSize(2);
+    }
+
+    @Test
+    void 카테고리가_기타인_공모전은_무엇을_골랐든_내려간다() {
+        // 분류가 애매해 기타로 넣은 공고를 가리면 사용자가 존재조차 알 수 없다.
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(contest(1L, ContestCategory.ETC), contest(2L, ContestCategory.IT)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("디자인"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10))
+                .extracting(PostResponseDTO.PostPreviewDTO::getPostId)
+                .containsExactly(1L);
+    }
+
+    @Test
+    void 카테고리가_없는_공모전은_판정하지_않고_내려간다() {
+        // 공용 DB의 contest_category가 아직 비어 있어 이 경로가 실제로 쓰인다.
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(contest(1L, null)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("디자인"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10)).hasSize(1);
+    }
+
+    @Test
+    void 알아볼_수_없는_관심분야만_고른_사용자는_거르지_않는다() {
+        // 직접 입력한 '로봇공학'은 카테고리로 바꿀 수 없다. 못 알아본 것으로 공고를 가리지 않는다.
+        when(postRepository.findClosingSoonPosts(isNull(), any(PageRequest.class)))
+                .thenReturn(List.of(contest(1L, ContestCategory.DESIGN), contest(2L, ContestCategory.IT)));
+        when(postInterestRepository.findPostInterestNamesByPostIds(anyCollection()))
+                .thenReturn(List.of());
+
+        UserFitProfile profile = new UserFitProfile(3.5, 3, "서울", "가천대학교", Set.of("로봇공학"));
+
+        assertThat(postQueryService.getClosingSoonPosts(profile, null, 10)).hasSize(2);
+    }
+
+    private Contest contest(Long id, ContestCategory category) {
+        return Contest.builder()
+                .id(id)
+                .postType(PostType.CONTEST)
+                .contestCategory(category)
+                .title("테스트 공모전 " + id)
+                .organizer("테스트 주최")
+                .applyStartAt(LocalDate.now())
+                .applyEndAt(LocalDate.now().plusDays(3))
+                .applicationMethod("홈페이지 지원")
+                .applicationUrl("https://example.com")
+                .build();
     }
 
     private List<Post> contests(Long... ids) {
