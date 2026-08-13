@@ -14,17 +14,16 @@ import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.entity.ViewHistory;
 import umc.fitme.domain.post.enums.ClosingSoonSort;
 import umc.fitme.domain.post.enums.PostType;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.domain.post.repository.PostRepository;
 import umc.fitme.domain.post.repository.ViewHistoryRepository;
 import umc.fitme.domain.post.util.UniversityTypeResolver;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
-import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserDetailRepository;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.domain.user.repository.UserSaveRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -124,7 +123,7 @@ public class PostQueryService {
 
         // 회원 이름 조회
         String name = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND)).getName();
+                .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND)).getName();
 
         Set<Long> savedPostIds = userSaveRepository.findSavedPostIdsByUserId(userId);
         return PostConverter.toPostPreviewListDTO(name, posts, viewHistories.hasNext(), null, savedPostIds);
@@ -143,9 +142,9 @@ public class PostQueryService {
                         history -> history.updateViewedAt(now),
                         () -> {
                             Post post = postRepository.findById(postId)
-                                    .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+                                    .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
                             User userReference = userRepository.findById(userId)
-                                    .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+                                    .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
                             viewHistoryRepository.save(ViewHistory.builder()
                                     .user(userReference)
                                     .post(post)
@@ -189,10 +188,12 @@ public class PostQueryService {
             PostType expectedPostType
     ) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
-        if (expectedPostType == null || post.getPostType() != expectedPostType) {
-            throw new ProjectException(GeneralErrorCode.NOT_FOUND);
+        // expectedPostType이 null이면 타입 제한 없는 조회이므로 검사하지 않는다.
+        // 장학금 경로로 공모전 ID가 들어온 경우 등, 요청한 타입과 실제 타입이 다르면 거부한다.
+        if (expectedPostType != null && post.getPostType() != expectedPostType) {
+            throw new ProjectException(PostErrorCode.POST_TYPE_NOT_FOUND);
         }
 
         post.incrementViewCount();

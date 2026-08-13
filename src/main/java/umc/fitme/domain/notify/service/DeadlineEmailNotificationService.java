@@ -1,6 +1,7 @@
 package umc.fitme.domain.notify.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import umc.fitme.domain.notify.dto.DeadlineEmailReminderTarget;
 import umc.fitme.domain.notify.entity.DeadlineEmailNotificationLog;
@@ -15,6 +16,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeadlineEmailNotificationService {
@@ -32,7 +34,17 @@ public class DeadlineEmailNotificationService {
                 userSaveRepository.findDeadlineEmailReminderTargets(applyEndDates);
 
         for (DeadlineEmailReminderTarget target : targets) {
-            sendIfNeeded(target, today);
+            // 한 대상의 실패가 남은 대상의 발송까지 막지 않도록 개별적으로 격리한다.
+            try {
+                sendIfNeeded(target, today);
+            } catch (Exception e) {
+                log.warn(
+                        "마감 임박 메일 처리에 실패했습니다. userId={}, postId={}",
+                        target.user() != null ? target.user().getId() : null,
+                        target.post() != null ? target.post().getId() : null,
+                        e
+                );
+            }
         }
     }
 
@@ -64,6 +76,11 @@ public class DeadlineEmailNotificationService {
                     DeadlineEmailNotificationLog.success(user, post, reminderType)
             );
         } catch (Exception e) {
+            log.warn(
+                    "마감 임박 메일 발송에 실패했습니다. userId={}, postId={}, reminderType={}",
+                    user.getId(), post.getId(), reminderType, e
+            );
+
             deadlineEmailNotificationLogRepository.save(
                     DeadlineEmailNotificationLog.failed(
                             user,

@@ -10,7 +10,7 @@ import umc.fitme.domain.post.entity.Contest;
 import umc.fitme.domain.post.entity.Post;
 import umc.fitme.domain.post.entity.Scholarship;
 import umc.fitme.domain.post.repository.PostRepository;
-import umc.fitme.global.apiPayload.code.GeneralErrorCode;
+import umc.fitme.domain.post.exception.code.PostErrorCode;
 import umc.fitme.global.apiPayload.exception.ProjectException;
 
 import java.util.List;
@@ -61,7 +61,7 @@ public class PostSummaryService {
      */
     public void generateSummaryForPost(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
 
         if (!openAiSummaryClient.isConfigured()) {
             log.warn("OpenAI API 키가 설정되지 않아 AI 요약 생성을 건너뜁니다. postId={}", postId);
@@ -91,7 +91,7 @@ public class PostSummaryService {
      */
     private void saveSummary(Long postId, String summary) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ProjectException(GeneralErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(PostErrorCode.POST_NOT_FOUND));
         post.updateSummary(summary);
         postRepository.save(post);
     }

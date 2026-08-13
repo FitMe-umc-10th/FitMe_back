@@ -1,6 +1,7 @@
 package umc.fitme.global.scheduler;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @Profile("ec2") // EC2 환경에서만 실행
@@ -48,6 +50,14 @@ public class BaseScheduler {
     @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
     public void sendDeadlineReminderEmails() {
         LocalDate today = LocalDate.now(clock);
-        deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
+
+        // 잡 경계에서 실패를 잡아 맥락과 함께 남긴다.
+        // 스프링 기본 처리에 맡기면 "Unexpected error occurred in scheduled task"만 남아
+        // 어떤 배치가 어떤 날짜에 실패했는지 알 수 없다.
+        try {
+            deadlineEmailNotificationService.sendDeadlineReminderEmails(today);
+        } catch (Exception e) {
+            log.error("마감 임박 메일 발송 배치 실패 - date={}", today, e);
+        }
     }
 }

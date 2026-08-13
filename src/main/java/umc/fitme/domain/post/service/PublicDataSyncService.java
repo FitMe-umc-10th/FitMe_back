@@ -44,8 +44,10 @@ public class PublicDataSyncService {
             log.info("성공적으로 {}개의 장학금 데이터를 DB에 저장했습니다.", scholarships.size());
 
         } catch (Exception e) {
-            log.error("장학금 데이터 동기화 중 오류 발생: {}", e.getMessage(), e);
-
+            // 예외를 삼키면 @Transactional이 정상 커밋되어 호출자도 운영자도 실패를 알 수 없다.
+            // 맥락만 로그로 남기고 그대로 전파해 롤백시킨다.
+            log.error("장학금 데이터 동기화 실패 - page={}, perPage={}", page, perPage, e);
+            throw e;
         }
     }
 }

@@ -19,11 +19,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import umc.fitme.global.apiPayload.ApiResponse;
 import umc.fitme.global.apiPayload.code.BaseErrorCode;
 import umc.fitme.global.security.entity.PrincipalDetails;
-import umc.fitme.global.security.exception.TokenException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
 import umc.fitme.global.security.util.JwtUtil;
 
 import java.io.IOException;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 @Component
 @RequiredArgsConstructor
@@ -103,7 +103,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             BaseErrorCode tokenInvalid = TokenErrorCode.AT_INVALID;
             setErrorResponse(response, tokenInvalid);
             return;
-        } catch (TokenException e){
+        } catch (ProjectException e){
             log.warn("에러 코드: {}, 에러 메시지: {}", e.getErrorCode(), e.getMessage());
             setErrorResponse(response, e.getErrorCode());
             return;

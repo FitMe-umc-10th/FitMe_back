@@ -1,6 +1,8 @@
 package umc.fitme.global.security.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -10,18 +12,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import umc.fitme.domain.auth.dto.LinkTokenDto;
 import umc.fitme.domain.auth.repository.BlacklistRepository;
-import umc.fitme.domain.auth.service.AuthService;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.enums.SocialType;
-import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.security.entity.PrincipalDetails;
-import umc.fitme.global.security.exception.TokenException;
 import umc.fitme.global.security.exception.code.TokenErrorCode;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import umc.fitme.global.apiPayload.exception.ProjectException;
 
 @Component
 @Slf4j
@@ -125,7 +125,7 @@ public class JwtUtil {
 
         // 해당 AT가 로그아웃, 탈퇴 등으로 만료 되었다면, 예외 발생
         if (blacklistRepository.findByToken(token).isPresent()){
-            throw new TokenException(TokenErrorCode.AT_BLACKLISTED);
+            throw new ProjectException(TokenErrorCode.AT_BLACKLISTED);
         }
 
         Jwts.parser()
@@ -142,15 +142,22 @@ public class JwtUtil {
      */
     public String validateLinkToken(String linkTokenHeader) {
         if (linkTokenHeader == null || !linkTokenHeader.startsWith("Bearer ")){
-            throw new TokenException(TokenErrorCode.LT_INVALID);
+            throw new ProjectException(TokenErrorCode.LT_INVALID);
         }
 
         String linkToken = linkTokenHeader.substring(7);
 
         try {
             validateToken(linkToken);
-        } catch (Exception e){
-            throw new TokenException(TokenErrorCode.LT_EXPIRED);
+        } catch (ExpiredJwtException e){
+            throw new ProjectException(TokenErrorCode.LT_EXPIRED);
+        } catch (ProjectException e){
+            // 블랙리스트 등록처럼 이미 사유가 특정된 예외는 덮어쓰지 않고 그대로 전달한다.
+            throw e;
+        } catch (JwtException | IllegalArgumentException e){
+            // 서명 위조, 형식 오류 등은 만료가 아니라 '유효하지 않은 토큰'이다.
+            log.warn("LT 검증 실패: {}", e.getMessage());
+            throw new ProjectException(TokenErrorCode.LT_INVALID);
         }
         return linkToken;
     }
@@ -174,15 +181,15 @@ public class JwtUtil {
 
         // 토큰 타입이 access가 아닌 경우 예외 처리
         if (!"access".equals(typ)) {
-            throw new TokenException(TokenErrorCode.AT_TYPE_INVALID);
+            throw new ProjectException(TokenErrorCode.AT_TYPE_INVALID);
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new TokenException(TokenErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(TokenErrorCode.USER_NOT_FOUND));
 
         // 유저가 탈퇴한 유저인지 확인
         if (user.getDeletedAt() != null){
-            throw new TokenException(TokenErrorCode.USER_WITHDRAW);
+            throw new ProjectException(TokenErrorCode.USER_WITHDRAW);
         }
 
         PrincipalDetails principal = new PrincipalDetails(user, role);
@@ -203,7 +210,7 @@ public class JwtUtil {
 
         String typ = payload.get("typ", String.class);
         if(!"refresh".equals(typ)){
-            throw new TokenException(TokenErrorCode.RT_TYPE_INVALID);
+            throw new ProjectException(TokenErrorCode.RT_TYPE_INVALID);
         }
 
         return Long.parseLong(payload.getSubject());
@@ -223,7 +230,7 @@ public class JwtUtil {
 
         String typ = payload.get("typ", String.class);
         if (!"link".equals(typ)){
-            throw new TokenException(TokenErrorCode.LT_TYPE_INVALID);
+            throw new ProjectException(TokenErrorCode.LT_TYPE_INVALID);
         }
 
         return LinkTokenDto.builder()

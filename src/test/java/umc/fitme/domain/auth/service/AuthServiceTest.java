@@ -8,16 +8,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import umc.fitme.domain.auth.dto.EmailVerificationConfirmDto;
 import umc.fitme.domain.auth.dto.EmailVerificationDto;
+import umc.fitme.domain.auth.dto.LoginDto;
 import umc.fitme.domain.auth.entity.EmailVerification;
-import umc.fitme.domain.auth.exception.AuthException;
 import umc.fitme.domain.auth.exception.code.AuthErrorCode;
 import umc.fitme.domain.auth.repository.EmailVerificationRepository;
-import umc.fitme.domain.user.exception.UserException;
 import umc.fitme.domain.user.exception.code.UserErrorCode;
 import umc.fitme.domain.user.repository.UserRepository;
 import umc.fitme.global.apiPayload.exception.ProjectException;
+import umc.fitme.global.security.exception.SocialAccountLoginException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -38,6 +42,8 @@ class AuthServiceTest {
     private EmailVerificationRepository emailVerificationRepository;
     @Mock
     private EmailSender emailSender;
+    @Mock
+    private AuthenticationManager authenticationManager;
 
     @InjectMocks
     private AuthService authService;
@@ -61,7 +67,7 @@ class AuthServiceTest {
 
             // when & then
             assertThatThrownBy(() -> authService.sendVerificationCode(request))
-                    .isInstanceOf(UserException.class)
+                    .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
                     .isEqualTo(UserErrorCode.EMAIL_ALREADY_EXISTS);
 
@@ -122,7 +128,7 @@ class AuthServiceTest {
 
             // when & then
             assertThatThrownBy(() -> authService.isValidateCode(request))
-                    .isInstanceOf(AuthException.class)
+                    .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
                     .isEqualTo(AuthErrorCode.EMAIL_CODE_NOT_FOUND);
         }
@@ -140,7 +146,7 @@ class AuthServiceTest {
 
             // when & then
             assertThatThrownBy(() -> authService.isValidateCode(request))
-                    .isInstanceOf(AuthException.class)
+                    .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
                     .isEqualTo(AuthErrorCode.CODE_NOT_VALIDATE);
 
@@ -161,7 +167,7 @@ class AuthServiceTest {
 
             // when & then
             assertThatThrownBy(() -> authService.isValidateCode(request))
-                    .isInstanceOf(AuthException.class)
+                    .isInstanceOf(ProjectException.class)
                     .extracting(e -> ((ProjectException) e).getErrorCode())
                     .isEqualTo(AuthErrorCode.CODE_NOT_MATCH);
 
@@ -187,6 +193,88 @@ class AuthServiceTest {
             assertThat(response.email()).isEqualTo(EMAIL);
             assertThat(response.isVerified()).isTrue();
             assertThat(valid.getVerifiedAt()).isNotNull(); // verify() 호출 확인
+        }
+    }
+
+    @Nested
+    @DisplayName("login - 이메일 로그인")
+    class Login {
+
+        private static final String PASSWORD = "password1234";
+
+        private LoginDto.LoginReq request() {
+            return new LoginDto.LoginReq(EMAIL, PASSWORD, false);
+        }
+
+        @Test
+        @DisplayName("가입되지 않은 이메일이면 500이 아닌 EMAIL_NOT_FOUND 예외를 던진다")
+        void 가입되지_않은_이메일이면_EMAIL_NOT_FOUND_예외를_던진다() {
+            // given
+            // SecurityConfig에서 hideUserNotFoundExceptions=false로 두었기 때문에
+            // BadCredentialsException으로 변환되지 않고 그대로 올라온다.
+            given(authenticationManager.authenticate(any()))
+                    .willThrow(new UsernameNotFoundException("존재하지 않는 이메일입니다: " + EMAIL));
+
+            // when & then
+            assertThatThrownBy(() -> authService.login(request()))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(AuthErrorCode.EMAIL_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("소셜 로그인 전용 계정이면 SOCIAL_ACCOUNT_ONLY 예외를 던진다")
+        void 소셜_전용_계정이면_SOCIAL_ACCOUNT_ONLY_예외를_던진다() {
+            // given
+            given(authenticationManager.authenticate(any()))
+                    .willThrow(new SocialAccountLoginException("소셜 로그인으로 가입된 계정입니다."));
+
+            // when & then
+            assertThatThrownBy(() -> authService.login(request()))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(AuthErrorCode.SOCIAL_ACCOUNT_ONLY);
+        }
+
+        @Test
+        @DisplayName("탈퇴한 계정이면 DELETED_USER_EMAIL 예외를 던진다")
+        void 탈퇴한_계정이면_DELETED_USER_EMAIL_예외를_던진다() {
+            // given
+            given(authenticationManager.authenticate(any()))
+                    .willThrow(new DisabledException("탈퇴한 계정입니다."));
+
+            // when & then
+            assertThatThrownBy(() -> authService.login(request()))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(AuthErrorCode.DELETED_USER_EMAIL);
+        }
+
+        @Test
+        @DisplayName("비밀번호가 틀리면 INVALID_PASSWORD 예외를 던진다")
+        void 비밀번호가_틀리면_INVALID_PASSWORD_예외를_던진다() {
+            // given
+            given(authenticationManager.authenticate(any()))
+                    .willThrow(new BadCredentialsException("비밀번호가 일치하지 않습니다."));
+
+            // when & then
+            assertThatThrownBy(() -> authService.login(request()))
+                    .isInstanceOf(ProjectException.class)
+                    .extracting(e -> ((ProjectException) e).getErrorCode())
+                    .isEqualTo(AuthErrorCode.INVALID_PASSWORD);
+        }
+    }
+
+    @Nested
+    @DisplayName("ProjectException 메시지")
+    class ProjectExceptionMessage {
+
+        @Test
+        @DisplayName("에러 코드의 메시지가 getMessage()로 노출된다")
+        void 에러코드_메시지가_getMessage로_노출된다() {
+            ProjectException e = new ProjectException(AuthErrorCode.EMAIL_NOT_FOUND);
+
+            assertThat(e.getMessage()).isEqualTo(AuthErrorCode.EMAIL_NOT_FOUND.getMessage());
         }
     }
 }

@@ -9,7 +9,6 @@ import umc.fitme.domain.interest.repository.InterestRepository;
 import umc.fitme.domain.interest.repository.UserInterestRepository;
 import umc.fitme.domain.onboarding.dto.OnboardingRequestDto;
 import umc.fitme.domain.onboarding.dto.OnboardingResponseDto;
-import umc.fitme.domain.onboarding.exception.OnboardingException;
 import umc.fitme.domain.onboarding.exception.code.OnboardingErrorCode;
 import umc.fitme.domain.user.entity.User;
 import umc.fitme.domain.user.entity.UserDetail;
@@ -46,7 +45,7 @@ public class OnboardingService {
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
         if (Boolean.TRUE.equals(user.getIsOnboarded())) {
-            throw new OnboardingException(OnboardingErrorCode.ALREADY_ONBOARDED);
+            throw new ProjectException(OnboardingErrorCode.ALREADY_ONBOARDED);
         }
 
         validate(request);
@@ -81,17 +80,17 @@ public class OnboardingService {
                 || isBlank(request.university())
                 || request.gpa() == null
                 || isBlank(request.incomeLevel())) {
-            throw new OnboardingException(OnboardingErrorCode.MISSING_REQUIRED_FIELD);
+            throw new ProjectException(OnboardingErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         if (request.gpa() < MIN_GPA || request.gpa() > MAX_GPA) {
-            throw new OnboardingException(OnboardingErrorCode.INVALID_GPA_RANGE);
+            throw new ProjectException(OnboardingErrorCode.INVALID_GPA_RANGE);
         }
 
         boolean hasInterests = request.interests() != null && !request.interests().isEmpty();
         boolean hasCustomInterests = request.customInterests() != null && !request.customInterests().isEmpty();
         if (!hasInterests && !hasCustomInterests) {
-            throw new OnboardingException(OnboardingErrorCode.INTEREST_REQUIRED);
+            throw new ProjectException(OnboardingErrorCode.INTEREST_REQUIRED);
         }
     }
 
@@ -102,7 +101,7 @@ public class OnboardingService {
     private int parseIncomeLevel(String incomeLevel) {
         Matcher matcher = INCOME_LEVEL_DIGIT_PATTERN.matcher(incomeLevel);
         if (!matcher.find()) {
-            throw new OnboardingException(OnboardingErrorCode.INVALID_INCOME_LEVEL);
+            throw new ProjectException(OnboardingErrorCode.INVALID_INCOME_LEVEL);
         }
         return Integer.parseInt(matcher.group());
     }
