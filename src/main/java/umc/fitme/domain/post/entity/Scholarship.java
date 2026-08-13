@@ -49,6 +49,7 @@ public class Scholarship extends Post{
         this.supportAmountValue = ScholarshipAmountParser.parse(supportAmount);
     }
 
+
     public void syncFrom(
             String title,
             String organizer,
