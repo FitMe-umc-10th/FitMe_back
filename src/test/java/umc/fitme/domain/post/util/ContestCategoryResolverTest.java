@@ -22,12 +22,7 @@ class ContestCategoryResolverTest {
         assertThat(resolver.resolve("디자인")).isEqualTo(ContestCategory.DESIGN);
         assertThat(resolver.resolve("IT/개발")).isEqualTo(ContestCategory.IT);
         assertThat(resolver.resolve("영상편집")).isEqualTo(ContestCategory.VIDEO);
-    }
-
-    @Test
-    void 어학은_대응하는_카테고리가_없어_판정하지_않는다() {
-        // ContestCategory에 어학이 없다. 어학 공모전은 ETC로 분류되어 어차피 항상 노출된다.
-        assertThat(resolver.resolve("어학")).isNull();
+        assertThat(resolver.resolve("어학")).isEqualTo(ContestCategory.LANGUAGE);
     }
 
     @Test
@@ -58,10 +53,9 @@ class ContestCategoryResolverTest {
     }
 
     @Test
-    void 어학과_다른_태그를_함께_고르면_다른_태그로_판정한다() {
-        // 어학 때문에 전체가 통과로 열리면 안 된다.
+    void 어학과_다른_태그를_함께_고르면_둘_다_집합에_담긴다() {
         assertThat(resolver.resolveAll(Set.of("어학", "디자인")))
-                .containsExactly(ContestCategory.DESIGN);
+                .containsExactlyInAnyOrder(ContestCategory.LANGUAGE, ContestCategory.DESIGN);
     }
 
     @Test
