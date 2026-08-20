@@ -23,10 +23,6 @@ public class ContestCategoryResolver {
 
     /**
      * 온보딩 화면이 제공하는 관심 분야 태그 6개. 화면 설계서 기준이며 이 값이 판정의 기준이다.
-     * <p>
-     * {@code 어학}은 대응하는 {@link ContestCategory}가 없어 일부러 넣지 않았다.
-     * 매핑에 없으므로 '판정 불가'가 되고, 어학만 고른 사용자는 공모전이 걸러지지 않는다.
-     * 어학 공모전은 카테고리상 {@code ETC}로 분류되어 어차피 항상 노출된다.
      */
     private static final Map<String, ContestCategory> ONBOARDING_TAGS = new LinkedHashMap<>();
 
@@ -36,6 +32,7 @@ public class ContestCategoryResolver {
         ONBOARDING_TAGS.put("디자인", ContestCategory.DESIGN);
         ONBOARDING_TAGS.put("it/개발", ContestCategory.IT);
         ONBOARDING_TAGS.put("영상편집", ContestCategory.VIDEO);
+        ONBOARDING_TAGS.put("어학", ContestCategory.LANGUAGE);
     }
 
     /**

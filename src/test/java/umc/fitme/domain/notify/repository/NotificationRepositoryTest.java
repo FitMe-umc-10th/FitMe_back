@@ -60,7 +60,7 @@ class NotificationRepositoryTest extends RepositoryTestSupport {
     private Post persistContest(String title) {
         Contest post = Contest.builder()
                 .postType(PostType.CONTEST)
-                .contestCategory(ContestCategory.LANGAUGE)
+                .contestCategory(ContestCategory.LANGUAGE)
                 .title(title)
                 .organizer("테스트 기관")
                 .applyStartAt(LocalDate.of(2026, 7, 1))
